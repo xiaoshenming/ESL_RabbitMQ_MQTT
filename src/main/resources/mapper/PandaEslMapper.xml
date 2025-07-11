@@ -1,0 +1,1168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pandatech.downloadcf.mapper.PandaEslMapper">
+  <resultMap id="BaseResultMap" type="com.pandatech.downloadcf.entity.PandaEsl">
+    <id column="ID" jdbcType="VARCHAR" property="id" />
+    <result column="TENANT_ID" jdbcType="VARCHAR" property="tenantId" />
+    <result column="SORT_CODE" jdbcType="INTEGER" property="sortCode" />
+    <result column="DELETE_FLAG" jdbcType="VARCHAR" property="deleteFlag" />
+    <result column="CREATE_TIME" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="CREATE_USER" jdbcType="VARCHAR" property="createUser" />
+    <result column="UPDATE_TIME" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="UPDATE_USER" jdbcType="VARCHAR" property="updateUser" />
+    <result column="ESL_ID" jdbcType="VARCHAR" property="eslId" />
+    <result column="STORE_CODE" jdbcType="VARCHAR" property="storeCode" />
+    <result column="ESL_MODEL" jdbcType="VARCHAR" property="eslModel" />
+    <result column="BOUND_PRODUCT" jdbcType="VARCHAR" property="boundProduct" />
+    <result column="BATTERY_LEVEL" jdbcType="REAL" property="batteryLevel" />
+    <result column="TEMPERATURE" jdbcType="REAL" property="temperature" />
+    <result column="SIGNAL_STRENGTH" jdbcType="INTEGER" property="signalStrength" />
+    <result column="COMMUNICATION_COUNT" jdbcType="INTEGER" property="communicationCount" />
+    <result column="FAILURE_COUNT" jdbcType="INTEGER" property="failureCount" />
+    <result column="ESL_CATEGORY" jdbcType="VARCHAR" property="eslCategory" />
+    <result column="ESL_STATUS" jdbcType="VARCHAR" property="eslStatus" />
+    <result column="SCREEN_COLOR" jdbcType="VARCHAR" property="screenColor" />
+    <result column="COMMUNICATION_METHOD" jdbcType="VARCHAR" property="communicationMethod" />
+    <result column="OPERATING_TEMPERATURE_RANGE" jdbcType="VARCHAR" property="operatingTemperatureRange" />
+    <result column="IP_RATING" jdbcType="VARCHAR" property="ipRating" />
+    <result column="VERSION" jdbcType="VARCHAR" property="version" />
+    <result column="HARDWARE" jdbcType="VARCHAR" property="hardware" />
+    <result column="STORE_CODE_ID" jdbcType="VARCHAR" property="storeCodeId" />
+    <result column="BOUND_PRODUCT_ID" jdbcType="VARCHAR" property="boundProductId" />
+    <result column="ESL_ID_X" jdbcType="VARCHAR" property="eslIdX" />
+    <result column="AP_SN" jdbcType="VARCHAR" property="apSn" />
+    <result column="AP_SN_ID" jdbcType="VARCHAR" property="apSnId" />
+    <result column="UPC1" jdbcType="VARCHAR" property="upc1" />
+    <result column="UPC2" jdbcType="VARCHAR" property="upc2" />
+    <result column="UPC3" jdbcType="VARCHAR" property="upc3" />
+    <result column="UPC4" jdbcType="VARCHAR" property="upc4" />
+    <result column="NAME" jdbcType="VARCHAR" property="name" />
+    <result column="CODE" jdbcType="VARCHAR" property="code" />
+    <result column="F_01" jdbcType="VARCHAR" property="f01" />
+    <result column="F_02" jdbcType="VARCHAR" property="f02" />
+    <result column="F_03" jdbcType="VARCHAR" property="f03" />
+    <result column="F_04" jdbcType="VARCHAR" property="f04" />
+    <result column="F_05" jdbcType="VARCHAR" property="f05" />
+    <result column="F_06" jdbcType="VARCHAR" property="f06" />
+    <result column="F_07" jdbcType="VARCHAR" property="f07" />
+    <result column="F_08" jdbcType="VARCHAR" property="f08" />
+    <result column="F_09" jdbcType="VARCHAR" property="f09" />
+    <result column="F_10" jdbcType="VARCHAR" property="f10" />
+    <result column="F_11" jdbcType="VARCHAR" property="f11" />
+    <result column="F_20" jdbcType="VARCHAR" property="f20" />
+    <result column="F_12" jdbcType="VARCHAR" property="f12" />
+    <result column="F_13" jdbcType="VARCHAR" property="f13" />
+    <result column="F_14" jdbcType="VARCHAR" property="f14" />
+    <result column="F_32" jdbcType="VARCHAR" property="f32" />
+    <result column="F_15" jdbcType="VARCHAR" property="f15" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.pandatech.downloadcf.entity.PandaEslWithBLOBs">
+    <result column="EXT_JSON" jdbcType="LONGVARCHAR" property="extJson" />
+    <result column="ESL_TEMPLATE_JSON" jdbcType="LONGVARCHAR" property="eslTemplateJson" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    ID, TENANT_ID, SORT_CODE, DELETE_FLAG, CREATE_TIME, CREATE_USER, UPDATE_TIME, UPDATE_USER, 
+    ESL_ID, STORE_CODE, ESL_MODEL, BOUND_PRODUCT, BATTERY_LEVEL, TEMPERATURE, SIGNAL_STRENGTH, 
+    COMMUNICATION_COUNT, FAILURE_COUNT, ESL_CATEGORY, ESL_STATUS, SCREEN_COLOR, COMMUNICATION_METHOD, 
+    OPERATING_TEMPERATURE_RANGE, IP_RATING, VERSION, HARDWARE, STORE_CODE_ID, BOUND_PRODUCT_ID, 
+    ESL_ID_X, AP_SN, AP_SN_ID, UPC1, UPC2, UPC3, UPC4, NAME, CODE, F_01, F_02, F_03, 
+    F_04, F_05, F_06, F_07, F_08, F_09, F_10, F_11, F_20, F_12, F_13, F_14, F_32, F_15
+  </sql>
+  <sql id="Blob_Column_List">
+    EXT_JSON, ESL_TEMPLATE_JSON
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.String" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from panda_esl
+    where ID = #{id,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String">
+    delete from panda_esl
+    where ID = #{id,jdbcType=VARCHAR}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.pandatech.downloadcf.entity.PandaEslExample">
+    delete from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.pandatech.downloadcf.entity.PandaEslWithBLOBs">
+    insert into panda_esl (ID, TENANT_ID, SORT_CODE, 
+      DELETE_FLAG, CREATE_TIME, CREATE_USER, 
+      UPDATE_TIME, UPDATE_USER, ESL_ID, 
+      STORE_CODE, ESL_MODEL, BOUND_PRODUCT, 
+      BATTERY_LEVEL, TEMPERATURE, SIGNAL_STRENGTH, 
+      COMMUNICATION_COUNT, FAILURE_COUNT, ESL_CATEGORY, 
+      ESL_STATUS, SCREEN_COLOR, COMMUNICATION_METHOD, 
+      OPERATING_TEMPERATURE_RANGE, IP_RATING, VERSION, 
+      HARDWARE, STORE_CODE_ID, BOUND_PRODUCT_ID, 
+      ESL_ID_X, AP_SN, AP_SN_ID, 
+      UPC1, UPC2, UPC3, UPC4, 
+      NAME, CODE, F_01, F_02, 
+      F_03, F_04, F_05, F_06, 
+      F_07, F_08, F_09, F_10, 
+      F_11, F_20, F_12, F_13, 
+      F_14, F_32, F_15, EXT_JSON, 
+      ESL_TEMPLATE_JSON)
+    values (#{id,jdbcType=VARCHAR}, #{tenantId,jdbcType=VARCHAR}, #{sortCode,jdbcType=INTEGER}, 
+      #{deleteFlag,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{createUser,jdbcType=VARCHAR}, 
+      #{updateTime,jdbcType=TIMESTAMP}, #{updateUser,jdbcType=VARCHAR}, #{eslId,jdbcType=VARCHAR}, 
+      #{storeCode,jdbcType=VARCHAR}, #{eslModel,jdbcType=VARCHAR}, #{boundProduct,jdbcType=VARCHAR}, 
+      #{batteryLevel,jdbcType=REAL}, #{temperature,jdbcType=REAL}, #{signalStrength,jdbcType=INTEGER}, 
+      #{communicationCount,jdbcType=INTEGER}, #{failureCount,jdbcType=INTEGER}, #{eslCategory,jdbcType=VARCHAR}, 
+      #{eslStatus,jdbcType=VARCHAR}, #{screenColor,jdbcType=VARCHAR}, #{communicationMethod,jdbcType=VARCHAR}, 
+      #{operatingTemperatureRange,jdbcType=VARCHAR}, #{ipRating,jdbcType=VARCHAR}, #{version,jdbcType=VARCHAR}, 
+      #{hardware,jdbcType=VARCHAR}, #{storeCodeId,jdbcType=VARCHAR}, #{boundProductId,jdbcType=VARCHAR}, 
+      #{eslIdX,jdbcType=VARCHAR}, #{apSn,jdbcType=VARCHAR}, #{apSnId,jdbcType=VARCHAR}, 
+      #{upc1,jdbcType=VARCHAR}, #{upc2,jdbcType=VARCHAR}, #{upc3,jdbcType=VARCHAR}, #{upc4,jdbcType=VARCHAR}, 
+      #{name,jdbcType=VARCHAR}, #{code,jdbcType=VARCHAR}, #{f01,jdbcType=VARCHAR}, #{f02,jdbcType=VARCHAR}, 
+      #{f03,jdbcType=VARCHAR}, #{f04,jdbcType=VARCHAR}, #{f05,jdbcType=VARCHAR}, #{f06,jdbcType=VARCHAR}, 
+      #{f07,jdbcType=VARCHAR}, #{f08,jdbcType=VARCHAR}, #{f09,jdbcType=VARCHAR}, #{f10,jdbcType=VARCHAR}, 
+      #{f11,jdbcType=VARCHAR}, #{f20,jdbcType=VARCHAR}, #{f12,jdbcType=VARCHAR}, #{f13,jdbcType=VARCHAR}, 
+      #{f14,jdbcType=VARCHAR}, #{f32,jdbcType=VARCHAR}, #{f15,jdbcType=VARCHAR}, #{extJson,jdbcType=LONGVARCHAR}, 
+      #{eslTemplateJson,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.pandatech.downloadcf.entity.PandaEslWithBLOBs">
+    insert into panda_esl
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        ID,
+      </if>
+      <if test="tenantId != null">
+        TENANT_ID,
+      </if>
+      <if test="sortCode != null">
+        SORT_CODE,
+      </if>
+      <if test="deleteFlag != null">
+        DELETE_FLAG,
+      </if>
+      <if test="createTime != null">
+        CREATE_TIME,
+      </if>
+      <if test="createUser != null">
+        CREATE_USER,
+      </if>
+      <if test="updateTime != null">
+        UPDATE_TIME,
+      </if>
+      <if test="updateUser != null">
+        UPDATE_USER,
+      </if>
+      <if test="eslId != null">
+        ESL_ID,
+      </if>
+      <if test="storeCode != null">
+        STORE_CODE,
+      </if>
+      <if test="eslModel != null">
+        ESL_MODEL,
+      </if>
+      <if test="boundProduct != null">
+        BOUND_PRODUCT,
+      </if>
+      <if test="batteryLevel != null">
+        BATTERY_LEVEL,
+      </if>
+      <if test="temperature != null">
+        TEMPERATURE,
+      </if>
+      <if test="signalStrength != null">
+        SIGNAL_STRENGTH,
+      </if>
+      <if test="communicationCount != null">
+        COMMUNICATION_COUNT,
+      </if>
+      <if test="failureCount != null">
+        FAILURE_COUNT,
+      </if>
+      <if test="eslCategory != null">
+        ESL_CATEGORY,
+      </if>
+      <if test="eslStatus != null">
+        ESL_STATUS,
+      </if>
+      <if test="screenColor != null">
+        SCREEN_COLOR,
+      </if>
+      <if test="communicationMethod != null">
+        COMMUNICATION_METHOD,
+      </if>
+      <if test="operatingTemperatureRange != null">
+        OPERATING_TEMPERATURE_RANGE,
+      </if>
+      <if test="ipRating != null">
+        IP_RATING,
+      </if>
+      <if test="version != null">
+        VERSION,
+      </if>
+      <if test="hardware != null">
+        HARDWARE,
+      </if>
+      <if test="storeCodeId != null">
+        STORE_CODE_ID,
+      </if>
+      <if test="boundProductId != null">
+        BOUND_PRODUCT_ID,
+      </if>
+      <if test="eslIdX != null">
+        ESL_ID_X,
+      </if>
+      <if test="apSn != null">
+        AP_SN,
+      </if>
+      <if test="apSnId != null">
+        AP_SN_ID,
+      </if>
+      <if test="upc1 != null">
+        UPC1,
+      </if>
+      <if test="upc2 != null">
+        UPC2,
+      </if>
+      <if test="upc3 != null">
+        UPC3,
+      </if>
+      <if test="upc4 != null">
+        UPC4,
+      </if>
+      <if test="name != null">
+        NAME,
+      </if>
+      <if test="code != null">
+        CODE,
+      </if>
+      <if test="f01 != null">
+        F_01,
+      </if>
+      <if test="f02 != null">
+        F_02,
+      </if>
+      <if test="f03 != null">
+        F_03,
+      </if>
+      <if test="f04 != null">
+        F_04,
+      </if>
+      <if test="f05 != null">
+        F_05,
+      </if>
+      <if test="f06 != null">
+        F_06,
+      </if>
+      <if test="f07 != null">
+        F_07,
+      </if>
+      <if test="f08 != null">
+        F_08,
+      </if>
+      <if test="f09 != null">
+        F_09,
+      </if>
+      <if test="f10 != null">
+        F_10,
+      </if>
+      <if test="f11 != null">
+        F_11,
+      </if>
+      <if test="f20 != null">
+        F_20,
+      </if>
+      <if test="f12 != null">
+        F_12,
+      </if>
+      <if test="f13 != null">
+        F_13,
+      </if>
+      <if test="f14 != null">
+        F_14,
+      </if>
+      <if test="f32 != null">
+        F_32,
+      </if>
+      <if test="f15 != null">
+        F_15,
+      </if>
+      <if test="extJson != null">
+        EXT_JSON,
+      </if>
+      <if test="eslTemplateJson != null">
+        ESL_TEMPLATE_JSON,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="tenantId != null">
+        #{tenantId,jdbcType=VARCHAR},
+      </if>
+      <if test="sortCode != null">
+        #{sortCode,jdbcType=INTEGER},
+      </if>
+      <if test="deleteFlag != null">
+        #{deleteFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createUser != null">
+        #{createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateUser != null">
+        #{updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="eslId != null">
+        #{eslId,jdbcType=VARCHAR},
+      </if>
+      <if test="storeCode != null">
+        #{storeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="eslModel != null">
+        #{eslModel,jdbcType=VARCHAR},
+      </if>
+      <if test="boundProduct != null">
+        #{boundProduct,jdbcType=VARCHAR},
+      </if>
+      <if test="batteryLevel != null">
+        #{batteryLevel,jdbcType=REAL},
+      </if>
+      <if test="temperature != null">
+        #{temperature,jdbcType=REAL},
+      </if>
+      <if test="signalStrength != null">
+        #{signalStrength,jdbcType=INTEGER},
+      </if>
+      <if test="communicationCount != null">
+        #{communicationCount,jdbcType=INTEGER},
+      </if>
+      <if test="failureCount != null">
+        #{failureCount,jdbcType=INTEGER},
+      </if>
+      <if test="eslCategory != null">
+        #{eslCategory,jdbcType=VARCHAR},
+      </if>
+      <if test="eslStatus != null">
+        #{eslStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="screenColor != null">
+        #{screenColor,jdbcType=VARCHAR},
+      </if>
+      <if test="communicationMethod != null">
+        #{communicationMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="operatingTemperatureRange != null">
+        #{operatingTemperatureRange,jdbcType=VARCHAR},
+      </if>
+      <if test="ipRating != null">
+        #{ipRating,jdbcType=VARCHAR},
+      </if>
+      <if test="version != null">
+        #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="hardware != null">
+        #{hardware,jdbcType=VARCHAR},
+      </if>
+      <if test="storeCodeId != null">
+        #{storeCodeId,jdbcType=VARCHAR},
+      </if>
+      <if test="boundProductId != null">
+        #{boundProductId,jdbcType=VARCHAR},
+      </if>
+      <if test="eslIdX != null">
+        #{eslIdX,jdbcType=VARCHAR},
+      </if>
+      <if test="apSn != null">
+        #{apSn,jdbcType=VARCHAR},
+      </if>
+      <if test="apSnId != null">
+        #{apSnId,jdbcType=VARCHAR},
+      </if>
+      <if test="upc1 != null">
+        #{upc1,jdbcType=VARCHAR},
+      </if>
+      <if test="upc2 != null">
+        #{upc2,jdbcType=VARCHAR},
+      </if>
+      <if test="upc3 != null">
+        #{upc3,jdbcType=VARCHAR},
+      </if>
+      <if test="upc4 != null">
+        #{upc4,jdbcType=VARCHAR},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="code != null">
+        #{code,jdbcType=VARCHAR},
+      </if>
+      <if test="f01 != null">
+        #{f01,jdbcType=VARCHAR},
+      </if>
+      <if test="f02 != null">
+        #{f02,jdbcType=VARCHAR},
+      </if>
+      <if test="f03 != null">
+        #{f03,jdbcType=VARCHAR},
+      </if>
+      <if test="f04 != null">
+        #{f04,jdbcType=VARCHAR},
+      </if>
+      <if test="f05 != null">
+        #{f05,jdbcType=VARCHAR},
+      </if>
+      <if test="f06 != null">
+        #{f06,jdbcType=VARCHAR},
+      </if>
+      <if test="f07 != null">
+        #{f07,jdbcType=VARCHAR},
+      </if>
+      <if test="f08 != null">
+        #{f08,jdbcType=VARCHAR},
+      </if>
+      <if test="f09 != null">
+        #{f09,jdbcType=VARCHAR},
+      </if>
+      <if test="f10 != null">
+        #{f10,jdbcType=VARCHAR},
+      </if>
+      <if test="f11 != null">
+        #{f11,jdbcType=VARCHAR},
+      </if>
+      <if test="f20 != null">
+        #{f20,jdbcType=VARCHAR},
+      </if>
+      <if test="f12 != null">
+        #{f12,jdbcType=VARCHAR},
+      </if>
+      <if test="f13 != null">
+        #{f13,jdbcType=VARCHAR},
+      </if>
+      <if test="f14 != null">
+        #{f14,jdbcType=VARCHAR},
+      </if>
+      <if test="f32 != null">
+        #{f32,jdbcType=VARCHAR},
+      </if>
+      <if test="f15 != null">
+        #{f15,jdbcType=VARCHAR},
+      </if>
+      <if test="extJson != null">
+        #{extJson,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="eslTemplateJson != null">
+        #{eslTemplateJson,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultType="java.lang.Long">
+    select count(*) from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update panda_esl
+    <set>
+      <if test="row.id != null">
+        ID = #{row.id,jdbcType=VARCHAR},
+      </if>
+      <if test="row.tenantId != null">
+        TENANT_ID = #{row.tenantId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.sortCode != null">
+        SORT_CODE = #{row.sortCode,jdbcType=INTEGER},
+      </if>
+      <if test="row.deleteFlag != null">
+        DELETE_FLAG = #{row.deleteFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="row.createTime != null">
+        CREATE_TIME = #{row.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.createUser != null">
+        CREATE_USER = #{row.createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="row.updateTime != null">
+        UPDATE_TIME = #{row.updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.updateUser != null">
+        UPDATE_USER = #{row.updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="row.eslId != null">
+        ESL_ID = #{row.eslId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.storeCode != null">
+        STORE_CODE = #{row.storeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="row.eslModel != null">
+        ESL_MODEL = #{row.eslModel,jdbcType=VARCHAR},
+      </if>
+      <if test="row.boundProduct != null">
+        BOUND_PRODUCT = #{row.boundProduct,jdbcType=VARCHAR},
+      </if>
+      <if test="row.batteryLevel != null">
+        BATTERY_LEVEL = #{row.batteryLevel,jdbcType=REAL},
+      </if>
+      <if test="row.temperature != null">
+        TEMPERATURE = #{row.temperature,jdbcType=REAL},
+      </if>
+      <if test="row.signalStrength != null">
+        SIGNAL_STRENGTH = #{row.signalStrength,jdbcType=INTEGER},
+      </if>
+      <if test="row.communicationCount != null">
+        COMMUNICATION_COUNT = #{row.communicationCount,jdbcType=INTEGER},
+      </if>
+      <if test="row.failureCount != null">
+        FAILURE_COUNT = #{row.failureCount,jdbcType=INTEGER},
+      </if>
+      <if test="row.eslCategory != null">
+        ESL_CATEGORY = #{row.eslCategory,jdbcType=VARCHAR},
+      </if>
+      <if test="row.eslStatus != null">
+        ESL_STATUS = #{row.eslStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="row.screenColor != null">
+        SCREEN_COLOR = #{row.screenColor,jdbcType=VARCHAR},
+      </if>
+      <if test="row.communicationMethod != null">
+        COMMUNICATION_METHOD = #{row.communicationMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="row.operatingTemperatureRange != null">
+        OPERATING_TEMPERATURE_RANGE = #{row.operatingTemperatureRange,jdbcType=VARCHAR},
+      </if>
+      <if test="row.ipRating != null">
+        IP_RATING = #{row.ipRating,jdbcType=VARCHAR},
+      </if>
+      <if test="row.version != null">
+        VERSION = #{row.version,jdbcType=VARCHAR},
+      </if>
+      <if test="row.hardware != null">
+        HARDWARE = #{row.hardware,jdbcType=VARCHAR},
+      </if>
+      <if test="row.storeCodeId != null">
+        STORE_CODE_ID = #{row.storeCodeId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.boundProductId != null">
+        BOUND_PRODUCT_ID = #{row.boundProductId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.eslIdX != null">
+        ESL_ID_X = #{row.eslIdX,jdbcType=VARCHAR},
+      </if>
+      <if test="row.apSn != null">
+        AP_SN = #{row.apSn,jdbcType=VARCHAR},
+      </if>
+      <if test="row.apSnId != null">
+        AP_SN_ID = #{row.apSnId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.upc1 != null">
+        UPC1 = #{row.upc1,jdbcType=VARCHAR},
+      </if>
+      <if test="row.upc2 != null">
+        UPC2 = #{row.upc2,jdbcType=VARCHAR},
+      </if>
+      <if test="row.upc3 != null">
+        UPC3 = #{row.upc3,jdbcType=VARCHAR},
+      </if>
+      <if test="row.upc4 != null">
+        UPC4 = #{row.upc4,jdbcType=VARCHAR},
+      </if>
+      <if test="row.name != null">
+        NAME = #{row.name,jdbcType=VARCHAR},
+      </if>
+      <if test="row.code != null">
+        CODE = #{row.code,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f01 != null">
+        F_01 = #{row.f01,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f02 != null">
+        F_02 = #{row.f02,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f03 != null">
+        F_03 = #{row.f03,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f04 != null">
+        F_04 = #{row.f04,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f05 != null">
+        F_05 = #{row.f05,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f06 != null">
+        F_06 = #{row.f06,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f07 != null">
+        F_07 = #{row.f07,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f08 != null">
+        F_08 = #{row.f08,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f09 != null">
+        F_09 = #{row.f09,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f10 != null">
+        F_10 = #{row.f10,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f11 != null">
+        F_11 = #{row.f11,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f20 != null">
+        F_20 = #{row.f20,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f12 != null">
+        F_12 = #{row.f12,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f13 != null">
+        F_13 = #{row.f13,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f14 != null">
+        F_14 = #{row.f14,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f32 != null">
+        F_32 = #{row.f32,jdbcType=VARCHAR},
+      </if>
+      <if test="row.f15 != null">
+        F_15 = #{row.f15,jdbcType=VARCHAR},
+      </if>
+      <if test="row.extJson != null">
+        EXT_JSON = #{row.extJson,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="row.eslTemplateJson != null">
+        ESL_TEMPLATE_JSON = #{row.eslTemplateJson,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update panda_esl
+    set ID = #{row.id,jdbcType=VARCHAR},
+      TENANT_ID = #{row.tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{row.sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{row.deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{row.createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{row.createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{row.updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{row.updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{row.eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{row.storeCode,jdbcType=VARCHAR},
+      ESL_MODEL = #{row.eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{row.boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{row.batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{row.temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{row.signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{row.communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{row.failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{row.eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{row.eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{row.screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{row.communicationMethod,jdbcType=VARCHAR},
+      OPERATING_TEMPERATURE_RANGE = #{row.operatingTemperatureRange,jdbcType=VARCHAR},
+      IP_RATING = #{row.ipRating,jdbcType=VARCHAR},
+      VERSION = #{row.version,jdbcType=VARCHAR},
+      HARDWARE = #{row.hardware,jdbcType=VARCHAR},
+      STORE_CODE_ID = #{row.storeCodeId,jdbcType=VARCHAR},
+      BOUND_PRODUCT_ID = #{row.boundProductId,jdbcType=VARCHAR},
+      ESL_ID_X = #{row.eslIdX,jdbcType=VARCHAR},
+      AP_SN = #{row.apSn,jdbcType=VARCHAR},
+      AP_SN_ID = #{row.apSnId,jdbcType=VARCHAR},
+      UPC1 = #{row.upc1,jdbcType=VARCHAR},
+      UPC2 = #{row.upc2,jdbcType=VARCHAR},
+      UPC3 = #{row.upc3,jdbcType=VARCHAR},
+      UPC4 = #{row.upc4,jdbcType=VARCHAR},
+      NAME = #{row.name,jdbcType=VARCHAR},
+      CODE = #{row.code,jdbcType=VARCHAR},
+      F_01 = #{row.f01,jdbcType=VARCHAR},
+      F_02 = #{row.f02,jdbcType=VARCHAR},
+      F_03 = #{row.f03,jdbcType=VARCHAR},
+      F_04 = #{row.f04,jdbcType=VARCHAR},
+      F_05 = #{row.f05,jdbcType=VARCHAR},
+      F_06 = #{row.f06,jdbcType=VARCHAR},
+      F_07 = #{row.f07,jdbcType=VARCHAR},
+      F_08 = #{row.f08,jdbcType=VARCHAR},
+      F_09 = #{row.f09,jdbcType=VARCHAR},
+      F_10 = #{row.f10,jdbcType=VARCHAR},
+      F_11 = #{row.f11,jdbcType=VARCHAR},
+      F_20 = #{row.f20,jdbcType=VARCHAR},
+      F_12 = #{row.f12,jdbcType=VARCHAR},
+      F_13 = #{row.f13,jdbcType=VARCHAR},
+      F_14 = #{row.f14,jdbcType=VARCHAR},
+      F_32 = #{row.f32,jdbcType=VARCHAR},
+      F_15 = #{row.f15,jdbcType=VARCHAR},
+      EXT_JSON = #{row.extJson,jdbcType=LONGVARCHAR},
+      ESL_TEMPLATE_JSON = #{row.eslTemplateJson,jdbcType=LONGVARCHAR}
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update panda_esl
+    set ID = #{row.id,jdbcType=VARCHAR},
+      TENANT_ID = #{row.tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{row.sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{row.deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{row.createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{row.createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{row.updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{row.updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{row.eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{row.storeCode,jdbcType=VARCHAR},
+      ESL_MODEL = #{row.eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{row.boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{row.batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{row.temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{row.signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{row.communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{row.failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{row.eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{row.eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{row.screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{row.communicationMethod,jdbcType=VARCHAR},
+      OPERATING_TEMPERATURE_RANGE = #{row.operatingTemperatureRange,jdbcType=VARCHAR},
+      IP_RATING = #{row.ipRating,jdbcType=VARCHAR},
+      VERSION = #{row.version,jdbcType=VARCHAR},
+      HARDWARE = #{row.hardware,jdbcType=VARCHAR},
+      STORE_CODE_ID = #{row.storeCodeId,jdbcType=VARCHAR},
+      BOUND_PRODUCT_ID = #{row.boundProductId,jdbcType=VARCHAR},
+      ESL_ID_X = #{row.eslIdX,jdbcType=VARCHAR},
+      AP_SN = #{row.apSn,jdbcType=VARCHAR},
+      AP_SN_ID = #{row.apSnId,jdbcType=VARCHAR},
+      UPC1 = #{row.upc1,jdbcType=VARCHAR},
+      UPC2 = #{row.upc2,jdbcType=VARCHAR},
+      UPC3 = #{row.upc3,jdbcType=VARCHAR},
+      UPC4 = #{row.upc4,jdbcType=VARCHAR},
+      NAME = #{row.name,jdbcType=VARCHAR},
+      CODE = #{row.code,jdbcType=VARCHAR},
+      F_01 = #{row.f01,jdbcType=VARCHAR},
+      F_02 = #{row.f02,jdbcType=VARCHAR},
+      F_03 = #{row.f03,jdbcType=VARCHAR},
+      F_04 = #{row.f04,jdbcType=VARCHAR},
+      F_05 = #{row.f05,jdbcType=VARCHAR},
+      F_06 = #{row.f06,jdbcType=VARCHAR},
+      F_07 = #{row.f07,jdbcType=VARCHAR},
+      F_08 = #{row.f08,jdbcType=VARCHAR},
+      F_09 = #{row.f09,jdbcType=VARCHAR},
+      F_10 = #{row.f10,jdbcType=VARCHAR},
+      F_11 = #{row.f11,jdbcType=VARCHAR},
+      F_20 = #{row.f20,jdbcType=VARCHAR},
+      F_12 = #{row.f12,jdbcType=VARCHAR},
+      F_13 = #{row.f13,jdbcType=VARCHAR},
+      F_14 = #{row.f14,jdbcType=VARCHAR},
+      F_32 = #{row.f32,jdbcType=VARCHAR},
+      F_15 = #{row.f15,jdbcType=VARCHAR}
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.pandatech.downloadcf.entity.PandaEslWithBLOBs">
+    update panda_esl
+    <set>
+      <if test="tenantId != null">
+        TENANT_ID = #{tenantId,jdbcType=VARCHAR},
+      </if>
+      <if test="sortCode != null">
+        SORT_CODE = #{sortCode,jdbcType=INTEGER},
+      </if>
+      <if test="deleteFlag != null">
+        DELETE_FLAG = #{deleteFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createUser != null">
+        CREATE_USER = #{createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateUser != null">
+        UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="eslId != null">
+        ESL_ID = #{eslId,jdbcType=VARCHAR},
+      </if>
+      <if test="storeCode != null">
+        STORE_CODE = #{storeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="eslModel != null">
+        ESL_MODEL = #{eslModel,jdbcType=VARCHAR},
+      </if>
+      <if test="boundProduct != null">
+        BOUND_PRODUCT = #{boundProduct,jdbcType=VARCHAR},
+      </if>
+      <if test="batteryLevel != null">
+        BATTERY_LEVEL = #{batteryLevel,jdbcType=REAL},
+      </if>
+      <if test="temperature != null">
+        TEMPERATURE = #{temperature,jdbcType=REAL},
+      </if>
+      <if test="signalStrength != null">
+        SIGNAL_STRENGTH = #{signalStrength,jdbcType=INTEGER},
+      </if>
+      <if test="communicationCount != null">
+        COMMUNICATION_COUNT = #{communicationCount,jdbcType=INTEGER},
+      </if>
+      <if test="failureCount != null">
+        FAILURE_COUNT = #{failureCount,jdbcType=INTEGER},
+      </if>
+      <if test="eslCategory != null">
+        ESL_CATEGORY = #{eslCategory,jdbcType=VARCHAR},
+      </if>
+      <if test="eslStatus != null">
+        ESL_STATUS = #{eslStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="screenColor != null">
+        SCREEN_COLOR = #{screenColor,jdbcType=VARCHAR},
+      </if>
+      <if test="communicationMethod != null">
+        COMMUNICATION_METHOD = #{communicationMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="operatingTemperatureRange != null">
+        OPERATING_TEMPERATURE_RANGE = #{operatingTemperatureRange,jdbcType=VARCHAR},
+      </if>
+      <if test="ipRating != null">
+        IP_RATING = #{ipRating,jdbcType=VARCHAR},
+      </if>
+      <if test="version != null">
+        VERSION = #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="hardware != null">
+        HARDWARE = #{hardware,jdbcType=VARCHAR},
+      </if>
+      <if test="storeCodeId != null">
+        STORE_CODE_ID = #{storeCodeId,jdbcType=VARCHAR},
+      </if>
+      <if test="boundProductId != null">
+        BOUND_PRODUCT_ID = #{boundProductId,jdbcType=VARCHAR},
+      </if>
+      <if test="eslIdX != null">
+        ESL_ID_X = #{eslIdX,jdbcType=VARCHAR},
+      </if>
+      <if test="apSn != null">
+        AP_SN = #{apSn,jdbcType=VARCHAR},
+      </if>
+      <if test="apSnId != null">
+        AP_SN_ID = #{apSnId,jdbcType=VARCHAR},
+      </if>
+      <if test="upc1 != null">
+        UPC1 = #{upc1,jdbcType=VARCHAR},
+      </if>
+      <if test="upc2 != null">
+        UPC2 = #{upc2,jdbcType=VARCHAR},
+      </if>
+      <if test="upc3 != null">
+        UPC3 = #{upc3,jdbcType=VARCHAR},
+      </if>
+      <if test="upc4 != null">
+        UPC4 = #{upc4,jdbcType=VARCHAR},
+      </if>
+      <if test="name != null">
+        NAME = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="code != null">
+        CODE = #{code,jdbcType=VARCHAR},
+      </if>
+      <if test="f01 != null">
+        F_01 = #{f01,jdbcType=VARCHAR},
+      </if>
+      <if test="f02 != null">
+        F_02 = #{f02,jdbcType=VARCHAR},
+      </if>
+      <if test="f03 != null">
+        F_03 = #{f03,jdbcType=VARCHAR},
+      </if>
+      <if test="f04 != null">
+        F_04 = #{f04,jdbcType=VARCHAR},
+      </if>
+      <if test="f05 != null">
+        F_05 = #{f05,jdbcType=VARCHAR},
+      </if>
+      <if test="f06 != null">
+        F_06 = #{f06,jdbcType=VARCHAR},
+      </if>
+      <if test="f07 != null">
+        F_07 = #{f07,jdbcType=VARCHAR},
+      </if>
+      <if test="f08 != null">
+        F_08 = #{f08,jdbcType=VARCHAR},
+      </if>
+      <if test="f09 != null">
+        F_09 = #{f09,jdbcType=VARCHAR},
+      </if>
+      <if test="f10 != null">
+        F_10 = #{f10,jdbcType=VARCHAR},
+      </if>
+      <if test="f11 != null">
+        F_11 = #{f11,jdbcType=VARCHAR},
+      </if>
+      <if test="f20 != null">
+        F_20 = #{f20,jdbcType=VARCHAR},
+      </if>
+      <if test="f12 != null">
+        F_12 = #{f12,jdbcType=VARCHAR},
+      </if>
+      <if test="f13 != null">
+        F_13 = #{f13,jdbcType=VARCHAR},
+      </if>
+      <if test="f14 != null">
+        F_14 = #{f14,jdbcType=VARCHAR},
+      </if>
+      <if test="f32 != null">
+        F_32 = #{f32,jdbcType=VARCHAR},
+      </if>
+      <if test="f15 != null">
+        F_15 = #{f15,jdbcType=VARCHAR},
+      </if>
+      <if test="extJson != null">
+        EXT_JSON = #{extJson,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="eslTemplateJson != null">
+        ESL_TEMPLATE_JSON = #{eslTemplateJson,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.pandatech.downloadcf.entity.PandaEslWithBLOBs">
+    update panda_esl
+    set TENANT_ID = #{tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{storeCode,jdbcType=VARCHAR},
+      ESL_MODEL = #{eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{communicationMethod,jdbcType=VARCHAR},
+      OPERATING_TEMPERATURE_RANGE = #{operatingTemperatureRange,jdbcType=VARCHAR},
+      IP_RATING = #{ipRating,jdbcType=VARCHAR},
+      VERSION = #{version,jdbcType=VARCHAR},
+      HARDWARE = #{hardware,jdbcType=VARCHAR},
+      STORE_CODE_ID = #{storeCodeId,jdbcType=VARCHAR},
+      BOUND_PRODUCT_ID = #{boundProductId,jdbcType=VARCHAR},
+      ESL_ID_X = #{eslIdX,jdbcType=VARCHAR},
+      AP_SN = #{apSn,jdbcType=VARCHAR},
+      AP_SN_ID = #{apSnId,jdbcType=VARCHAR},
+      UPC1 = #{upc1,jdbcType=VARCHAR},
+      UPC2 = #{upc2,jdbcType=VARCHAR},
+      UPC3 = #{upc3,jdbcType=VARCHAR},
+      UPC4 = #{upc4,jdbcType=VARCHAR},
+      NAME = #{name,jdbcType=VARCHAR},
+      CODE = #{code,jdbcType=VARCHAR},
+      F_01 = #{f01,jdbcType=VARCHAR},
+      F_02 = #{f02,jdbcType=VARCHAR},
+      F_03 = #{f03,jdbcType=VARCHAR},
+      F_04 = #{f04,jdbcType=VARCHAR},
+      F_05 = #{f05,jdbcType=VARCHAR},
+      F_06 = #{f06,jdbcType=VARCHAR},
+      F_07 = #{f07,jdbcType=VARCHAR},
+      F_08 = #{f08,jdbcType=VARCHAR},
+      F_09 = #{f09,jdbcType=VARCHAR},
+      F_10 = #{f10,jdbcType=VARCHAR},
+      F_11 = #{f11,jdbcType=VARCHAR},
+      F_20 = #{f20,jdbcType=VARCHAR},
+      F_12 = #{f12,jdbcType=VARCHAR},
+      F_13 = #{f13,jdbcType=VARCHAR},
+      F_14 = #{f14,jdbcType=VARCHAR},
+      F_32 = #{f32,jdbcType=VARCHAR},
+      F_15 = #{f15,jdbcType=VARCHAR},
+      EXT_JSON = #{extJson,jdbcType=LONGVARCHAR},
+      ESL_TEMPLATE_JSON = #{eslTemplateJson,jdbcType=LONGVARCHAR}
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.pandatech.downloadcf.entity.PandaEsl">
+    update panda_esl
+    set TENANT_ID = #{tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{storeCode,jdbcType=VARCHAR},
+      ESL_MODEL = #{eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{communicationMethod,jdbcType=VARCHAR},
+      OPERATING_TEMPERATURE_RANGE = #{operatingTemperatureRange,jdbcType=VARCHAR},
+      IP_RATING = #{ipRating,jdbcType=VARCHAR},
+      VERSION = #{version,jdbcType=VARCHAR},
+      HARDWARE = #{hardware,jdbcType=VARCHAR},
+      STORE_CODE_ID = #{storeCodeId,jdbcType=VARCHAR},
+      BOUND_PRODUCT_ID = #{boundProductId,jdbcType=VARCHAR},
+      ESL_ID_X = #{eslIdX,jdbcType=VARCHAR},
+      AP_SN = #{apSn,jdbcType=VARCHAR},
+      AP_SN_ID = #{apSnId,jdbcType=VARCHAR},
+      UPC1 = #{upc1,jdbcType=VARCHAR},
+      UPC2 = #{upc2,jdbcType=VARCHAR},
+      UPC3 = #{upc3,jdbcType=VARCHAR},
+      UPC4 = #{upc4,jdbcType=VARCHAR},
+      NAME = #{name,jdbcType=VARCHAR},
+      CODE = #{code,jdbcType=VARCHAR},
+      F_01 = #{f01,jdbcType=VARCHAR},
+      F_02 = #{f02,jdbcType=VARCHAR},
+      F_03 = #{f03,jdbcType=VARCHAR},
+      F_04 = #{f04,jdbcType=VARCHAR},
+      F_05 = #{f05,jdbcType=VARCHAR},
+      F_06 = #{f06,jdbcType=VARCHAR},
+      F_07 = #{f07,jdbcType=VARCHAR},
+      F_08 = #{f08,jdbcType=VARCHAR},
+      F_09 = #{f09,jdbcType=VARCHAR},
+      F_10 = #{f10,jdbcType=VARCHAR},
+      F_11 = #{f11,jdbcType=VARCHAR},
+      F_20 = #{f20,jdbcType=VARCHAR},
+      F_12 = #{f12,jdbcType=VARCHAR},
+      F_13 = #{f13,jdbcType=VARCHAR},
+      F_14 = #{f14,jdbcType=VARCHAR},
+      F_32 = #{f32,jdbcType=VARCHAR},
+      F_15 = #{f15,jdbcType=VARCHAR}
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <select id="selectByExampleWithBLOBsWithRowbounds" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExampleWithRowbounds" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+</mapper>
