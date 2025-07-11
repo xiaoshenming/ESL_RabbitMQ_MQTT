@@ -101,10 +101,12 @@ public class TemplateExchangeController {
      * @param filename 带.json后缀的文件名
      * @return 文件下载响应
      */
-    /**
+
+/**
  * 根据POST请求数据下载模板文件（二进制流）
  * @param request 包含id和name的请求对象
  * @return 文件下载响应
+ * 成功版本2025年7月11日12点10分
  */
 @PostMapping("/templ/loadtemple")
 public ResponseEntity<byte[]> loadTemplateName(@RequestBody TemplateLoadRequest request) {
