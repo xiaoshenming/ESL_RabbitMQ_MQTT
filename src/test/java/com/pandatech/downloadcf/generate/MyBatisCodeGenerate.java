@@ -1,4 +1,4 @@
-package com.cc.pandaordernew.generate;
+package com.pandatech.downloadcf.generate;
 
 
 import org.junit.jupiter.api.Test;

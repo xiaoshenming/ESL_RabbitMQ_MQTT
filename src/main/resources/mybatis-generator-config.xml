@@ -27,9 +27,9 @@
         <!--数据库地址及登陆账号密码 改成你自己的配置-->
         <jdbcConnection
                 driverClass="com.mysql.cj.jdbc.Driver"
-                connectionURL="jdbc:mysql://111.229.135.191:3306/ccorder"
-                userId="ccorder"
-                password="kBbTXRSbGjzA7Psy"
+                connectionURL="jdbc:mysql://47.119.183.105:3306/template"
+                userId="template"
+                password="6SS5FrzkTezsHD6a"
                 >
         </jdbcConnection>
 
@@ -38,7 +38,7 @@
         </javaTypeResolver>
 
         <!--生成实体类设置-->
-        <javaModelGenerator targetPackage="com.cc.pandaordernew.model" targetProject="src/main/java">
+        <javaModelGenerator targetPackage="com.pandatech.downloadcf.entity" targetProject="src/main/java">
             <property name="enableSubPackages" value="true"/>
             <property name="trimStrings" value="true"/>
         </javaModelGenerator>
@@ -49,7 +49,7 @@
         </sqlMapGenerator>
 
         <!--生成Dao类设置-->
-        <javaClientGenerator type="XMLMAPPER" targetPackage="com.cc.pandaordernew.mapper"
+        <javaClientGenerator type="XMLMAPPER" targetPackage="com.pandatech.downloadcf.mapper"
                              targetProject="src/main/java">
             <property name="enableSubPackages" value="true"/>
         </javaClientGenerator>
@@ -118,7 +118,7 @@
 <!--               enableUpdateByExample="true"-->
 <!--               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">-->
 <!--        </table>-->
-        <table tableName="panda_customer" domainObjectName="PandaCustomer"
+        <table tableName="platform_exchange" domainObjectName="PlatformExchange"
                enableCountByExample="true"
                enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
