@@ -1,35 +1,4 @@
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
 
--- ----------------------------
--- Table structure for platform_exchange
--- ----------------------------
-DROP TABLE IF EXISTS `platform_exchange`;
-CREATE TABLE `platform_exchange`  (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `chuangfeng_template` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
-  `platform_template` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
-  `yaliang_template` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for template_exchange
--- ----------------------------
-DROP TABLE IF EXISTS `template_exchange`;
-CREATE TABLE `template_exchange`  (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `chuangfeng_template` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
-以上是数据库的原本结构template
-
-但是我换成了新的结构叫做company
 # mysql
 url=mysql://10.3.36.25:3306/company?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&useInformationSchema=true&rewriteBatchedStatements=true
 username=panda
@@ -46,7 +15,6 @@ password=panda@123
 # MQTT配置
 url=tcp://10.3.36.25:1883
 client-id=data_server_1
-首先/templ/loadtemple保留给ap做下载用。然后，其他的api以及其方法全都删除!保留最干净的结果。
 然后。我要做一个数据监听处理的程序，用来给中台服务提供支持，中台是一个控制电子价签的系统，他有的作用只有增删改查，他会指定对某个电子价签进行刷新模板的数据，那么这个模板就要在我这里实现数据的处理进行更新等。我这里要做的就是接收命令，Rabbitmq队列处理发送mqtt，接收回参传递回RabbitMq队列，前端就能查看任务完成情况了。这个程序主要做的是mqtt的监听并且接收api服务，
 
 已知模板遵顼一套定义规则。
