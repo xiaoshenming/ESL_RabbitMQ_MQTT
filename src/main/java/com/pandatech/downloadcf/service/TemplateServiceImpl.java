@@ -61,7 +61,7 @@ public class TemplateServiceImpl implements TemplateService {
             mqttMessage.put("data", data);
             mqttMessage.put("id", UUID.randomUUID().toString());
             mqttMessage.put("timestamp", System.currentTimeMillis() / 1000);
-            mqttMessage.put("shop", "ZH01"); // 店铺ID，可以配置化
+            mqttMessage.put("shop", templateDto.getStoreCode()); // 使用传入的门店编码
             
             String message = objectMapper.writeValueAsString(mqttMessage);
             rabbitTemplate.convertAndSend(RabbitMQConfig.TEMPLATE_QUEUE, message);

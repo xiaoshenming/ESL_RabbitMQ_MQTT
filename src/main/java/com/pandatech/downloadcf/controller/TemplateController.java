@@ -27,7 +27,7 @@ public class TemplateController {
     @PostMapping("/send")
     @Operation(
         summary = "下发模板", 
-        description = "根据模板ID从数据库获取模板信息，构造MQTT消息格式并发送到RabbitMQ队列，最终通过MQTT推送到价签设备。消息格式符合tmpllist命令规范。",
+        description = "根据模板ID和门店编码从数据库获取模板信息，构造MQTT消息格式并发送到RabbitMQ队列，最终通过MQTT推送到指定门店的价签设备。消息将发送到主题：esl/server/data/{门店编码}。",
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200", 

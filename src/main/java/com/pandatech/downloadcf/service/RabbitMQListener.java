@@ -5,6 +5,7 @@ import com.pandatech.downloadcf.config.MqttConfig;
 import com.pandatech.downloadcf.config.RabbitMQConfig;
 import com.pandatech.downloadcf.dto.RefreshDto;
 import com.pandatech.downloadcf.dto.TemplateDto;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -29,12 +30,20 @@ public class RabbitMQListener {
         try {
             log.info("从RabbitMQ接收到模板消息: {}", message);
             
-            // 直接将消息发送到MQTT
+            // 解析消息获取门店编码
+            @SuppressWarnings("unchecked")
+            Map<String, Object> messageMap = objectMapper.readValue(message, Map.class);
+            String storeCode = (String) messageMap.get("shop");
+            
+            // 构造正确的MQTT主题：esl/server/data/{storeCode}
+            String mqttTopic = "esl/server/data/" + storeCode;
+            
+            // 将消息发送到MQTT
             Message<String> mqttMessage = MessageBuilder.withPayload(message)
-                    .setHeader("mqtt_topic", "esl/template/download")
+                    .setHeader("mqtt_topic", mqttTopic)
                     .build();
             mqttOutboundChannel.send(mqttMessage);
-            log.info("模板消息已发送到MQTT: {}", message);
+            log.info("模板消息已发送到MQTT主题 {}: {}", mqttTopic, message);
         } catch (Exception e) {
             log.error("处理模板消息并推送到MQTT失败", e);
         }
