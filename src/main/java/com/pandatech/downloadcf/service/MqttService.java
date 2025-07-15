@@ -111,7 +111,7 @@ public class MqttService {
             }
 
             // 转换模板到官方格式
-            String officialTemplateJson = convertToOfficialTemplate(template.getContent());
+            String officialTemplateJson = convertToOfficialTemplate(template.getContent(), template);
 
             // 计算MD5
             String md5 = calculateMD5(officialTemplateJson);
@@ -154,7 +154,7 @@ public class MqttService {
             // 假设checksum从数据库或缓存获取先前MD5
             String checksum = getCachedChecksum(template.getId());  // 实现获取缓存MD5的方法
             if (checksum == null) {
-                String officialTemplateJson = convertToOfficialTemplate(template.getContent());
+                String officialTemplateJson = convertToOfficialTemplate(template.getContent(), template);
                 checksum = calculateMD5(officialTemplateJson);
                 // 可选：发送tmpllist如果需要
             }
@@ -182,7 +182,7 @@ public class MqttService {
      * 1. 已经是官方格式的JSON（如U_06.json）
      * 2. 自定义格式的JSON（如数据库中的panels格式）
      */
-    public String convertToOfficialTemplate(String customJson) throws JsonProcessingException {
+    public String convertToOfficialTemplate(String customJson, ActExtTemplatePrintWithBLOBs template) throws JsonProcessingException {
         if (customJson == null || customJson.trim().isEmpty()) {
             return createDefaultOfficialTemplate();
         }
@@ -206,7 +206,7 @@ public class MqttService {
             // 检查是否是panels格式（自定义格式）
             if (rootNode.has("panels")) {
                 log.debug("检测到panels格式模板，开始转换");
-                String result = convertPanelsToOfficialFormat(rootNode);
+                String result = convertPanelsToOfficialFormat(rootNode, template);
                  // 验证模板
                  TemplateValidator.ValidationResult validation = templateValidator.validateTemplateContent(result);
                  if (validation.hasWarnings()) {
@@ -270,20 +270,23 @@ public class MqttService {
     /**
      * 将panels格式转换为官方格式
      */
-    private String convertPanelsToOfficialFormat(JsonNode rootNode) throws JsonProcessingException {
+    private String convertPanelsToOfficialFormat(JsonNode rootNode, ActExtTemplatePrintWithBLOBs template) throws JsonProcessingException {
         Map<String, Object> official = new HashMap<>();
         List<Map<String, Object>> items = new ArrayList<>();
         
-        // 默认值
-        official.put("Name", "U");
-        official.put("Size", "250, 122");
-        official.put("TagType", "06");
-        official.put("Version", 10);
-        official.put("height", "122");
-        official.put("hext", "6");
-        official.put("rgb", "3");
-        official.put("wext", "0");
-        official.put("width", "250");
+        // 从模板对象中获取基本信息，如果为空则使用默认值
+        TemplateConfig.DefaultTemplate defaultConfig = templateConfig.getDefaultTemplate();
+        official.put("Name", template.getName() != null ? template.getName() : defaultConfig.getName());
+        official.put("TagType", template.getTagType() != null ? template.getTagType() : defaultConfig.getTagType());
+        official.put("Version", defaultConfig.getVersion());
+        official.put("hext", defaultConfig.getHext());
+        official.put("rgb", defaultConfig.getRgb());
+        official.put("wext", defaultConfig.getWext());
+        
+        // 默认尺寸，会被面板信息覆盖
+        official.put("Size", defaultConfig.getSize());
+        official.put("height", defaultConfig.getHeight());
+        official.put("width", defaultConfig.getWidth());
         
         JsonNode panels = rootNode.get("panels");
         if (panels.isArray()) {
@@ -473,7 +476,7 @@ public class MqttService {
             }
             
             // 转换模板格式
-            String officialTemplate = convertToOfficialTemplate(template.getContent());
+            String officialTemplate = convertToOfficialTemplate(template.getContent(), template);
             
             // 如果提供了screenType，需要更新模板中的TagType
             if (screenType != null && !screenType.isEmpty()) {

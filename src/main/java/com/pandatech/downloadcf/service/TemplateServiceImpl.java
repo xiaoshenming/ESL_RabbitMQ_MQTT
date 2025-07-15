@@ -59,7 +59,7 @@ public class TemplateServiceImpl implements TemplateService {
             log.info("生成的模板文件名: {}", templateFileName);
             
             // 计算模板内容的MD5（用于转换后的官方格式）
-            String officialTemplateJson = mqttService.convertToOfficialTemplate(template.getContent());
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template.getContent(), template);
             String templateMd5 = calculateMd5(officialTemplateJson);
             
             // 构造MQTT消息格式
@@ -167,7 +167,7 @@ public class TemplateServiceImpl implements TemplateService {
 
         try {
             // 将数据库中的模板内容（JSON字符串）转换为官方模板格式
-            String officialTemplateJson = mqttService.convertToOfficialTemplate(template.getContent());
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template.getContent(), template);
             return officialTemplateJson.getBytes();
         } catch (JsonProcessingException e) {
             log.error("Error converting template to official format for ID: {} or Name: {}", request.getId(), request.getName(), e);
