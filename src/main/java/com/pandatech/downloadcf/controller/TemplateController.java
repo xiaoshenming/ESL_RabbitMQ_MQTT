@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/template")
+@RequestMapping("/api/res/templ")
 @Tag(name = "模板与价签操作", description = "提供模板下发和价签刷新的接口")
 @RequiredArgsConstructor
 public class TemplateController {
