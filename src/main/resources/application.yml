@@ -60,4 +60,4 @@ springdoc:
 # 模板下载配置
 app:
   template:
-    base-url: http://localhost:8999/api/res/templ/loadtemple
+    base-url: http://10.3.36.36:8999/api/res/templ/loadtemple
