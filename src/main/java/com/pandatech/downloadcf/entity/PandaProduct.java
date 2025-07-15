@@ -57,6 +57,16 @@ public class PandaProduct implements Serializable {
 
     private String storeCodeId;
 
+    private String goodsSpec;
+
+    private String goodsUnit;
+
+    private String goodsOrigin;
+
+    private String goodsPromotion;
+
+    private String model;
+
     private static final long serialVersionUID = 1L;
 
     public String getId() {
@@ -265,6 +275,46 @@ public class PandaProduct implements Serializable {
 
     public void setStoreCodeId(String storeCodeId) {
         this.storeCodeId = storeCodeId == null ? null : storeCodeId.trim();
+    }
+
+    public String getGoodsSpec() {
+        return goodsSpec;
+    }
+
+    public void setGoodsSpec(String goodsSpec) {
+        this.goodsSpec = goodsSpec;
+    }
+
+    public String getGoodsUnit() {
+        return goodsUnit;
+    }
+
+    public void setGoodsUnit(String goodsUnit) {
+        this.goodsUnit = goodsUnit;
+    }
+
+    public String getGoodsOrigin() {
+        return goodsOrigin;
+    }
+
+    public void setGoodsOrigin(String goodsOrigin) {
+        this.goodsOrigin = goodsOrigin;
+    }
+
+    public String getGoodsPromotion() {
+        return goodsPromotion;
+    }
+
+    public void setGoodsPromotion(String goodsPromotion) {
+        this.goodsPromotion = goodsPromotion;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
     }
 
     @Override

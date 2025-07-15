@@ -1,44 +1,200 @@
-E:\JAVA\JAVA22\bin\java.exe -XX:TieredStopAtLevel=1 -Dspring.output.ansi.enabled=always -Dcom.sun.management.jmxremote -Dspring.jmx.enabled=true -Dspring.liveBeansView.mbeanDomain -Dspring.application.admin.enabled=true "-Dmanagement.endpoints.jmx.exposure.include=*" "-javaagent:D:\JetBrains\IntelliJ IDEA 2024.2.1\lib\idea_rt.jar=13354:D:\JetBrains\IntelliJ IDEA 2024.2.1\bin" -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath E:\IdeaProjects\cfdownloadexample\target\classes;D:\Maven\repository\org\springframework\boot\spring-boot-starter-web\3.4.5\spring-boot-starter-web-3.4.5.jar;D:\Maven\repository\org\springframework\boot\spring-boot-starter\3.4.5\spring-boot-starter-3.4.5.jar;D:\Maven\repository\org\springframework\boot\spring-boot\3.4.5\spring-boot-3.4.5.jar;D:\Maven\repository\org\springframework\boot\spring-boot-starter-logging\3.4.5\spring-boot-starter-logging-3.4.5.jar;D:\Maven\repository\ch\qos\logback\logback-classic\1.5.18\logback-classic-1.5.18.jar;D:\Maven\repository\ch\qos\logback\logback-core\1.5.18\logback-core-1.5.18.jar;D:\Maven\repository\org\apache\logging\log4j\log4j-to-slf4j\2.24.3\log4j-to-slf4j-2.24.3.jar;D:\Maven\repository\org\apache\logging\log4j\log4j-api\2.24.3\log4j-api-2.24.3.jar;D:\Maven\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;D:\Maven\repository\org\yaml\snakeyaml\2.3\snakeyaml-2.3.jar;D:\Maven\repository\org\springframework\boot\spring-boot-starter-json\3.4.5\spring-boot-starter-json-3.4.5.jar;D:\Maven\repository\com\fasterxml\jackson\core\jackson-databind\2.18.3\jackson-databind-2.18.3.jar;D:\Maven\repository\com\fasterxml\jackson\core\jackson-annotations\2.18.3\jackson-annotations-2.18.3.jar;D:\Maven\repository\com\fasterxml\jackson\core\jackson-core\2.18.3\jackson-core-2.18.3.jar;D:\Maven\repository\com\fasterxml\jackson\datatype\jackson-datatype-jdk8\2.18.3\jackson-datatype-jdk8-2.18.3.jar;D:\Maven\repository\com\fasterxml\jackson\datatype\jackson-datatype-jsr310\2.18.3\jackson-datatype-jsr310-2.18.3.jar;D:\Maven\repository\com\fasterxml\jackson\module\jackson-module-parameter-names\2.18.3\jackson-module-parameter-names-2.18.3.jar;D:\Maven\repository\org\springframework\boot\spring-boot-starter-tomcat\3.4.5\spring-boot-starter-tomcat-3.4.5.jar;D:\Maven\repository\org\apache\tomcat\embed\tomcat-embed-core\10.1.40\tomcat-embed-core-10.1.40.jar;D:\Maven\repository\org\apache\tomcat\embed\tomcat-embed-el\10.1.40\tomcat-embed-el-10.1.40.jar;D:\Maven\repository\org\apache\tomcat\embed\tomcat-embed-websocket\10.1.40\tomcat-embed-websocket-10.1.40.jar;D:\Maven\repository\org\springframework\spring-web\6.2.6\spring-web-6.2.6.jar;D:\Maven\repository\org\springframework\spring-beans\6.2.6\spring-beans-6.2.6.jar;D:\Maven\repository\io\micrometer\micrometer-observation\1.14.6\micrometer-observation-1.14.6.jar;D:\Maven\repository\io\micrometer\micrometer-commons\1.14.6\micrometer-commons-1.14.6.jar;D:\Maven\repository\org\springframework\spring-webmvc\6.2.6\spring-webmvc-6.2.6.jar;D:\Maven\repository\org\springframework\spring-aop\6.2.6\spring-aop-6.2.6.jar;D:\Maven\repository\org\springframework\spring-context\6.2.6\spring-context-6.2.6.jar;D:\Maven\repository\org\springframework\spring-expression\6.2.6\spring-expression-6.2.6.jar;D:\Maven\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.2\jakarta.xml.bind-api-4.0.2.jar;D:\Maven\repository\jakarta\activation\jakarta.activation-api\2.1.3\jakarta.activation-api-2.1.3.jar;D:\Maven\repository\org\springframework\spring-core\6.2.6\spring-core-6.2.6.jar;D:\Maven\repository\org\springframework\spring-jcl\6.2.6\spring-jcl-6.2.6.jar;D:\Maven\repository\cn\hutool\hutool-all\5.8.24\hutool-all-5.8.24.jar;D:\Maven\repository\org\projectlombok\lombok\1.18.38\lombok-1.18.38.jar;D:\Maven\repository\org\mybatis\generator\mybatis-generator-core\1.4.1\mybatis-generator-core-1.4.1.jar;D:\Maven\repository\jakarta\annotation\jakarta.annotation-api\2.1.1\jakarta.annotation-api-2.1.1.jar;D:\Maven\repository\org\mybatis\spring\boot\mybatis-spring-boot-starter\3.0.3\mybatis-spring-boot-starter-3.0.3.jar;D:\Maven\repository\org\springframework\boot\spring-boot-starter-jdbc\3.4.5\spring-boot-starter-jdbc-3.4.5.jar;D:\Maven\repository\com\zaxxer\HikariCP\5.1.0\HikariCP-5.1.0.jar;D:\Maven\repository\org\springframework\spring-jdbc\6.2.6\spring-jdbc-6.2.6.jar;D:\Maven\repository\org\mybatis\spring\boot\mybatis-spring-boot-autoconfigure\3.0.3\mybatis-spring-boot-autoconfigure-3.0.3.jar;D:\Maven\repository\org\mybatis\mybatis\3.5.14\mybatis-3.5.14.jar;D:\Maven\repository\org\mybatis\mybatis-spring\3.0.3\mybatis-spring-3.0.3.jar;D:\Maven\repository\com\mysql\mysql-connector-j\8.0.33\mysql-connector-j-8.0.33.jar;D:\Maven\repository\com\alibaba\druid-spring-boot-starter\1.2.16\druid-spring-boot-starter-1.2.16.jar;D:\Maven\repository\com\alibaba\druid\1.2.16\druid-1.2.16.jar;D:\Maven\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;D:\Maven\repository\org\springframework\boot\spring-boot-autoconfigure\3.4.5\spring-boot-autoconfigure-3.4.5.jar;D:\Maven\repository\org\springframework\boot\spring-boot-starter-amqp\3.4.5\spring-boot-starter-amqp-3.4.5.jar;D:\Maven\repository\org\springframework\spring-messaging\6.2.6\spring-messaging-6.2.6.jar;D:\Maven\repository\org\springframework\amqp\spring-rabbit\3.2.5\spring-rabbit-3.2.5.jar;D:\Maven\repository\org\springframework\amqp\spring-amqp\3.2.5\spring-amqp-3.2.5.jar;D:\Maven\repository\com\rabbitmq\amqp-client\5.22.0\amqp-client-5.22.0.jar;D:\Maven\repository\org\springframework\spring-tx\6.2.6\spring-tx-6.2.6.jar;D:\Maven\repository\org\springframework\integration\spring-integration-mqtt\6.4.4\spring-integration-mqtt-6.4.4.jar;D:\Maven\repository\org\springframework\integration\spring-integration-core\6.4.4\spring-integration-core-6.4.4.jar;D:\Maven\repository\org\springframework\retry\spring-retry\2.0.11\spring-retry-2.0.11.jar;D:\Maven\repository\io\projectreactor\reactor-core\3.7.5\reactor-core-3.7.5.jar;D:\Maven\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar;D:\Maven\repository\org\eclipse\paho\org.eclipse.paho.client.mqttv3\1.2.5\org.eclipse.paho.client.mqttv3-1.2.5.jar;D:\Maven\repository\org\springdoc\springdoc-openapi-starter-webmvc-ui\2.2.0\springdoc-openapi-starter-webmvc-ui-2.2.0.jar;D:\Maven\repository\org\springdoc\springdoc-openapi-starter-webmvc-api\2.2.0\springdoc-openapi-starter-webmvc-api-2.2.0.jar;D:\Maven\repository\org\springdoc\springdoc-openapi-starter-common\2.2.0\springdoc-openapi-starter-common-2.2.0.jar;D:\Maven\repository\io\swagger\core\v3\swagger-core-jakarta\2.2.15\swagger-core-jakarta-2.2.15.jar;D:\Maven\repository\org\apache\commons\commons-lang3\3.17.0\commons-lang3-3.17.0.jar;D:\Maven\repository\io\swagger\core\v3\swagger-annotations-jakarta\2.2.15\swagger-annotations-jakarta-2.2.15.jar;D:\Maven\repository\io\swagger\core\v3\swagger-models-jakarta\2.2.15\swagger-models-jakarta-2.2.15.jar;D:\Maven\repository\jakarta\validation\jakarta.validation-api\3.0.2\jakarta.validation-api-3.0.2.jar;D:\Maven\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-yaml\2.18.3\jackson-dataformat-yaml-2.18.3.jar;D:\Maven\repository\org\webjars\swagger-ui\5.2.0\swagger-ui-5.2.0.jar com.pandatech.downloadcf.DownloadcfApplication
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v3.4.5)
-
-2025-07-11T17:12:05.562+08:00  INFO 21832 --- [           main] c.p.downloadcf.DownloadcfApplication     : Starting DownloadcfApplication using Java 22.0.2 with PID 21832 (E:\IdeaProjects\cfdownloadexample\target\classes started by Ming in E:\IdeaProjects\cfdownloadexample)
-2025-07-11T17:12:05.565+08:00  INFO 21832 --- [           main] c.p.downloadcf.DownloadcfApplication     : No active profile set, falling back to 1 default profile: "default"
-2025-07-11T17:12:06.938+08:00  INFO 21832 --- [           main] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
-2025-07-11T17:12:06.953+08:00  INFO 21832 --- [           main] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
-2025-07-11T17:12:07.735+08:00  INFO 21832 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8999 (http)
-2025-07-11T17:12:07.754+08:00  INFO 21832 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2025-07-11T17:12:07.755+08:00  INFO 21832 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.40]
-2025-07-11T17:12:07.831+08:00  INFO 21832 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-2025-07-11T17:12:07.831+08:00  INFO 21832 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2200 ms
-Logging initialized using 'class org.apache.ibatis.logging.stdout.StdOutImpl' adapter.
-2025-07-11T17:12:08.530+08:00  WARN 21832 --- [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'rabbitMQListener' defined in file [E:\IdeaProjects\cfdownloadexample\target\classes\com\pandatech\downloadcf\service\RabbitMQListener.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
-2025-07-11T17:12:08.533+08:00  INFO 21832 --- [           main] com.alibaba.druid.pool.DruidDataSource   : {dataSource-0} closing ...
-2025-07-11T17:12:08.536+08:00  INFO 21832 --- [           main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
-2025-07-11T17:12:08.567+08:00  INFO 21832 --- [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2025-07-11T17:12:08.590+08:00 ERROR 21832 --- [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Parameter 0 of constructor in com.pandatech.downloadcf.service.RabbitMQListener required a bean of type 'org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler' that could not be found.
-
-
-Action:
-
-Consider defining a bean of type 'org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler' in your configuration.
-
-
-进程已结束，退出代码为 1
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:166:9
+java: 非法的类型开始
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:171:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:179:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:180:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:181:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:182:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:183:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:184:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:185:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:186:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:187:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:188:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:189:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:191:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:193:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:194:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:200:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:201:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:202:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:203:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:205:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:206:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:212:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:213:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:214:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:215:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:216:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:217:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:218:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:219:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:220:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:221:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:222:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:223:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:224:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:225:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:226:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:227:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:228:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:230:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:231:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:237:5
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:242:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:243:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:244:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:245:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:246:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:247:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:248:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:249:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:250:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:251:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:252:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:253:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:254:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:255:5
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:257:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:258:5
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:262:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:263:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:264:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:265:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:266:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:267:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:268:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:269:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:270:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:271:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:272:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:273:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:274:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:275:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:276:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:278:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:279:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:280:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:281:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:282:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:283:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:284:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:285:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:286:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:287:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:289:13
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:290:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:295:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:296:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:297:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:298:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:299:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:300:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:301:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:302:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:303:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:304:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:305:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:306:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:307:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:308:9
+java: 需要 class、interface、enum 或 record
+E:\IdeaProjects\cfdownloadexample\src\main\java\com\pandatech\downloadcf\service\MqttService.java:309:9
+java: 需要 class、interface、enum 或 record

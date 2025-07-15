@@ -30,19 +30,8 @@ public class RabbitMQListener {
             log.info("从RabbitMQ接收到模板消息: {}", message);
             TemplateDto templateDto = objectMapper.readValue(message, TemplateDto.class);
 
-            // 模拟从数据库加载数据并转换为二进制流
-            // 这里的逻辑应该和MqttService中的相似，但由HTTP触发
-            // 为了简化，我们直接将收到的templateData作为推送内容
-            byte[] binaryData = templateDto.getTemplateData().getBytes();
-
-            // 动态设置topic，例如，推送到特定价签的topic
-            String topic = "esl/" + templateDto.getEslId() + "/template";
-            Message<byte[]> mqttMessage = MessageBuilder.withPayload(binaryData)
-                    .setHeader("mqtt_topic", topic)
-                    .build();
-
-            mqttOutboundChannel.send(mqttMessage);
-            log.info("通过MQTT推送模板到主题: {}", topic);
+            // 使用MqttService处理模板下发
+            mqttService.processTemplateDownload(templateDto.getEslId());
         } catch (Exception e) {
             log.error("处理模板消息并推送到MQTT失败", e);
         }
@@ -53,18 +42,9 @@ public class RabbitMQListener {
         try {
             log.info("从RabbitMQ接收到刷新消息: {}", message);
             RefreshDto refreshDto = objectMapper.readValue(message, RefreshDto.class);
-
-            // 刷新操作通常是发送一个简单的指令
-            String refreshCommand = "{\"action\": \"refresh\"}";
-            byte[] binaryData = refreshCommand.getBytes();
-
-            String topic = "esl/" + refreshDto.getEslId() + "/refresh";
-            Message<byte[]> mqttMessage = MessageBuilder.withPayload(binaryData)
-                    .setHeader("mqtt_topic", topic)
-                    .build();
-
-            mqttOutboundChannel.send(mqttMessage);
-            log.info("通过MQTT推送刷新指令到主题: {}", topic);
+            
+            // 使用MqttService处理价签刷新
+            mqttService.processRefresh(refreshDto.getEslId());
         } catch (Exception e) {
             log.error("处理刷新消息并推送到MQTT失败", e);
         }

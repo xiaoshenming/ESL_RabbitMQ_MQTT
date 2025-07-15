@@ -28,6 +28,10 @@ public class ActExtTemplatePrint implements Serializable {
 
     private String updateUser;
 
+    private String content;
+
+    private String tagType;
+
     private static final long serialVersionUID = 1L;
 
     public String getId() {
@@ -124,6 +128,22 @@ public class ActExtTemplatePrint implements Serializable {
 
     public void setUpdateUser(String updateUser) {
         this.updateUser = updateUser == null ? null : updateUser.trim();
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public String getTagType() {
+        return tagType;
+    }
+
+    public void setTagType(String tagType) {
+        this.tagType = tagType;
     }
 
     @Override
