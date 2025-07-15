@@ -131,10 +131,33 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public byte[] loadTemple(LoadTemplateRequest request) {
-        ActExtTemplatePrintWithBLOBs template;
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            template = actExtTemplatePrintMapper.findByName(request.getName());
-        } else {
+        ActExtTemplatePrintWithBLOBs template = null;
+        
+        // 优先使用name查找，如果name为空则使用id
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            String searchName = request.getName();
+            
+            // 处理带.json后缀的文件名
+            if (searchName.toLowerCase().endsWith(".json")) {
+                searchName = searchName.substring(0, searchName.length() - 5);
+            }
+            
+            // 处理带屏幕类型后缀的模板名称（如 6666_1C -> 6666）
+            String baseName = extractBaseName(searchName);
+            
+            // 首先尝试精确匹配原始名称
+            template = actExtTemplatePrintMapper.findByName(searchName);
+            
+            // 如果精确匹配失败，尝试使用基础名称进行精确匹配
+            if (template == null && !baseName.equals(searchName)) {
+                template = actExtTemplatePrintMapper.findByName(baseName);
+            }
+            
+            // 如果仍然失败，使用基础名称进行模糊搜索
+            if (template == null) {
+                template = actExtTemplatePrintMapper.findByNameLike(baseName);
+            }
+        } else if (request.getId() != null && !request.getId().trim().isEmpty()) {
             template = actExtTemplatePrintMapper.findById(request.getId());
         }
 
@@ -150,5 +173,26 @@ public class TemplateServiceImpl implements TemplateService {
             log.error("Error converting template to official format for ID: {} or Name: {}", request.getId(), request.getName(), e);
             return null;
         }
+    }
+    
+    /**
+     * 提取模板名称的基础部分，去除屏幕类型后缀
+     * 例如：6666_1C -> 6666, 7777_2A -> 7777
+     */
+    private String extractBaseName(String templateName) {
+        if (templateName == null || templateName.trim().isEmpty()) {
+            return templateName;
+        }
+        
+        // 匹配模式：数字_字母数字组合
+        // 例如：6666_1C, 7777_2A 等
+        if (templateName.matches(".*_[A-Za-z0-9]+$")) {
+            int lastUnderscoreIndex = templateName.lastIndexOf('_');
+            if (lastUnderscoreIndex > 0) {
+                return templateName.substring(0, lastUnderscoreIndex);
+            }
+        }
+        
+        return templateName;
     }
 }

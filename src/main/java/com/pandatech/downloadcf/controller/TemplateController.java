@@ -100,25 +100,42 @@ public class TemplateController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
-                description = "找不到对应的模板"
+                description = "模板未找到"
             )
         }
     )
     public ResponseEntity<byte[]> loadTemple(@RequestBody LoadTemplateRequest request) {
-        if ((request.getId() == null || request.getId().isEmpty()) && (request.getName() == null || request.getName().isEmpty())) {
+        // 优先使用name查找，如果name为空则使用id
+        String searchKey = request.getName() != null ? request.getName() : request.getId();
+        
+        if (searchKey == null || searchKey.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
+        }
+        
+        // 处理带.json后缀的文件名（参考downloadJsonFileByFilename的逻辑）
+        String templateName = searchKey;
+        String downloadFileName = searchKey;
+        
+        if (searchKey.toLowerCase().endsWith(".json")) {
+            // 移除.json后缀用于数据库查找
+            templateName = searchKey.substring(0, searchKey.length() - 5);
+            // 保留原始文件名用于下载
+            downloadFileName = searchKey;
+        } else {
+            // 如果没有.json后缀，下载时自动添加
+            downloadFileName = searchKey + ".json";
         }
 
         byte[] templateContent = templateService.loadTemple(request);
-
         if (templateContent == null) {
             return ResponseEntity.notFound().build();
         }
 
-        String fileName = (request.getName() != null && !request.getName().isEmpty()) ? request.getName() : request.getId();
+        // 设置响应头，使用处理后的文件名
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", fileName + ".json");
+        headers.setContentDispositionFormData("attachment", downloadFileName);
+        headers.setContentLength(templateContent.length);
 
         return new ResponseEntity<>(templateContent, headers, HttpStatus.OK);
     }

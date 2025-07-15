@@ -44,6 +44,9 @@ public interface ActExtTemplatePrintMapper {
 
     @Select("SELECT * FROM act_ext_template_print WHERE id = #{id}")
     ActExtTemplatePrintWithBLOBs findById(String id);
+    
+    @Select("SELECT * FROM act_ext_template_print WHERE name LIKE CONCAT('%', #{name}, '%') LIMIT 1")
+    ActExtTemplatePrintWithBLOBs findByNameLike(String name);
 
     int updateByPrimaryKey(ActExtTemplatePrint row);
 }
