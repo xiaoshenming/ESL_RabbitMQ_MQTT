@@ -28,10 +28,13 @@ public class RabbitMQListener {
     public void receiveTemplateMessage(String message) {
         try {
             log.info("从RabbitMQ接收到模板消息: {}", message);
-            TemplateDto templateDto = objectMapper.readValue(message, TemplateDto.class);
-
-            // 使用MqttService处理模板下发
-            mqttService.processTemplateDownload(templateDto.getEslId());
+            
+            // 直接将消息发送到MQTT
+            Message<String> mqttMessage = MessageBuilder.withPayload(message)
+                    .setHeader("mqtt_topic", "esl/template/download")
+                    .build();
+            mqttOutboundChannel.send(mqttMessage);
+            log.info("模板消息已发送到MQTT: {}", message);
         } catch (Exception e) {
             log.error("处理模板消息并推送到MQTT失败", e);
         }

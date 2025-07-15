@@ -27,7 +27,7 @@ public class TemplateController {
     @PostMapping("/send")
     @Operation(
         summary = "下发模板", 
-        description = "将模板内容发送到指定的价签。此操作会将消息放入RabbitMQ队列，由后端服务处理后通过MQTT推送。",
+        description = "根据模板ID从数据库获取模板信息，构造MQTT消息格式并发送到RabbitMQ队列，最终通过MQTT推送到价签设备。消息格式符合tmpllist命令规范。",
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200", 
@@ -41,7 +41,7 @@ public class TemplateController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400", 
-                description = "请求参数错误"
+                description = "请求参数错误或模板ID不存在"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "500", 
