@@ -1,11 +1,15 @@
 package com.pandatech.downloadcf.controller;
 
+import com.pandatech.downloadcf.dto.LoadTemplateRequest;
 import com.pandatech.downloadcf.dto.RefreshDto;
 import com.pandatech.downloadcf.dto.TemplateDto;
 import com.pandatech.downloadcf.service.TemplateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,5 +82,44 @@ public class TemplateController {
     public ResponseEntity<String> refreshEsl(@RequestBody RefreshDto refreshDto) {
         templateService.refreshEsl(refreshDto);
         return ResponseEntity.ok("价签刷新请求已接收");
+    }
+
+    @PostMapping("/loadtemple")
+    @Operation(
+        summary = "下载模板文件",
+        description = "根据模板ID或名称下载模板文件（二进制流格式）",
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "模板文件二进制流",
+                content = @io.swagger.v3.oas.annotations.media.Content(mediaType = "application/octet-stream")
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "请求参数无效（id和name都为空）"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "找不到对应的模板"
+            )
+        }
+    )
+    public ResponseEntity<byte[]> loadTemple(@RequestBody LoadTemplateRequest request) {
+        if ((request.getId() == null || request.getId().isEmpty()) && (request.getName() == null || request.getName().isEmpty())) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        byte[] templateContent = templateService.loadTemple(request);
+
+        if (templateContent == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String fileName = (request.getName() != null && !request.getName().isEmpty()) ? request.getName() : request.getId();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", fileName + ".json");
+
+        return new ResponseEntity<>(templateContent, headers, HttpStatus.OK);
     }
 }

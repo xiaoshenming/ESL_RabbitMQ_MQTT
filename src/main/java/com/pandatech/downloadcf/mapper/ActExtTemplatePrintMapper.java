@@ -5,6 +5,7 @@ import com.pandatech.downloadcf.entity.ActExtTemplatePrintExample;
 import com.pandatech.downloadcf.entity.ActExtTemplatePrintWithBLOBs;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.session.RowBounds;
 
 public interface ActExtTemplatePrintMapper {
@@ -37,6 +38,12 @@ public interface ActExtTemplatePrintMapper {
     int updateByPrimaryKeySelective(ActExtTemplatePrintWithBLOBs row);
 
     int updateByPrimaryKeyWithBLOBs(ActExtTemplatePrintWithBLOBs row);
+
+    @Select("SELECT * FROM act_ext_template_print WHERE name = #{name}")
+    ActExtTemplatePrintWithBLOBs findByName(String name);
+
+    @Select("SELECT * FROM act_ext_template_print WHERE id = #{id}")
+    ActExtTemplatePrintWithBLOBs findById(String id);
 
     int updateByPrimaryKey(ActExtTemplatePrint row);
 }

@@ -1,5 +1,6 @@
 package com.pandatech.downloadcf.service;
 
+import com.pandatech.downloadcf.dto.LoadTemplateRequest;
 import com.pandatech.downloadcf.dto.RefreshDto;
 import com.pandatech.downloadcf.dto.TemplateDto;
 
@@ -18,4 +19,6 @@ public interface TemplateService {
      * @param refreshDto 刷新数据
      */
     void refreshEsl(RefreshDto refreshDto);
+
+    byte[] loadTemple(LoadTemplateRequest request);
 }

@@ -7,9 +7,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
-import com.pandatech.downloadcf.entity.ActExtTemplatePrint;
+import com.pandatech.downloadcf.entity.ActExtTemplatePrintWithBLOBs;
 import com.pandatech.downloadcf.entity.PandaEsl;
 import com.pandatech.downloadcf.entity.PandaProduct;
 import com.pandatech.downloadcf.mapper.ActExtTemplatePrintMapper;
@@ -30,6 +31,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MqttService {
 
+    @Value("${app.template.base-url}")
+    private String templateBaseUrl;
+
     private final ActExtTemplatePrintMapper templatePrintMapper;
     private final PandaEslMapper eslMapper;
     private final PandaProductMapper productMapper;
@@ -43,6 +47,7 @@ public class MqttService {
             try {
                 // 这里模拟根据payload（可能是价签ID）加载模板和产品数据
                 // 实际场景中，payload的格式需要根据业务确定
+                @SuppressWarnings("unchecked")
                 Map<String, Object> request = objectMapper.readValue(payload, HashMap.class);
                 String eslId = (String) request.get("eslId");
 
@@ -58,7 +63,7 @@ public class MqttService {
                     return;
                 }
 
-                ActExtTemplatePrint template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
+                ActExtTemplatePrintWithBLOBs template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
                 if (template == null) {
                     log.error("未找到模板: {}", product.getEslTemplateId());
                     return;
@@ -91,7 +96,7 @@ public class MqttService {
                 return;
             }
 
-            ActExtTemplatePrint template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
+            ActExtTemplatePrintWithBLOBs template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
             if (template == null) {
                 log.error("未找到模板: {}", product.getEslTemplateId());
                 return;
@@ -131,7 +136,7 @@ public class MqttService {
                 return;
             }
 
-            ActExtTemplatePrint template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
+            ActExtTemplatePrintWithBLOBs template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
             if (template == null) {
                 log.error("未找到模板: {}", product.getEslTemplateId());
                 return;
@@ -163,7 +168,7 @@ public class MqttService {
 
     
 
-    private String convertToOfficialTemplate(String customJson) {
+    public String convertToOfficialTemplate(String customJson) throws JsonProcessingException {
     // 假设 ActExtTemplatePrint 有 getContent() 方法，如果没有，根据实体调整
     // 这里简化实现
 
@@ -181,12 +186,7 @@ public class MqttService {
         official.put("rgb", "3");
         official.put("wext", "0");
         official.put("width", "250");
-        try {
-            return objectMapper.writeValueAsString(official);
-        } catch (JsonProcessingException e) {
-            log.error("转换模板失败", e);
-            return "{}";
-        }
+        return objectMapper.writeValueAsString(official);
     }
 
     private String calculateMD5(String data) {
@@ -206,7 +206,7 @@ public class MqttService {
             Map<String, Object> json = new HashMap<>();
             json.put("command", "tmpllist");
             Map<String, Object> data = new HashMap<>();
-            data.put("url", "http://esl.openesl.cn/api/res/templ/loadtemple");
+            data.put("url", templateBaseUrl);
             List<Map<String, String>> tmpls = new ArrayList<>();
             Map<String, String> tmpl = new HashMap<>();
             tmpl.put("name", getTemplateFileName(tagType));
@@ -231,7 +231,7 @@ public class MqttService {
         return "TAG_" + Integer.toHexString(Integer.parseInt(tagType)).toUpperCase() + ".json";
     }
 
-    private String generateWtagJson(PandaEsl esl, PandaProduct product, ActExtTemplatePrint template, String md5) {
+    private String generateWtagJson(PandaEsl esl, PandaProduct product, ActExtTemplatePrintWithBLOBs template, String md5) {
         try {
             Map<String, Object> json = new HashMap<>();
             json.put("command", "wtag");
