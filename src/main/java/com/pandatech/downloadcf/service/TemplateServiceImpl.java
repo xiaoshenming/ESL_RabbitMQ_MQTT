@@ -8,6 +8,7 @@ import com.pandatech.downloadcf.dto.RefreshDto;
 import com.pandatech.downloadcf.dto.TemplateDto;
 import com.pandatech.downloadcf.entity.ActExtTemplatePrintWithBLOBs;
 import com.pandatech.downloadcf.mapper.ActExtTemplatePrintMapper;
+import com.pandatech.downloadcf.util.ScreenTypeConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -27,6 +28,7 @@ public class TemplateServiceImpl implements TemplateService {
     private final ObjectMapper objectMapper;
     private final MqttService mqttService;
     private final ActExtTemplatePrintMapper actExtTemplatePrintMapper;
+    private final ScreenTypeConverter screenTypeConverter;
     
     @Value("${app.template.base-url}")
     private String baseUrl;
@@ -35,11 +37,30 @@ public class TemplateServiceImpl implements TemplateService {
     public void sendTemplate(TemplateDto templateDto) {
         try {
             // 根据templateId从数据库获取模板信息
-             ActExtTemplatePrintWithBLOBs template = actExtTemplatePrintMapper.findById(templateDto.getTemplateId());
+            ActExtTemplatePrintWithBLOBs template = actExtTemplatePrintMapper.findById(templateDto.getTemplateId());
             if (template == null) {
                 log.error("未找到模板ID: {}", templateDto.getTemplateId());
                 throw new RuntimeException("未找到指定的模板");
             }
+            
+            // 提取屏幕类型
+            String screenType = screenTypeConverter.extractScreenType(
+                template.getContent(), 
+                template.getExtJson(), 
+                template.getTagType()
+            );
+            log.info("模板ID: {} 提取到屏幕类型: {}", template.getId(), screenType);
+            
+            // 生成带屏幕类型的模板文件名
+            String templateFileName = screenTypeConverter.generateTemplateFileName(
+                template.getName(), 
+                screenType
+            );
+            log.info("生成的模板文件名: {}", templateFileName);
+            
+            // 计算模板内容的MD5（用于转换后的官方格式）
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template.getContent());
+            String templateMd5 = calculateMd5(officialTemplateJson);
             
             // 构造MQTT消息格式
             Map<String, Object> mqttMessage = new HashMap<>();
@@ -50,12 +71,12 @@ public class TemplateServiceImpl implements TemplateService {
             data.put("tid", "396a5189-53d8-4354-bcfa-27d57d9d69ad"); // 多租户ID，可以配置化
             
             // 构造模板列表
-             List<Map<String, Object>> tmpls = new ArrayList<>();
-             Map<String, Object> tmpl = new HashMap<>();
-             tmpl.put("name", template.getName() + ".json");
-             tmpl.put("md5", calculateMd5(template.getContent()));
-             tmpl.put("id", template.getId());
-             tmpls.add(tmpl);
+            List<Map<String, Object>> tmpls = new ArrayList<>();
+            Map<String, Object> tmpl = new HashMap<>();
+            tmpl.put("name", templateFileName); // 使用带屏幕类型的文件名
+            tmpl.put("md5", templateMd5); // 使用转换后内容的MD5
+            tmpl.put("id", template.getId());
+            tmpls.add(tmpl);
             data.put("tmpls", tmpls);
             
             mqttMessage.put("data", data);
@@ -66,8 +87,12 @@ public class TemplateServiceImpl implements TemplateService {
             String message = objectMapper.writeValueAsString(mqttMessage);
             rabbitTemplate.convertAndSend(RabbitMQConfig.TEMPLATE_QUEUE, message);
             log.info("模板消息已发送到RabbitMQ队列: {}", message);
+            
         } catch (JsonProcessingException e) {
             log.error("序列化模板消息失败", e);
+            throw new RuntimeException("发送模板消息失败", e);
+        } catch (Exception e) {
+            log.error("发送模板消息时发生未知错误", e);
             throw new RuntimeException("发送模板消息失败", e);
         }
     }
