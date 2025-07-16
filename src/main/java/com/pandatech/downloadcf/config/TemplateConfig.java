@@ -47,11 +47,11 @@ public class TemplateConfig {
         private String size = "250, 122";
         private String tagType = "06";
         private int version = 10;
-        private String height = "122";
-        private String hext = "6";
-        private String rgb = "3";
-        private String wext = "0";
-        private String width = "250";
+        private int height = 122;
+        private int hext = 6;
+        private int rgb = 3;
+        private int wext = 0;
+        private int width = 250;
         private String fontFamily = "Zfull-GB";
         private String fontColor = "Black";
         private String background = "Transparent";

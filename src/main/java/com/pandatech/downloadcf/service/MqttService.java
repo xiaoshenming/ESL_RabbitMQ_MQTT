@@ -293,8 +293,8 @@ public class MqttService {
             for (JsonNode panel : panels) {
                 // 提取面板的基本信息
                 if (panel.has("width") && panel.has("height")) {
-                    String width = panel.get("width").asText();
-                    String height = panel.get("height").asText();
+                    int width = panel.get("width").asInt();
+                    int height = panel.get("height").asInt();
                     official.put("Size", width + ", " + height);
                     official.put("width", width);
                     official.put("height", height);
