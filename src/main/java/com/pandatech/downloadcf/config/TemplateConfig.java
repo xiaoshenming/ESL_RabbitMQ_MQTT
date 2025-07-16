@@ -86,18 +86,22 @@ public class TemplateConfig {
         
         /**
          * TagType到屏幕类型的映射
+         * 修正：TagType和屏幕类型应该保持一致，避免内外TagType值不同的问题
          */
         private Map<String, String> tagTypeToScreenType = new HashMap<String, String>() {{
-            put("06", "1C");
-            put("07", "2C");
-            put("08", "3C");
-            put("09", "1C");
-            put("10", "2C");
-            put("11", "3C");
-            put("12", "1C");
-            put("13", "2C");
-            put("14", "3C");
-            put("15", "1C");
+            put("1C", "1C");
+            put("2C", "2C");
+            put("3C", "3C");
+            put("06", "06");
+            put("07", "07");
+            put("08", "08");
+            put("09", "09");
+            put("10", "10");
+            put("11", "11");
+            put("12", "12");
+            put("13", "13");
+            put("14", "14");
+            put("15", "15");
         }};
     }
     
@@ -170,13 +174,18 @@ public class TemplateConfig {
     
     /**
      * 获取屏幕类型对应的TagType
+     * 修正：由于TagType和屏幕类型现在保持一致，直接返回屏幕类型作为TagType
      */
     public String getTagTypeByScreenType(String screenType) {
-        for (Map.Entry<String, String> entry : screenTypeMapping.getTagTypeToScreenType().entrySet()) {
-            if (entry.getValue().equals(screenType)) {
-                return entry.getKey();
-            }
+        if (screenType == null || screenType.trim().isEmpty()) {
+            return defaultTemplate.getTagType();
         }
+        
+        // 检查是否在映射表中存在
+        if (screenTypeMapping.getTagTypeToScreenType().containsKey(screenType)) {
+            return screenType;
+        }
+        
         return defaultTemplate.getTagType();
     }
     
