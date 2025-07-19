@@ -107,17 +107,30 @@ public class MqttService {
      * 2. 自定义格式的JSON（如数据库中的panels格式）
      */
     public String convertToOfficialTemplate(PrintTemplateDesignWithBLOBs template) throws JsonProcessingException {
-        // 添加调试日志
+        // 添加详细的调试日志
         log.info("模板转换开始 - 模板ID: {}, 模板名称: {}", template.getId(), template.getName());
-        log.info("EXT_JSON内容: {}", template.getExtJson());
-        log.info("CONTENT内容: {}", template.getContent());
         
-        String jsonToParse = template.getExtJson();
+        String extJson = template.getExtJson();
+        String content = template.getContent();
+        
+        log.info("EXT_JSON是否为null: {}", extJson == null);
+        if (extJson != null) {
+            log.info("EXT_JSON长度: {}", extJson.length());
+            log.info("EXT_JSON前100个字符: {}", extJson.length() > 100 ? extJson.substring(0, 100) : extJson);
+        }
+        
+        log.info("CONTENT是否为null: {}", content == null);
+        if (content != null) {
+            log.info("CONTENT长度: {}", content.length());
+            log.info("CONTENT前100个字符: {}", content.length() > 100 ? content.substring(0, 100) : content);
+        }
+        
+        String jsonToParse = extJson;
 
         // 如果EXT_JSON为空，则尝试使用CONTENT字段
         if (jsonToParse == null || jsonToParse.trim().isEmpty()) {
             log.info("EXT_JSON为空，尝试使用CONTENT字段");
-            jsonToParse = template.getContent();
+            jsonToParse = content;
         }
 
         if (jsonToParse == null || jsonToParse.trim().isEmpty()) {
@@ -125,7 +138,8 @@ public class MqttService {
             return createDefaultOfficialTemplate();
         }
 
-        log.info("准备解析的JSON内容: {}", jsonToParse.substring(0, Math.min(200, jsonToParse.length())) + "...");
+        log.info("准备解析的JSON内容长度: {}", jsonToParse.length());
+        log.info("准备解析的JSON内容前200个字符: {}", jsonToParse.substring(0, Math.min(200, jsonToParse.length())) + "...");
 
         try {
             JsonNode rootNode = objectMapper.readTree(jsonToParse);
