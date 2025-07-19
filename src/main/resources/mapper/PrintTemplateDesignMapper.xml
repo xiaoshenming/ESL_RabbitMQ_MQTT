@@ -432,7 +432,7 @@
     <include refid="Blob_Column_List" />
     from print_template_design
     where NAME = #{name,jdbcType=VARCHAR}
-    and DELETE_FLAG = '0'
+    and DELETE_FLAG = 'NOT_DELETE'
     limit 1
   </select>
   
@@ -443,7 +443,7 @@
     <include refid="Blob_Column_List" />
     from print_template_design
     where NAME like CONCAT('%', #{name,jdbcType=VARCHAR}, '%')
-    and DELETE_FLAG = '0'
+    and DELETE_FLAG = 'NOT_DELETE'
     order by CREATE_TIME desc
     limit 1
   </select>
