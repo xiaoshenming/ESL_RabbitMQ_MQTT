@@ -38,4 +38,11 @@ public interface EslBrandFieldMappingMapper {
     int updateByPrimaryKeyWithBLOBs(EslBrandFieldMapping row);
 
     int updateByPrimaryKey(EslBrandFieldMapping row);
+    
+    /**
+     * 根据品牌编码查询字段映射
+     * @param brandCode 品牌编码
+     * @return 字段映射列表
+     */
+    List<EslBrandFieldMapping> findByBrandCode(@Param("brandCode") String brandCode);
 }

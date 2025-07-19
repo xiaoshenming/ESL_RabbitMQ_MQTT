@@ -13,6 +13,8 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 import com.pandatech.downloadcf.util.ScreenTypeConverter;
 import com.pandatech.downloadcf.util.TemplateValidator;
+import com.pandatech.downloadcf.util.ScreenTypeMapper;
+import com.pandatech.downloadcf.service.FieldMappingService;
 import com.pandatech.downloadcf.config.TemplateConfig;
 import com.pandatech.downloadcf.exception.TemplateException;
 import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
@@ -46,6 +48,7 @@ public class MqttService {
     private final ScreenTypeConverter screenTypeConverter;
     private final TemplateValidator templateValidator;
     private final TemplateConfig templateConfig;
+    private final FieldMappingService fieldMappingService;
 
     @ServiceActivator(inputChannel = "mqttInputChannel")
     public void handleMessage(@Header(MqttHeaders.RECEIVED_TOPIC) String topic, String payload) {
@@ -197,16 +200,22 @@ public class MqttService {
         // 从模板对象中获取基本信息，如果为空则使用默认值
         TemplateConfig.DefaultTemplate defaultConfig = templateConfig.getDefaultTemplate();
         official.put("Name", template.getName() != null ? template.getName() : defaultConfig.getName());
-        official.put("TagType", template.getCategory() != null ? template.getCategory() : defaultConfig.getTagType());
         official.put("Version", defaultConfig.getVersion());
-        official.put("hext", defaultConfig.getHext());
-        official.put("rgb", defaultConfig.getRgb());
-        official.put("wext", defaultConfig.getWext());
+        official.put("hext", String.valueOf(defaultConfig.getHext()));
+        official.put("rgb", String.valueOf(defaultConfig.getRgb()));
+        official.put("wext", String.valueOf(defaultConfig.getWext()));
         
         // 默认尺寸，会被面板信息覆盖
         official.put("Size", defaultConfig.getSize());
-        official.put("height", defaultConfig.getHeight());
-        official.put("width", defaultConfig.getWidth());
+        official.put("height", String.valueOf(defaultConfig.getHeight()));
+        official.put("width", String.valueOf(defaultConfig.getWidth()));
+        
+        // 提取屏幕类型并映射为TagType
+        String screenType = extractScreenTypeFromTemplate(template);
+        String tagType = ScreenTypeMapper.getTagType(screenType);
+        official.put("TagType", tagType);
+        
+        log.info("模板转换 - 屏幕类型: {}, TagType: {}", screenType, tagType);
         
         JsonNode panels = rootNode.get("panels");
         if (panels.isArray()) {
@@ -216,38 +225,120 @@ public class MqttService {
                     int width = panel.get("width").asInt();
                     int height = panel.get("height").asInt();
                     official.put("Size", width + ", " + height);
-                    official.put("width", width);
-                    official.put("height", height);
+                    official.put("width", String.valueOf(width));
+                    official.put("height", String.valueOf(height));
                 }
                 
                 // 转换printElements
                 if (panel.has("printElements")) {
                     JsonNode printElements = panel.get("printElements");
+                    log.debug("找到printElements数组，元素数量: {}", printElements.size());
                     if (printElements.isArray()) {
-                        for (JsonNode element : printElements) {
-                            Map<String, Object> item = convertPrintElementToItem(element);
+                        for (int i = 0; i < printElements.size(); i++) {
+                            JsonNode element = printElements.get(i);
+                            log.debug("处理第{}个printElement: {}", i, element.toString());
+                            Map<String, Object> item = convertPrintElementToItem(element, template);
                             if (item != null) {
                                 items.add(item);
+                                log.debug("成功转换第{}个printElement为Item", i);
+                            } else {
+                                log.warn("第{}个printElement转换失败", i);
+                            }
+                        }
+                    }
+                } else {
+                    log.debug("面板中没有printElements字段");
+                }
+            }
+        }
+        
+        log.info("模板转换完成，共生成{}个Items", items.size());
+        official.put("Items", items);
+        return objectMapper.writeValueAsString(official);
+    }
+    
+    /**
+     * 从模板中提取屏幕类型
+     */
+    private String extractScreenTypeFromTemplate(PrintTemplateDesignWithBLOBs template) {
+        // 首先尝试从EXT_JSON中提取
+        String screenType = extractScreenTypeFromExtJson(template.getExtJson());
+        if (screenType != null) {
+            return screenType;
+        }
+        
+        // 如果EXT_JSON中没有，尝试从CATEGORY字段获取
+        if (template.getCategory() != null && !template.getCategory().trim().isEmpty()) {
+            return template.getCategory();
+        }
+        
+        // 默认返回2.13T
+        return "2.13T";
+    }
+    
+    /**
+     * 从EXT_JSON中提取屏幕类型信息
+     */
+    @SuppressWarnings("unchecked")
+    private String extractScreenTypeFromExtJson(String extJson) {
+        if (extJson == null || extJson.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            Map<String, Object> extData = objectMapper.readValue(extJson, Map.class);
+            
+            // 检查designConfig.panels[0].eslConfig.screenType
+            if (extData.containsKey("designConfig")) {
+                Object designConfigObj = extData.get("designConfig");
+                if (designConfigObj instanceof Map) {
+                    Map<String, Object> designConfig = (Map<String, Object>) designConfigObj;
+                    if (designConfig.containsKey("panels")) {
+                        Object panelsObj = designConfig.get("panels");
+                        if (panelsObj instanceof List) {
+                            List<Map<String, Object>> panels = (List<Map<String, Object>>) panelsObj;
+                            if (!panels.isEmpty()) {
+                                Map<String, Object> firstPanel = panels.get(0);
+                                if (firstPanel.containsKey("eslConfig")) {
+                                    Object eslConfigObj = firstPanel.get("eslConfig");
+                                    if (eslConfigObj instanceof Map) {
+                                        Map<String, Object> eslConfig = (Map<String, Object>) eslConfigObj;
+                                        if (eslConfig.containsKey("screenType")) {
+                                            Object screenTypeObj = eslConfig.get("screenType");
+                                            if (screenTypeObj instanceof String) {
+                                                return (String) screenTypeObj;
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+        } catch (Exception e) {
+            log.warn("解析EXT_JSON失败: {}", e.getMessage());
         }
         
-        official.put("Items", items);
-        return objectMapper.writeValueAsString(official);
+        return null;
     }
 
     /**
      * 将printElement转换为官方格式的Item
      */
-    private Map<String, Object> convertPrintElementToItem(JsonNode element) {
-        if (!element.has("options")) {
+    private Map<String, Object> convertPrintElementToItem(JsonNode element, PrintTemplateDesignWithBLOBs template) {
+        log.debug("开始转换printElement: {}", element.toString());
+        
+        // 检查element是否为空
+        if (element == null) {
+            log.warn("printElement为null，跳过转换");
             return null;
         }
         
-        JsonNode options = element.get("options");
+        // 检查是否有options字段，如果没有则尝试直接使用element
+        JsonNode options = element.has("options") ? element.get("options") : element;
+        log.debug("使用的options节点: {}", options.toString());
+        
         Map<String, Object> item = new HashMap<>();
         
         // 基本属性（使用配置中的默认值）
@@ -268,6 +359,8 @@ public class MqttService {
         int y = options.has("top") ? options.get("top").asInt() : 0;
         int width = options.has("width") ? options.get("width").asInt() : 50;
         int height = options.has("height") ? options.get("height").asInt() : 20;
+        
+        log.debug("位置和尺寸 - x: {}, y: {}, width: {}, height: {}", x, y, width, height);
         
         item.put("x", x);
         item.put("y", y);
@@ -296,12 +389,32 @@ public class MqttService {
             item.put("TextAlign", align);
         }
         
-        // 数据绑定
+        // 数据绑定 - 使用字段映射服务
+        String templateField = null;
         if (options.has("field")) {
-            item.put("DataKey", options.get("field").asText());
+            templateField = options.get("field").asText();
+            log.debug("找到字段: {}", templateField);
         } else {
-            item.put("DataKey", "");
+            log.debug("未找到field字段");
         }
+        
+        // 尝试获取品牌编码进行字段映射
+        String brandCode = extractBrandCodeFromTemplate(template);
+        String mappedField = templateField;
+        
+        if (templateField != null && !templateField.isEmpty() && brandCode != null) {
+            try {
+                String systemField = fieldMappingService.getSystemField(brandCode, templateField);
+                if (systemField != null && !systemField.isEmpty()) {
+                    mappedField = systemField;
+                    log.debug("字段映射: {} -> {} (品牌: {})", templateField, systemField, brandCode);
+                }
+            } catch (Exception e) {
+                log.warn("字段映射失败，使用原始字段: {} (品牌: {})", templateField, brandCode, e);
+            }
+        }
+        
+        item.put("DataKey", mappedField != null ? mappedField : "");
         
         if (options.has("testData")) {
             item.put("DataDefault", options.get("testData").asText());
@@ -318,7 +431,28 @@ public class MqttService {
             item.put("Background", options.get("backgroundColor").asText());
         }
         
+        log.debug("成功转换printElement为Item: {}", item);
         return item;
+    }
+    
+    /**
+     * 从模板中提取品牌编码
+     */
+    private String extractBrandCodeFromTemplate(PrintTemplateDesignWithBLOBs template) {
+        // 尝试从模板名称中提取品牌编码
+        // 假设模板名称格式为: brandCode_templateName 或者直接是品牌编码
+        String templateName = template.getName();
+        if (templateName != null && !templateName.trim().isEmpty()) {
+            // 如果包含下划线，取第一部分作为品牌编码
+            if (templateName.contains("_")) {
+                return templateName.split("_")[0];
+            }
+            // 否则直接返回模板名称作为品牌编码
+            return templateName;
+        }
+        
+        // 默认品牌编码
+        return "DEFAULT";
     }
 
     /**
@@ -466,10 +600,14 @@ public class MqttService {
         JsonNode rootNode = objectMapper.readTree(officialTemplate);
         Map<String, Object> result = objectMapper.convertValue(rootNode, Map.class);
         
-        // 根据屏幕类型设置TagType
-        String tagType = screenTypeConverter.convertScreenTypeToTagType(screenType);
+        // 使用ScreenTypeMapper进行屏幕类型到TagType的映射
+        String tagType = ScreenTypeMapper.getTagType(screenType);
         if (tagType != null) {
             result.put("TagType", tagType);
+            log.info("更新模板TagType: 屏幕类型 {} -> TagType {}", screenType, tagType);
+        } else {
+            log.warn("未找到屏幕类型 {} 对应的TagType，使用默认值", screenType);
+            result.put("TagType", ScreenTypeMapper.getDefaultTagType());
         }
         
         return objectMapper.writeValueAsString(result);

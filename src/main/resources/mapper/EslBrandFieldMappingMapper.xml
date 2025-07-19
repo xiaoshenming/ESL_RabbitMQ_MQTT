@@ -425,4 +425,16 @@
       order by ${orderByClause}
     </if>
   </select>
+  
+  <!-- 根据品牌编码查询字段映射 -->
+  <select id="findByBrandCode" parameterType="java.lang.String" resultMap="ResultMapWithBLOBs">
+    select
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from esl_brand_field_mapping
+    where BRAND_CODE = #{brandCode,jdbcType=VARCHAR}
+      and DELETE_FLAG = 'NOT_DELETE'
+    order by SORT_CODE asc
+  </select>
 </mapper>

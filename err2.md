@@ -1,17 +1,18 @@
 
 2_1C.json
 {
-  "TagType": "2.13T",
+  "TagType": "06",
   "Version": 10,
   "Size": "250, 122",
-  "width": 250,
-  "hext": 6,
+  "width": "250",
+  "hext": "6",
   "Items": [],
-  "rgb": 3,
-  "wext": 0,
+  "rgb": "3",
+  "wext": "0",
   "Name": "2",
-  "height": 122
+  "height": "122"
 }
+
 
 这是你合成出来的模板？是不是哪里不对？
 以下是官方模板
