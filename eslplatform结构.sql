@@ -1,17 +1,17 @@
 /*
  Navicat Premium Dump SQL
 
- Source Server         : 内网部署code
+ Source Server         : 内网服务器穿透
  Source Server Type    : MySQL
  Source Server Version : 80036 (8.0.36)
- Source Host           : 192.168.10.50:3306
- Source Schema         : company
+ Source Host           : 10.3.36.25:3306
+ Source Schema         : eslplatform
 
  Target Server Type    : MySQL
  Target Server Version : 80036 (8.0.36)
  File Encoding         : 65001
 
- Date: 11/07/2025 10:45:12
+ Date: 19/07/2025 15:29:39
 */
 
 SET NAMES utf8mb4;
@@ -1187,7 +1187,7 @@ CREATE TABLE `biz_notice`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `chuang_feng_esl_key`;
 CREATE TABLE `chuang_feng_esl_key`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
   `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
   `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
@@ -1196,12 +1196,12 @@ CREATE TABLE `chuang_feng_esl_key`  (
   `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `ESL_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签编号',
   `STORE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
-  `ESL_SN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '电子价签编号',
+  `AP_SN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'AP编码',
+  `ESL_SN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签编号',
   `ESL_SERVER_KEY` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签serverkey',
   `ESL_TAG_KEY` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签tagkey',
-  PRIMARY KEY (`ESL_SN` DESC) USING BTREE
+  PRIMARY KEY (`ID`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1292,6 +1292,36 @@ CREATE TABLE `dev_config`  (
   `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
   PRIMARY KEY (`ID`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for dev_dfc
+-- ----------------------------
+DROP TABLE IF EXISTS `dev_dfc`;
+CREATE TABLE `dev_dfc`  (
+  `ID` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '主键',
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `DBS_ID` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '数据源',
+  `TABLE_NAME` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表名称',
+  `COLUMN_NAME` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '字段名称',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `NAME` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '表单域属性名',
+  `LABEL` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '标签文本',
+  `REQUIRED` tinyint(1) NULL DEFAULT NULL COMMENT '必填',
+  `PLACEHOLDER` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '提示语',
+  `TYPE` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '类型',
+  `SELECT_OPTION_TYPE` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '选择项类型',
+  `DICT_TYPE_CODE` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '字典',
+  `SEL_OPTION_API_URL` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '选择项api地址',
+  `SEL_DATA_API_URL` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '已选择数据api地址',
+  `IS_MULTIPLE` tinyint(1) NULL DEFAULT NULL COMMENT '是否多选',
+  `STATUS` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '状态',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci COMMENT = '动态字段配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for dev_dict
@@ -1498,6 +1528,102 @@ CREATE TABLE `dev_sms`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '短信' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
+-- Table structure for esl_brand
+-- ----------------------------
+DROP TABLE IF EXISTS `esl_brand`;
+CREATE TABLE `esl_brand`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  `BRAND_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '品牌编码',
+  `BRAND_NAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '品牌名称',
+  `PROTOCOL_TYPE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通信协议',
+  `API_ENDPOINT` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '对接API地址',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'AP品牌信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for esl_brand_field_mapping
+-- ----------------------------
+DROP TABLE IF EXISTS `esl_brand_field_mapping`;
+CREATE TABLE `esl_brand_field_mapping`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  `BRAND_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '品牌编码',
+  `TEMPLATE_FIELD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模板字段名',
+  `FIELD_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '系统字段编码',
+  `FORMAT_RULE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '格式化规则',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '品牌字段映射表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for esl_field_definition
+-- ----------------------------
+DROP TABLE IF EXISTS `esl_field_definition`;
+CREATE TABLE `esl_field_definition`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  `FIELD_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字段编码',
+  `FIELD_NAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字段名称',
+  `DATA_TYPE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据类型(\'STRING\',\'NUMBER\',\'DATETIME\',\'CURRENCY\')',
+  `SOURCE_TABLE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'PANDA_PRODUCT' COMMENT '来源表',
+  `SOURCE_COLUMN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源字段',
+  `DEFAULT_VALUE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '默认值',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '价签字段定义表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for esl_model
+-- ----------------------------
+DROP TABLE IF EXISTS `esl_model`;
+CREATE TABLE `esl_model`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  `MODEL_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '型号编码',
+  `MODEL_NAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '型号名称',
+  `BRAND_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '品牌编码',
+  `ESL_CATEGORY` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分类',
+  `SCREEN_COLOR` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '屏幕颜色',
+  `COMMUNICATION_METHOD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通讯方式',
+  `OPERATING_TEMP_RANGE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工作温度范围',
+  `IP_RATING` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'IP防护等级',
+  `SCREEN_SIZE_WIDTH` float NULL DEFAULT NULL COMMENT '屏幕尺寸',
+  `SCREEN_SIZE_HIGH` float NULL DEFAULT NULL COMMENT '屏幕尺寸',
+  `RESOLUTION` float NULL DEFAULT NULL COMMENT '分辨率',
+  `BATTERY_LIFE` int UNSIGNED NULL DEFAULT 0 COMMENT '典型电池寿命(天)',
+  `HARDWARE_VERSION` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '硬件版本',
+  `SOFTWARE_VERSION` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '软件版本',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '电子价签型号表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for ext_database
 -- ----------------------------
 DROP TABLE IF EXISTS `ext_database`;
@@ -1689,6 +1815,54 @@ CREATE TABLE `mobile_resource`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '移动资源' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
+-- Table structure for mqtt_connection_config
+-- ----------------------------
+DROP TABLE IF EXISTS `mqtt_connection_config`;
+CREATE TABLE `mqtt_connection_config`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `SERVER_HOST` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'MQTT服务器主机地址（如emqx-host）',
+  `SERVER_PORT` int NOT NULL COMMENT 'MQTT服务器端口号（如1883）',
+  `USERNAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '连接用户名',
+  `PASSWORD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '连接密码',
+  `CLIENT_ID_PREFIX` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'price-tag-system-' COMMENT '客户端ID前缀',
+  `CLEAN_SESSION` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否清除会话（0=false, 1=true）',
+  `KEEP_ALIVE_INTERVAL` int NOT NULL DEFAULT 60 COMMENT '心跳间隔（秒）',
+  `CONNECTION_TIMEOUT` int NOT NULL DEFAULT 30 COMMENT '连接超时时间（秒）',
+  `AUTOMATIC_RECONNECT` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'A' COMMENT '是否自动重连（A=false, I=true）',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MQTT连接配置表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for mqtt_store_binding
+-- ----------------------------
+DROP TABLE IF EXISTS `mqtt_store_binding`;
+CREATE TABLE `mqtt_store_binding`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  `CONFIG_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'MQTT配置ID',
+  `STORE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
+  `BIND_STATUS` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'A' COMMENT '绑定状态(A=有效,I=无效)',
+  `BIND_TIME` datetime NULL DEFAULT NULL COMMENT '绑定时间',
+  `UNBIND_TIME` datetime NULL DEFAULT NULL COMMENT '解绑时间',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MQTT配置-店铺关联表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for panda_access_point
 -- ----------------------------
 DROP TABLE IF EXISTS `panda_access_point`;
@@ -1704,6 +1878,7 @@ CREATE TABLE `panda_access_point`  (
   `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
   `AP_SN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'AP-sn编号',
   `STORE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
+  `MQTT_SERVER_HOST` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'MQTT服务器主机地址（如emqx-host）',
   `AP_CATEGORY` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'AP分类',
   `AP_STATUS` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'AP状态',
   `CPU_USAGE` float NULL DEFAULT NULL COMMENT 'CPU使用率（百分比）',
@@ -1715,61 +1890,6 @@ CREATE TABLE `panda_access_point`  (
   `VERSION` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '版本号',
   `MODULE_COUNT` int NULL DEFAULT NULL COMMENT '模块数',
   `MODULE_VERSION` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模块版本',
-  `STORE_CODE_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码id',
-  PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Table structure for panda_company_order_detail
--- ----------------------------
-DROP TABLE IF EXISTS `panda_company_order_detail`;
-CREATE TABLE `panda_company_order_detail`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
-  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
-  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
-  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
-  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `COMPANY_ORDER_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '销售订单号',
-  `PANDA_PRODUCT_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品编号',
-  `PRODUCT_QUANTITY` int NULL DEFAULT 0 COMMENT '产品数量',
-  `ORDER_TOTAL_AMOUNT` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单明细金额合计',
-  `ORDER_TOTAL_WEIGHT` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单明细总重量',
-  `ORDER_TOTAL_VOLUME` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单明细总体积',
-  `ORDER_TOTAL_COST` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单明细总成本',
-  `ORDER_REMARK` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '订单明细备注',
-  PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Table structure for panda_company_sale_order
--- ----------------------------
-DROP TABLE IF EXISTS `panda_company_sale_order`;
-CREATE TABLE `panda_company_sale_order`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
-  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
-  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
-  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
-  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `ORDER_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '销售订单号',
-  `PI_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '销售订单pi号',
-  `PANDA_CUSTOMER_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '客户号',
-  `ORDER_PAYMENT_METHOD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '付款方式',
-  `ORDER_ADDRESS` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物流地址',
-  `ORDER_DATE` datetime NULL DEFAULT NULL COMMENT '发货时间',
-  `ORDER_TOTAL_AMOUNT` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单总价',
-  `ORDER_TOTAL_WEIGHT` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单总重量',
-  `ORDER_TOTAL_VOLUME` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单总体积',
-  `ORDER_TOTAL_COST` decimal(10, 2) NULL DEFAULT NULL COMMENT '订单总成本',
-  `ORDER_REMARK` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '备注',
-  `ORDER_STATUS` int NULL DEFAULT 0 COMMENT '0-表示未发货,1-表示打包中,2-表示已打包,3-表示已发货,4-表示已交付',
   PRIMARY KEY (`ID`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
@@ -1789,6 +1909,7 @@ CREATE TABLE `panda_esl`  (
   `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
   `ESL_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签编号',
   `STORE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
+  `AP_SN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
   `ESL_MODEL` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签型号',
   `BOUND_PRODUCT` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '绑定商品',
   `BATTERY_LEVEL` float NULL DEFAULT NULL COMMENT '电子价签电量（百分比）',
@@ -1800,39 +1921,8 @@ CREATE TABLE `panda_esl`  (
   `ESL_STATUS` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签状态',
   `SCREEN_COLOR` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签屏幕颜色',
   `COMMUNICATION_METHOD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签通讯方式（蓝牙/NFC/Wifi/ZigBee）',
-  `OPERATING_TEMPERATURE_RANGE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签适用温度（常温/冷冻）',
-  `IP_RATING` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签IP等级（IP54/IP67）',
   `VERSION` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '版本',
   `HARDWARE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '硬件',
-  `STORE_CODE_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码id',
-  `BOUND_PRODUCT_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '绑定商品id',
-  `ESL_ID_X` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '十进制电子价签编号',
-  `AP_SN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'AP编号',
-  `AP_SN_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'AP列表id',
-  `UPC1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'UPC1',
-  `UPC2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'UPC2',
-  `UPC3` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'UPC3',
-  `UPC4` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'UPC4',
-  `ESL_TEMPLATE_JSON` json NULL COMMENT '模板json',
-  `NAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
-  `CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '编码',
-  `F_01` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '价格',
-  `F_02` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '品牌',
-  `F_03` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品名',
-  `F_04` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格',
-  `F_05` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '全名',
-  `F_06` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产地',
-  `F_07` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'F_07',
-  `F_08` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '开始时间',
-  `F_09` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '结束时间',
-  `F_10` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '二维码',
-  `F_11` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '质检员',
-  `F_20` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '促销价',
-  `F_12` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'F_12',
-  `F_13` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'F_13',
-  `F_14` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'F_14',
-  `F_32` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'F_32',
-  `F_15` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品内部编码',
   PRIMARY KEY (`ID`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
@@ -1856,43 +1946,19 @@ CREATE TABLE `panda_product`  (
   `PRODUCT_SPECIFICATION` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品规格',
   `PRODUCT_COST_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品成本价',
   `PRODUCT_RETAIL_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品零售价',
-  `PRODUCT_SALE_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品销售价',
+  `PRODUCT_MEMBERSHIP_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品会员价',
   `PRODUCT_DISCOUNT_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品折扣价',
+  `PRODUCT_DISCOUNT` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品折扣',
   `PRODUCT_WHOLESALE_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品批发价',
   `PRODUCT_MATERIAL` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品材质',
   `PRODUCT_IMAGE` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品图片',
+  `PRODUCT_ORIGIN` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品产地',
   `PRODUCT_DESCRIPTION` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '商品描述',
   `PRODUCT_UNIT` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品单位',
-  `PRODUCT_WEIGHT` decimal(10, 2) NULL DEFAULT NULL COMMENT '产品重量',
+  `PRODUCT_WEIGHT` decimal(10, 2) NULL DEFAULT NULL COMMENT '产品重量（kg）',
   `PRODUCT_STATUS` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品状态',
-  `PRODUCT_STOCK` int NULL DEFAULT NULL COMMENT '商品库存',
-  `ESL_TEMPLATE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签模版',
-  `ESL_TEMPLATE_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签模版id',
-  `STORE_CODE_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码id',
-  PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Table structure for panda_store
--- ----------------------------
-DROP TABLE IF EXISTS `panda_store`;
-CREATE TABLE `panda_store`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
-  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
-  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
-  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
-  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `STORE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
-  `STORE_NAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店名称',
-  `SERVER_MODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '服务器类型(MQTT/)',
-  `SERVER_ADDRESS` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '服务器地址',
-  `SERVER_PORT` int NULL DEFAULT NULL COMMENT '服务器端口',
-  `ACCESS_USERNAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '访问用户名',
-  `ACCESS_PASSWORD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '访问密码',
+  `PRODUCT_STOCK` int UNSIGNED NULL DEFAULT 0 COMMENT '商品库存',
+  `ESL_TEMPLATE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签模版',
   PRIMARY KEY (`ID`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
@@ -1966,6 +2032,51 @@ CREATE TABLE `pay_order_refund`  (
   `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
   PRIMARY KEY (`ID`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单退款' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for print_template_design
+-- ----------------------------
+DROP TABLE IF EXISTS `print_template_design`;
+CREATE TABLE `print_template_design`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `NAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
+  `CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '编码',
+  `CONTENT` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '内容',
+  `CATEGORY` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分类',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标识',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '打印模板' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for product_esl_binding
+-- ----------------------------
+DROP TABLE IF EXISTS `product_esl_binding`;
+CREATE TABLE `product_esl_binding`  (
+  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
+  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
+  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
+  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  `ESL_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签ID',
+  `PRODUCT_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品ID',
+  `BIND_STATUS` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'A' COMMENT '绑定状态(A=有效,I=无效)',
+  `BIND_TIME` datetime NULL DEFAULT NULL COMMENT '绑定时间',
+  `UNBIND_TIME` datetime NULL DEFAULT NULL COMMENT '解绑时间',
+  `BINDING_TYPE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'PERMANENT' COMMENT '绑定类型(PERMANENT/TEMPORARY)',
+  `EXPIRY_DATE` datetime NULL DEFAULT NULL COMMENT '临时绑定到期时间',
+  PRIMARY KEY (`ID`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '商品-电子价签绑定关系表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for sys_group
