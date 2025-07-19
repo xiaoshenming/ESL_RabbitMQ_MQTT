@@ -247,7 +247,7 @@ public class MqttService {
         String templateName = template.getName() != null ? template.getName() : defaultConfig.getName();
         String screenType = extractScreenTypeFromTemplate(template);
         String tagType = ScreenTypeMapper.getTagType(screenType);
-        official.put("Name", templateName + "_" + tagType + ".json");
+        official.put("Name", templateName); // 只使用基础模板名称，不包含后缀
         official.put("Version", defaultConfig.getVersion());
         official.put("hext", String.valueOf(defaultConfig.getHext()));
         official.put("rgb", String.valueOf(defaultConfig.getRgb()));
