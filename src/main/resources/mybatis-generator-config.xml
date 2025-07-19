@@ -20,7 +20,7 @@
 
         <jdbcConnection
                 driverClass="com.mysql.cj.jdbc.Driver"
-                connectionURL="jdbc:mysql://10.3.36.25:3306/company?useUnicode=true&amp;characterEncoding=utf-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;nullCatalogMeansCurrent=true&amp;useInformationSchema=true&amp;rewriteBatchedStatements=true"
+                connectionURL="jdbc:mysql://10.3.36.25:3306/eslplatform?useUnicode=true&amp;characterEncoding=utf-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;nullCatalogMeansCurrent=true&amp;useInformationSchema=true&amp;rewriteBatchedStatements=true"
                 userId="panda"
                 password="panda@123">
         </jdbcConnection>
@@ -43,17 +43,32 @@
             <property name="enableSubPackages" value="true"/>
         </javaClientGenerator>
 
-        <table tableName="act_ext_template_print" domainObjectName="ActExtTemplatePrint"
+        <table tableName="print_template_design" domainObjectName="PrintTemplateDesign"
                enableCountByExample="true"
                enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
         </table>
-        <table tableName="panda_esl" domainObjectName="PandaEsl"
+        <table tableName="esl_brand_field_mapping" domainObjectName="EslBrandFieldMapping"
                enableCountByExample="true"
                enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
         </table>
-        <table tableName="panda_product" domainObjectName="PandaProduct"
+        <table tableName="esl_brand" domainObjectName="EslBrand"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+        <table tableName="esl_field_definition" domainObjectName="EslFieldDefinition"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+        <table tableName="esl_model" domainObjectName="EslModel"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+        <table tableName="product_esl_binding" domainObjectName="ProductEslBinding"
                enableCountByExample="true"
                enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">

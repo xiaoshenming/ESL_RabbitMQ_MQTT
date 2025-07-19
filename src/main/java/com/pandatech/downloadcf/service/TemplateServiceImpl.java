@@ -6,8 +6,8 @@ import com.pandatech.downloadcf.config.RabbitMQConfig;
 import com.pandatech.downloadcf.dto.LoadTemplateRequest;
 import com.pandatech.downloadcf.dto.RefreshDto;
 import com.pandatech.downloadcf.dto.TemplateDto;
-import com.pandatech.downloadcf.entity.ActExtTemplatePrintWithBLOBs;
-import com.pandatech.downloadcf.mapper.ActExtTemplatePrintMapper;
+import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
+import com.pandatech.downloadcf.mapper.PrintTemplateDesignMapper;
 import com.pandatech.downloadcf.util.ScreenTypeConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class TemplateServiceImpl implements TemplateService {
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     private final MqttService mqttService;
-    private final ActExtTemplatePrintMapper actExtTemplatePrintMapper;
+    private final PrintTemplateDesignMapper printTemplateDesignMapper;
     private final ScreenTypeConverter screenTypeConverter;
     
     @Value("${app.template.base-url}")
@@ -37,18 +37,19 @@ public class TemplateServiceImpl implements TemplateService {
     public void sendTemplate(TemplateDto templateDto) {
         try {
             // 根据templateId从数据库获取模板信息
-            ActExtTemplatePrintWithBLOBs template = actExtTemplatePrintMapper.findById(templateDto.getTemplateId());
+            PrintTemplateDesignWithBLOBs template = printTemplateDesignMapper.selectByPrimaryKey(templateDto.getTemplateId());
             if (template == null) {
                 log.error("未找到模板ID: {}", templateDto.getTemplateId());
                 throw new RuntimeException("未找到指定的模板");
             }
             
-            // 提取屏幕类型
-            String screenType = screenTypeConverter.extractScreenType(
-                template.getContent(), 
-                template.getExtJson(), 
-                template.getTagType()
-            );
+            // 从EXT_JSON中提取屏幕类型信息
+            String screenType = extractScreenTypeFromExtJson(template.getExtJson());
+            if (screenType == null) {
+                // 如果EXT_JSON中没有，尝试从CATEGORY字段获取
+                screenType = template.getCategory();
+            }
+            
             log.info("模板ID: {} 提取到屏幕类型: {}", template.getId(), screenType);
             
             // 生成带屏幕类型的模板文件名
@@ -98,6 +99,53 @@ public class TemplateServiceImpl implements TemplateService {
     }
     
     /**
+     * 从EXT_JSON中提取屏幕类型信息
+     */
+    @SuppressWarnings("unchecked")
+    private String extractScreenTypeFromExtJson(String extJson) {
+        if (extJson == null || extJson.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            Map<String, Object> extData = objectMapper.readValue(extJson, Map.class);
+            
+            // 检查designConfig.panels[0].eslConfig.screenType
+            if (extData.containsKey("designConfig")) {
+                Object designConfigObj = extData.get("designConfig");
+                if (designConfigObj instanceof Map) {
+                    Map<String, Object> designConfig = (Map<String, Object>) designConfigObj;
+                    if (designConfig.containsKey("panels")) {
+                        Object panelsObj = designConfig.get("panels");
+                        if (panelsObj instanceof List) {
+                            List<Map<String, Object>> panels = (List<Map<String, Object>>) panelsObj;
+                            if (!panels.isEmpty()) {
+                                Map<String, Object> firstPanel = panels.get(0);
+                                if (firstPanel.containsKey("eslConfig")) {
+                                    Object eslConfigObj = firstPanel.get("eslConfig");
+                                    if (eslConfigObj instanceof Map) {
+                                        Map<String, Object> eslConfig = (Map<String, Object>) eslConfigObj;
+                                        if (eslConfig.containsKey("screenType")) {
+                                            Object screenTypeObj = eslConfig.get("screenType");
+                                            if (screenTypeObj instanceof String) {
+                                                return (String) screenTypeObj;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析EXT_JSON失败: {}", e.getMessage());
+        }
+        
+        return null;
+    }
+    
+    /**
      * 计算字符串的MD5值
      */
     private String calculateMd5(String content) {
@@ -131,7 +179,7 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public byte[] loadTemple(LoadTemplateRequest request) {
-        ActExtTemplatePrintWithBLOBs template = null;
+        PrintTemplateDesignWithBLOBs template = null;
         
         // 优先使用name查找，如果name为空则使用id
         if (request.getName() != null && !request.getName().trim().isEmpty()) {
@@ -146,19 +194,19 @@ public class TemplateServiceImpl implements TemplateService {
             String baseName = extractBaseName(searchName);
             
             // 首先尝试精确匹配原始名称
-            template = actExtTemplatePrintMapper.findByName(searchName);
+            template = findTemplateByName(searchName);
             
             // 如果精确匹配失败，尝试使用基础名称进行精确匹配
             if (template == null && !baseName.equals(searchName)) {
-                template = actExtTemplatePrintMapper.findByName(baseName);
+                template = findTemplateByName(baseName);
             }
             
             // 如果仍然失败，使用基础名称进行模糊搜索
             if (template == null) {
-                template = actExtTemplatePrintMapper.findByNameLike(baseName);
+                template = findTemplateByNameLike(baseName);
             }
         } else if (request.getId() != null && !request.getId().trim().isEmpty()) {
-            template = actExtTemplatePrintMapper.findById(request.getId());
+            template = printTemplateDesignMapper.selectByPrimaryKey(request.getId());
         }
 
         if (template == null || template.getContent() == null) {
@@ -173,6 +221,20 @@ public class TemplateServiceImpl implements TemplateService {
             log.error("Error converting template to official format for ID: {} or Name: {}", request.getId(), request.getName(), e);
             return null;
         }
+    }
+    
+    /**
+     * 根据名称查找模板（精确匹配）
+     */
+    private PrintTemplateDesignWithBLOBs findTemplateByName(String name) {
+        return printTemplateDesignMapper.findByName(name);
+    }
+    
+    /**
+     * 根据名称查找模板（模糊匹配）
+     */
+    private PrintTemplateDesignWithBLOBs findTemplateByNameLike(String name) {
+        return printTemplateDesignMapper.findByNameLike(name);
     }
     
     /**

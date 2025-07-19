@@ -5,6 +5,7 @@ import com.pandatech.downloadcf.config.MqttConfig;
 import com.pandatech.downloadcf.config.RabbitMQConfig;
 import com.pandatech.downloadcf.dto.RefreshDto;
 import com.pandatech.downloadcf.dto.TemplateDto;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,8 +56,26 @@ public class RabbitMQListener {
             log.info("从RabbitMQ接收到刷新消息: {}", message);
             RefreshDto refreshDto = objectMapper.readValue(message, RefreshDto.class);
             
-            // 使用MqttService处理价签刷新
-            mqttService.processRefresh(refreshDto.getEslId());
+            // TODO: 根据新数据库结构重新实现价签刷新逻辑
+            log.warn("价签刷新功能暂时禁用，需要根据新数据库结构重新实现。价签ID: {}", refreshDto.getEslId());
+            
+            // 暂时直接发送刷新消息到MQTT（可选）
+            // 构造刷新消息格式
+            Map<String, Object> refreshMessage = new HashMap<>();
+            refreshMessage.put("command", "refresh");
+            refreshMessage.put("eslId", refreshDto.getEslId());
+            refreshMessage.put("timestamp", System.currentTimeMillis() / 1000);
+            
+            String refreshJson = objectMapper.writeValueAsString(refreshMessage);
+            
+            // 发送到MQTT（需要确定正确的主题）
+            String mqttTopic = "esl/server/refresh/" + refreshDto.getEslId();
+            Message<String> mqttMessage = MessageBuilder.withPayload(refreshJson)
+                    .setHeader("mqtt_topic", mqttTopic)
+                    .build();
+            mqttOutboundChannel.send(mqttMessage);
+            log.info("刷新消息已发送到MQTT主题 {}: {}", mqttTopic, refreshJson);
+            
         } catch (Exception e) {
             log.error("处理刷新消息并推送到MQTT失败", e);
         }

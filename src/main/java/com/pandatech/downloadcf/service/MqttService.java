@@ -15,12 +15,12 @@ import com.pandatech.downloadcf.util.ScreenTypeConverter;
 import com.pandatech.downloadcf.util.TemplateValidator;
 import com.pandatech.downloadcf.config.TemplateConfig;
 import com.pandatech.downloadcf.exception.TemplateException;
-import com.pandatech.downloadcf.entity.ActExtTemplatePrintWithBLOBs;
-import com.pandatech.downloadcf.entity.PandaEsl;
-import com.pandatech.downloadcf.entity.PandaProduct;
-import com.pandatech.downloadcf.mapper.ActExtTemplatePrintMapper;
-import com.pandatech.downloadcf.mapper.PandaEslMapper;
-import com.pandatech.downloadcf.mapper.PandaProductMapper;
+import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
+import com.pandatech.downloadcf.entity.EslBrand;
+import com.pandatech.downloadcf.entity.ProductEslBinding;
+import com.pandatech.downloadcf.mapper.PrintTemplateDesignMapper;
+import com.pandatech.downloadcf.mapper.EslBrandMapper;
+import com.pandatech.downloadcf.mapper.ProductEslBindingMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -39,9 +39,9 @@ public class MqttService {
     @Value("${app.template.base-url}")
     private String templateBaseUrl;
 
-    private final ActExtTemplatePrintMapper templatePrintMapper;
-    private final PandaEslMapper eslMapper;
-    private final PandaProductMapper productMapper;
+    private final PrintTemplateDesignMapper templateDesignMapper;
+    private final EslBrandMapper eslBrandMapper;
+    private final ProductEslBindingMapper productEslBindingMapper;
     private final ObjectMapper objectMapper;
     private final ScreenTypeConverter screenTypeConverter;
     private final TemplateValidator templateValidator;
@@ -50,6 +50,9 @@ public class MqttService {
     @ServiceActivator(inputChannel = "mqttInputChannel")
     public void handleMessage(@Header(MqttHeaders.RECEIVED_TOPIC) String topic, String payload) {
         log.info("接收到MQTT消息 - 主题: {}, 内容: {}", topic, payload);
+        // TODO: 根据新的数据库结构重新实现
+        log.warn("MQTT消息处理功能暂时禁用，需要根据新数据库结构重新实现");
+        /*
         // 假设 /templ/loadtemple 是一个特定的主题或包含在payload中用于区分
         if (topic.contains("loadtemple")) {
             try {
@@ -59,24 +62,7 @@ public class MqttService {
                 Map<String, Object> request = objectMapper.readValue(payload, HashMap.class);
                 String eslId = (String) request.get("eslId");
 
-                PandaEsl esl = eslMapper.selectByPrimaryKey(eslId);
-                if (esl == null) {
-                    log.error("未找到价签: {}", eslId);
-                    return;
-                }
-
-                PandaProduct product = productMapper.selectByPrimaryKey(esl.getBoundProductId());
-                if (product == null) {
-                    log.error("未找到产品: {}", esl.getBoundProductId());
-                    return;
-                }
-
-                ActExtTemplatePrintWithBLOBs template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
-                if (template == null) {
-                    log.error("未找到模板: {}", product.getEslTemplateId());
-                    return;
-                }
-
+                // TODO: 根据新的数据库结构重新实现
                 // 处理模板下发
                 processTemplateDownload(eslId);
                 log.info("成功为价签 {} 处理模板下发", eslId);
@@ -85,88 +71,22 @@ public class MqttService {
                 log.error("处理MQTT消息失败", e);
             }
         }
+        */
     }
 
     @Qualifier("mqttOutboundChannel")
     private final MessageChannel mqttOutboundChannel;
 
+    /*
+    // TODO: 根据新的数据库结构重新实现这些方法
     public void processTemplateDownload(String eslId) {
-        try {
-            PandaEsl esl = eslMapper.selectByPrimaryKey(eslId);
-            if (esl == null) {
-                log.error("未找到价签: {}", eslId);
-                return;
-            }
-
-            PandaProduct product = productMapper.selectByPrimaryKey(esl.getBoundProductId());
-            if (product == null) {
-                log.error("未找到产品: {}", esl.getBoundProductId());
-                return;
-            }
-
-            ActExtTemplatePrintWithBLOBs template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
-            if (template == null) {
-                log.error("未找到模板: {}", product.getEslTemplateId());
-                return;
-            }
-
-            // 转换模板到官方格式
-            String officialTemplateJson = convertToOfficialTemplate(template.getContent(), template);
-
-            // 计算MD5
-            String md5 = calculateMD5(officialTemplateJson);
-
-            // 生成tmpllist消息
-            String tmpllistJson = generateTmpllistJson(template.getId(), md5, esl.getTenantId(), product.getStoreCode(), template.getTagType());
-            sendMqttMessage("esl/server/data/" + product.getStoreCode(), tmpllistJson.getBytes());
-
-            // 生成wtag消息
-            String wtagJson = generateWtagJson(esl, product, template, md5);
-            sendMqttMessage("esl/server/data/" + product.getStoreCode(), wtagJson.getBytes());
-
-            log.info("模板下发成功 for eslId: {}", eslId);
-        } catch (Exception e) {
-            log.error("处理模板下发失败 for eslId: {}", eslId, e);
-        }
+        // 暂时注释掉，需要根据新的数据库结构重新实现
     }
 
     public void processRefresh(String eslId) {
-        try {
-            PandaEsl esl = eslMapper.selectByPrimaryKey(eslId);
-            if (esl == null) {
-                log.error("未找到价签: {}", eslId);
-                return;
-            }
-
-            PandaProduct product = productMapper.selectByPrimaryKey(esl.getBoundProductId());
-            if (product == null) {
-                log.error("未找到产品: {}", esl.getBoundProductId());
-                return;
-            }
-
-            ActExtTemplatePrintWithBLOBs template = templatePrintMapper.selectByPrimaryKey(product.getEslTemplateId());
-            if (template == null) {
-                log.error("未找到模板: {}", product.getEslTemplateId());
-                return;
-            }
-
-            // 对于刷新，不需要tmpllist，只需wtag
-            // 假设checksum从数据库或缓存获取先前MD5
-            String checksum = getCachedChecksum(template.getId());  // 实现获取缓存MD5的方法
-            if (checksum == null) {
-                String officialTemplateJson = convertToOfficialTemplate(template.getContent(), template);
-                checksum = calculateMD5(officialTemplateJson);
-                // 可选：发送tmpllist如果需要
-            }
-
-            String wtagJson = generateWtagJson(esl, product, template, checksum);
-            sendMqttMessage("esl/server/data/" + product.getStoreCode(), wtagJson.getBytes());
-
-            log.info("价签刷新成功 for eslId: {}", eslId);
-        } catch (Exception e) {
-            log.error("处理价签刷新失败 for eslId: {}", eslId, e);
-        }
+        // 暂时注释掉，需要根据新的数据库结构重新实现
     }
+    */
 
     private String getCachedChecksum(String templateId) {
         // TODO: 实现实际缓存逻辑
@@ -182,7 +102,7 @@ public class MqttService {
      * 1. 已经是官方格式的JSON（如U_06.json）
      * 2. 自定义格式的JSON（如数据库中的panels格式）
      */
-    public String convertToOfficialTemplate(String customJson, ActExtTemplatePrintWithBLOBs template) throws JsonProcessingException {
+    public String convertToOfficialTemplate(String customJson, PrintTemplateDesignWithBLOBs template) throws JsonProcessingException {
         if (customJson == null || customJson.trim().isEmpty()) {
             return createDefaultOfficialTemplate();
         }
@@ -270,14 +190,14 @@ public class MqttService {
     /**
      * 将panels格式转换为官方格式
      */
-    private String convertPanelsToOfficialFormat(JsonNode rootNode, ActExtTemplatePrintWithBLOBs template) throws JsonProcessingException {
+    private String convertPanelsToOfficialFormat(JsonNode rootNode, PrintTemplateDesignWithBLOBs template) throws JsonProcessingException {
         Map<String, Object> official = new HashMap<>();
         List<Map<String, Object>> items = new ArrayList<>();
         
         // 从模板对象中获取基本信息，如果为空则使用默认值
         TemplateConfig.DefaultTemplate defaultConfig = templateConfig.getDefaultTemplate();
         official.put("Name", template.getName() != null ? template.getName() : defaultConfig.getName());
-        official.put("TagType", template.getTagType() != null ? template.getTagType() : defaultConfig.getTagType());
+        official.put("TagType", template.getCategory() != null ? template.getCategory() : defaultConfig.getTagType());
         official.put("Version", defaultConfig.getVersion());
         official.put("hext", defaultConfig.getHext());
         official.put("rgb", defaultConfig.getRgb());
@@ -459,7 +379,7 @@ public class MqttService {
         }
     }
 
-    public void sendTemplateToMqtt(String topic, ActExtTemplatePrintWithBLOBs template, String screenType) {
+    public void sendTemplateToMqtt(String topic, PrintTemplateDesignWithBLOBs template, String screenType) {
         if (!templateConfig.getMqtt().isEnabled()) {
             log.debug("MQTT发送已禁用，跳过发送模板: {}", template.getName());
             return;
@@ -560,7 +480,11 @@ public class MqttService {
         return "TAG_" + Integer.toHexString(Integer.parseInt(tagType)).toUpperCase() + ".json";
     }
 
-    private String generateWtagJson(PandaEsl esl, PandaProduct product, ActExtTemplatePrintWithBLOBs template, String md5) {
+    /*
+    // TODO: 需要根据新数据库结构重新实现此方法
+    // 新结构使用 ProductEslBinding 来管理产品和价签的绑定关系
+    // 使用 EslModel 来管理价签型号信息
+    private String generateWtagJson(PandaEsl esl, PandaProduct product, PrintTemplateDesignWithBLOBs template, String md5) {
         try {
             Map<String, Object> json = new HashMap<>();
             json.put("command", "wtag");
@@ -593,6 +517,7 @@ public class MqttService {
             return "{}";
         }
     }
+    */
 
     private String convertModel(String model) {
         Map<String, String> modelconvert = new HashMap<>();
