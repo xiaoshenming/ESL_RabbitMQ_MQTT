@@ -550,7 +550,7 @@ public class MqttService {
         }
     }
 
-    private String generateTmpllistJson(String templateId, String md5, String tid, String shop, String tagType) {
+    private String generateTmpllistJson(String templateId, String templateName, String md5, String tid, String shop, String tagType) {
         try {
             Map<String, Object> json = new HashMap<>();
             json.put("command", "tmpllist");
@@ -558,7 +558,9 @@ public class MqttService {
             data.put("url", templateBaseUrl);
             List<Map<String, String>> tmpls = new ArrayList<>();
             Map<String, String> tmpl = new HashMap<>();
-            tmpl.put("name", getTemplateFileName(tagType));
+            // 根据templateName和tagType生成文件名，例如 "2_06.json"
+            String fileName = templateName + "_" + tagType + ".json";
+            tmpl.put("name", fileName);
             tmpl.put("md5", md5);
             tmpl.put("id", templateId);
             tmpls.add(tmpl);
@@ -594,14 +596,13 @@ public class MqttService {
             // 转换模板格式
             String officialTemplate = convertToOfficialTemplate(template);
             
-            // 如果提供了screenType，需要更新模板中的TagType
-            if (screenType != null && !screenType.isEmpty()) {
-                officialTemplate = updateTagTypeInTemplate(officialTemplate, screenType);
-            }
-            
-            // 生成带屏幕类型的模板文件名
-            String templateFileName = screenTypeConverter.generateTemplateFileName(template.getName(), screenType);
-            
+            // 从转换后的模板中提取Name和TagType以生成正确的文件名
+            JsonNode rootNode = objectMapper.readTree(officialTemplate);
+            String name = rootNode.has("Name") ? rootNode.get("Name").asText() : template.getName();
+            String tagType = rootNode.has("TagType") ? rootNode.get("TagType").asText() : ScreenTypeMapper.getTagType(screenType);
+
+            String templateFileName = name + "_" + tagType + ".json";
+
             // 创建MQTT消息
             Map<String, Object> message = new HashMap<>();
             if (templateConfig.getMqtt().isIncludeTemplateContent()) {
@@ -609,7 +610,7 @@ public class MqttService {
             }
             message.put("name", templateFileName);
             message.put("id", template.getId());
-            message.put("screenType", screenType != null ? screenType : "1C");
+            message.put("screenType", screenType != null ? screenType : "1C"); // 保留原始screenType以供参考
             message.put("timestamp", System.currentTimeMillis());
             
             String jsonMessage = objectMapper.writeValueAsString(message);
@@ -655,31 +656,7 @@ public class MqttService {
         throw new TemplateException.MqttSendException("MQTT消息发送失败，已重试" + retryCount + "次", lastException);
     }
     
-    /**
-     * 更新模板中的TagType字段
-     */
-    @SuppressWarnings("unchecked")
-    private String updateTagTypeInTemplate(String officialTemplate, String screenType) throws JsonProcessingException {
-        JsonNode rootNode = objectMapper.readTree(officialTemplate);
-        Map<String, Object> result = objectMapper.convertValue(rootNode, Map.class);
-        
-        // 使用ScreenTypeMapper进行屏幕类型到TagType的映射
-        String tagType = ScreenTypeMapper.getTagType(screenType);
-        if (tagType != null) {
-            result.put("TagType", tagType);
-            log.info("更新模板TagType: 屏幕类型 {} -> TagType {}", screenType, tagType);
-        } else {
-            log.warn("未找到屏幕类型 {} 对应的TagType，使用默认值", screenType);
-            result.put("TagType", ScreenTypeMapper.getDefaultTagType());
-        }
-        
-        return objectMapper.writeValueAsString(result);
-    }
 
-    private String getTemplateFileName(String tagType) {
-        // 根据tagType返回文件名，如 "06" -> "TAG_1C.json"
-        return "TAG_" + Integer.toHexString(Integer.parseInt(tagType)).toUpperCase() + ".json";
-    }
 
     /*
     // TODO: 需要根据新数据库结构重新实现此方法

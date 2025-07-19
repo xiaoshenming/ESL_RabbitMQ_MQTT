@@ -52,30 +52,41 @@ public class TemplateServiceImpl implements TemplateService {
             
             log.info("模板ID: {} 提取到屏幕类型: {}", template.getId(), screenType);
             
-            // 生成带屏幕类型的模板文件名
-            String templateFileName = screenTypeConverter.generateTemplateFileName(
-                template.getName(), 
-                screenType
-            );
-            log.info("生成的模板文件名: {}", templateFileName);
-            
-            // 计算模板内容的MD5（用于转换后的官方格式）
+            // 转换模板为官方格式
             String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            if (officialTemplateJson == null) {
+                log.error("模板转换失败，ID: {}", template.getId());
+                throw new RuntimeException("模板转换失败");
+            }
+
+            // 从转换后的JSON中提取TagType
+            String tagType = extractTagTypeFromOfficialTemplate(officialTemplateJson);
+            if (tagType == null) {
+                log.warn("无法从转换后的模板中提取TagType, 模板ID: {}", template.getId());
+                // 兜底逻辑：继续使用从EXT_JSON或CATEGORY中获取的screenType
+                tagType = screenType;
+            }
+
+            // 使用模板名称和提取到的TagType生成最终的文件名
+            String finalTemplateName = template.getName() + "_" + tagType + ".json";
+            log.info("生成的最终模板文件名: {}", finalTemplateName);
+
+            // 计算模板内容的MD5
             String templateMd5 = calculateMd5(officialTemplateJson);
-            
+
             // 构造MQTT消息格式
             Map<String, Object> mqttMessage = new HashMap<>();
             mqttMessage.put("command", "tmpllist");
-            
+
             Map<String, Object> data = new HashMap<>();
             data.put("url", baseUrl);
             data.put("tid", "396a5189-53d8-4354-bcfa-27d57d9d69ad"); // 多租户ID，可以配置化
-            
+
             // 构造模板列表
             List<Map<String, Object>> tmpls = new ArrayList<>();
             Map<String, Object> tmpl = new HashMap<>();
-            tmpl.put("name", templateFileName); // 使用带屏幕类型的文件名
-            tmpl.put("md5", templateMd5); // 使用转换后内容的MD5
+            tmpl.put("name", finalTemplateName); // 使用最终生成的文件名
+            tmpl.put("md5", templateMd5);
             tmpl.put("id", template.getId());
             tmpls.add(tmpl);
             data.put("tmpls", tmpls);
@@ -143,6 +154,23 @@ public class TemplateServiceImpl implements TemplateService {
         }
         
         return null;
+    }
+
+    /**
+     * 从官方模板JSON中提取TagType
+     */
+    @SuppressWarnings("unchecked")
+    private String extractTagTypeFromOfficialTemplate(String officialJson) {
+        if (officialJson == null || officialJson.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            Map<String, Object> templateData = objectMapper.readValue(officialJson, Map.class);
+            return (String) templateData.get("TagType");
+        } catch (Exception e) {
+            log.warn("从官方模板JSON解析TagType失败: {}", e.getMessage());
+            return null;
+        }
     }
     
     /**
