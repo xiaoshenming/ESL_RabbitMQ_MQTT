@@ -51,6 +51,7 @@ public class MqttService {
     private final FieldMappingService fieldMappingService;
 
     @ServiceActivator(inputChannel = "mqttInputChannel")
+    @SuppressWarnings("unchecked")
     public void handleMessage(@Header(MqttHeaders.RECEIVED_TOPIC) String topic, String payload) {
         log.info("接收到MQTT消息 - 主题: {}, 内容: {}", topic, payload);
         // TODO: 根据新的数据库结构重新实现
@@ -105,19 +106,36 @@ public class MqttService {
      * 1. 已经是官方格式的JSON（如U_06.json）
      * 2. 自定义格式的JSON（如数据库中的panels格式）
      */
-    public String convertToOfficialTemplate(String customJson, PrintTemplateDesignWithBLOBs template) throws JsonProcessingException {
-        if (customJson == null || customJson.trim().isEmpty()) {
+    public String convertToOfficialTemplate(PrintTemplateDesignWithBLOBs template) throws JsonProcessingException {
+        // 添加调试日志
+        log.info("模板转换开始 - 模板ID: {}, 模板名称: {}", template.getId(), template.getName());
+        log.info("EXT_JSON内容: {}", template.getExtJson());
+        log.info("CONTENT内容: {}", template.getContent());
+        
+        String jsonToParse = template.getExtJson();
+
+        // 如果EXT_JSON为空，则尝试使用CONTENT字段
+        if (jsonToParse == null || jsonToParse.trim().isEmpty()) {
+            log.info("EXT_JSON为空，尝试使用CONTENT字段");
+            jsonToParse = template.getContent();
+        }
+
+        if (jsonToParse == null || jsonToParse.trim().isEmpty()) {
+            log.warn("EXT_JSON和CONTENT都为空，使用默认模板");
             return createDefaultOfficialTemplate();
         }
 
+        log.info("准备解析的JSON内容: {}", jsonToParse.substring(0, Math.min(200, jsonToParse.length())) + "...");
+
         try {
-            JsonNode rootNode = objectMapper.readTree(customJson);
+            JsonNode rootNode = objectMapper.readTree(jsonToParse);
+            log.info("JSON解析成功，根节点字段: {}", rootNode.fieldNames());
             
             // 检查是否已经是官方格式（包含Items字段）
             if (rootNode.has("Items")) {
                 log.debug("检测到官方格式模板，直接返回");
                 // 确保FontFamily都是Zfull-GB
-                String result = ensureCorrectFontFamily(customJson);
+                String result = ensureCorrectFontFamily(jsonToParse);
                  // 验证模板
                  TemplateValidator.ValidationResult validation = templateValidator.validateTemplateContent(result);
                  if (validation.hasWarnings()) {
@@ -138,8 +156,20 @@ public class MqttService {
                  return result;
             }
             
+            // 检查是否包含designConfig字段
+            if (rootNode.has("designConfig")) {
+                log.info("检测到designConfig格式模板，开始转换");
+                String result = convertPanelsToOfficialFormat(rootNode, template);
+                 // 验证模板
+                 TemplateValidator.ValidationResult validation = templateValidator.validateTemplateContent(result);
+                 if (validation.hasWarnings()) {
+                     log.warn("模板验证警告: {}", validation.getWarnings());
+                 }
+                 return result;
+            }
+            
             // 其他格式，尝试提取基本信息
-            log.warn("未识别的模板格式，使用默认转换");
+            log.warn("未识别的模板格式，根节点包含字段: {}, 使用默认转换", rootNode.fieldNames());
             String result = createDefaultOfficialTemplate();
              // 验证模板
              TemplateValidator.ValidationResult validation = templateValidator.validateTemplateContent(result);
@@ -170,6 +200,7 @@ public class MqttService {
     /**
      * 确保官方格式模板中的FontFamily使用配置的字体
      */
+    @SuppressWarnings("unchecked")
     private String ensureCorrectFontFamily(String officialJson) throws JsonProcessingException {
         JsonNode rootNode = objectMapper.readTree(officialJson);
         Map<String, Object> result = objectMapper.convertValue(rootNode, Map.class);
@@ -199,7 +230,10 @@ public class MqttService {
         
         // 从模板对象中获取基本信息，如果为空则使用默认值
         TemplateConfig.DefaultTemplate defaultConfig = templateConfig.getDefaultTemplate();
-        official.put("Name", template.getName() != null ? template.getName() : defaultConfig.getName());
+        String templateName = template.getName() != null ? template.getName() : defaultConfig.getName();
+        String screenType = extractScreenTypeFromTemplate(template);
+        String tagType = ScreenTypeMapper.getTagType(screenType);
+        official.put("Name", templateName + "_" + tagType + ".json");
         official.put("Version", defaultConfig.getVersion());
         official.put("hext", String.valueOf(defaultConfig.getHext()));
         official.put("rgb", String.valueOf(defaultConfig.getRgb()));
@@ -210,14 +244,18 @@ public class MqttService {
         official.put("height", String.valueOf(defaultConfig.getHeight()));
         official.put("width", String.valueOf(defaultConfig.getWidth()));
         
-        // 提取屏幕类型并映射为TagType
-        String screenType = extractScreenTypeFromTemplate(template);
-        String tagType = ScreenTypeMapper.getTagType(screenType);
         official.put("TagType", tagType);
         
         log.info("模板转换 - 屏幕类型: {}, TagType: {}", screenType, tagType);
         
-        JsonNode panels = rootNode.get("panels");
+        JsonNode designConfig = rootNode.get("designConfig");
+        if (designConfig == null) {
+            log.warn("模板JSON中缺少 'designConfig' 字段");
+            official.put("Items", items);
+            return objectMapper.writeValueAsString(official);
+        }
+
+        JsonNode panels = designConfig.get("panels");
         if (panels.isArray()) {
             for (JsonNode panel : panels) {
                 // 提取面板的基本信息
@@ -335,15 +373,25 @@ public class MqttService {
             return null;
         }
         
-        // 检查是否有options字段，如果没有则尝试直接使用element
-        JsonNode options = element.has("options") ? element.get("options") : element;
+        // 元素必须包含options
+        if (!element.has("options")) {
+            log.warn("printElement缺少'options'字段，跳过转换: {}", element.toString());
+            return null;
+        }
+        JsonNode options = element.get("options");
         log.debug("使用的options节点: {}", options.toString());
-        
+
         Map<String, Object> item = new HashMap<>();
-        
+
         // 基本属性（使用配置中的默认值）
         TemplateConfig.DefaultTemplate defaultConfig = templateConfig.getDefaultTemplate();
-        item.put("Type", "text");
+
+        // 根据 printElementType 设置 Type
+        if (element.has("printElementType") && element.get("printElementType").has("type")) {
+            item.put("Type", element.get("printElementType").get("type").asText("text"));
+        } else {
+            item.put("Type", "text");
+        }
         item.put("FontFamily", defaultConfig.getFontFamily());
         item.put("FontColor", defaultConfig.getFontColor());
         item.put("Background", defaultConfig.getBackground());
@@ -354,11 +402,11 @@ public class MqttService {
         item.put("TextAlign", defaultConfig.getTextAlign());
         item.put("DataKeyStyle", defaultConfig.getDataKeyStyle());
         
-        // 位置和尺寸
-        int x = options.has("left") ? options.get("left").asInt() : 0;
-        int y = options.has("top") ? options.get("top").asInt() : 0;
-        int width = options.has("width") ? options.get("width").asInt() : 50;
-        int height = options.has("height") ? options.get("height").asInt() : 20;
+        // 位置和尺寸 (处理浮点数)
+        int x = options.has("left") ? (int) options.get("left").asDouble() : 0;
+        int y = options.has("top") ? (int) options.get("top").asDouble() : 0;
+        int width = options.has("width") ? (int) options.get("width").asDouble() : 50;
+        int height = options.has("height") ? (int) options.get("height").asDouble() : 20;
         
         log.debug("位置和尺寸 - x: {}, y: {}, width: {}, height: {}", x, y, width, height);
         
@@ -371,7 +419,7 @@ public class MqttService {
         
         // 字体属性
         if (options.has("fontSize")) {
-            item.put("FontSize", options.get("fontSize").asInt());
+            item.put("FontSize", (int) options.get("fontSize").asDouble());
         } else {
             item.put("FontSize", defaultConfig.getFontSize());
         }
@@ -391,8 +439,8 @@ public class MqttService {
         
         // 数据绑定 - 使用字段映射服务
         String templateField = null;
-        if (options.has("field")) {
-            templateField = options.get("field").asText();
+        if (options.has("templateField")) {
+            templateField = options.get("templateField").asText();
             log.debug("找到字段: {}", templateField);
         } else {
             log.debug("未找到field字段");
@@ -530,7 +578,7 @@ public class MqttService {
             }
             
             // 转换模板格式
-            String officialTemplate = convertToOfficialTemplate(template.getContent(), template);
+            String officialTemplate = convertToOfficialTemplate(template);
             
             // 如果提供了screenType，需要更新模板中的TagType
             if (screenType != null && !screenType.isEmpty()) {
@@ -596,6 +644,7 @@ public class MqttService {
     /**
      * 更新模板中的TagType字段
      */
+    @SuppressWarnings("unchecked")
     private String updateTagTypeInTemplate(String officialTemplate, String screenType) throws JsonProcessingException {
         JsonNode rootNode = objectMapper.readTree(officialTemplate);
         Map<String, Object> result = objectMapper.convertValue(rootNode, Map.class);
