@@ -401,11 +401,13 @@ public class MqttService {
         TemplateConfig.DefaultTemplate defaultConfig = templateConfig.getDefaultTemplate();
 
         // 根据 printElementType 设置 Type
+        String elementType = "text"; // 默认类型
         if (element.has("printElementType") && element.get("printElementType").has("type")) {
-            item.put("Type", element.get("printElementType").get("type").asText("text"));
-        } else {
-            item.put("Type", "text");
+            elementType = element.get("printElementType").get("type").asText("text");
         }
+        item.put("Type", elementType);
+        
+        // 设置默认属性
         item.put("FontFamily", defaultConfig.getFontFamily());
         item.put("FontColor", defaultConfig.getFontColor());
         item.put("Background", defaultConfig.getBackground());
@@ -416,42 +418,48 @@ public class MqttService {
         item.put("TextAlign", defaultConfig.getTextAlign());
         item.put("DataKeyStyle", defaultConfig.getDataKeyStyle());
         
-        // 获取画布尺寸（默认值）
-        int canvasWidth = defaultConfig.getWidth();
-        int canvasHeight = defaultConfig.getHeight();
+        // 获取画布尺寸
+        int canvasWidth = defaultConfig.getWidth();  // 250px
+        int canvasHeight = defaultConfig.getHeight(); // 122px
         
-        // 位置和尺寸转换：pt转px并进行边界检查
+        // 从原始数据分析，设计画布似乎是更大的尺寸（约720x360pt）
+        // 需要按比例缩放到目标画布（250x122px）
+        double originalCanvasWidth = 720.0;  // 推测的原始设计画布宽度
+        double originalCanvasHeight = 360.0; // 推测的原始设计画布高度
+        
+        // 计算缩放比例
+        double scaleX = (double) canvasWidth / originalCanvasWidth;   // 250/720 ≈ 0.347
+        double scaleY = (double) canvasHeight / originalCanvasHeight; // 122/360 ≈ 0.339
+        
+        // 使用较小的缩放比例以确保内容不会超出边界
+        double scale = Math.min(scaleX, scaleY);
+        
+        log.debug("缩放比例计算 - scaleX: {}, scaleY: {}, 使用scale: {}", scaleX, scaleY, scale);
+        
+        // 获取原始坐标和尺寸
         double leftPt = options.has("left") ? options.get("left").asDouble() : 0;
         double topPt = options.has("top") ? options.get("top").asDouble() : 0;
         double widthPt = options.has("width") ? options.get("width").asDouble() : 50;
         double heightPt = options.has("height") ? options.get("height").asDouble() : 20;
         
-        // pt转px的转换比例（1pt ≈ 0.75px，这是常用的转换比例）
-        double ptToPxRatio = 0.75;
+        // 应用缩放转换
+        int x = (int) Math.round(leftPt * scale);
+        int y = (int) Math.round(topPt * scale);
+        int width = (int) Math.round(widthPt * scale);
+        int height = (int) Math.round(heightPt * scale);
         
-        // 转换为px并取整
-        int x = (int) Math.round(leftPt * ptToPxRatio);
-        int y = (int) Math.round(topPt * ptToPxRatio);
-        int width = (int) Math.round(widthPt * ptToPxRatio);
-        int height = (int) Math.round(heightPt * ptToPxRatio);
-        
-        // 边界检查和自动调整
+        // 边界检查和调整
         if (x < 0) x = 0;
         if (y < 0) y = 0;
         
-        // 确保元素不超出画布右边界
+        // 确保元素不超出画布边界
+        if (x >= canvasWidth) x = canvasWidth - 1;
+        if (y >= canvasHeight) y = canvasHeight - 1;
+        
         if (x + width > canvasWidth) {
-            if (x >= canvasWidth) {
-                x = canvasWidth - Math.min(width, 50); // 至少保留50px宽度
-            }
             width = canvasWidth - x;
         }
-        
-        // 确保元素不超出画布下边界
         if (y + height > canvasHeight) {
-            if (y >= canvasHeight) {
-                y = canvasHeight - Math.min(height, 20); // 至少保留20px高度
-            }
             height = canvasHeight - y;
         }
         
@@ -459,8 +467,16 @@ public class MqttService {
         if (width < 1) width = 1;
         if (height < 1) height = 1;
         
-        log.debug("坐标转换 - 原始(pt): left={}, top={}, width={}, height={}", leftPt, topPt, widthPt, heightPt);
-        log.debug("转换后(px): x={}, y={}, width={}, height={}, 画布: {}x{}", x, y, width, height, canvasWidth, canvasHeight);
+        // 针对不同元素类型进行特殊处理
+        if ("rect".equals(elementType) || "oval".equals(elementType)) {
+            // 图形元素设置边框样式
+            item.put("BorderStyle", 1); // 显示边框
+            item.put("BorderColor", "Black");
+            item.put("Background", "Transparent");
+        }
+        
+        log.debug("坐标转换 - 原始: left={}, top={}, width={}, height={}", leftPt, topPt, widthPt, heightPt);
+        log.debug("转换后: x={}, y={}, width={}, height={}, 画布: {}x{}", x, y, width, height, canvasWidth, canvasHeight);
         
         item.put("x", x);
         item.put("y", y);
