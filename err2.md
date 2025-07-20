@@ -1,22 +1,10 @@
+{"TagType":"06","Version":10,"Size":"250, 122","width":"250","hext":"6","Items":[{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":0,"Size":"230, 122","FontColor":"Black","BorderColor":"Transparent","DataKey":"","FontSpace":0,"Type":"rect","FontSize":12,"TextAlign":0,"x":20,"width":230,"y":0,"height":122,"Location":"20, 0"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":0,"Size":"68, 68","FontColor":"Black","BorderColor":"Transparent","DataKey":"","FontSpace":0,"Type":"oval","FontSize":12,"TextAlign":0,"x":7,"width":68,"y":0,"height":68,"Location":"7, 0"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":0,"Size":"68, 20","FontColor":"Black","BorderColor":"Transparent","DataKey":"","FontSpace":0,"Type":"oval","FontSize":12,"TextAlign":0,"x":0,"width":68,"y":102,"height":20,"Location":"0, 102"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":0,"Size":"50, 20","FontColor":"Black","BorderColor":"Transparent","DataKey":"","FontSpace":0,"Type":"oval","FontSize":12,"TextAlign":0,"x":200,"width":50,"y":102,"height":20,"Location":"200, 102"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":0,"Size":"50, 68","FontColor":"Black","BorderColor":"Transparent","DataKey":"","FontSpace":0,"Type":"oval","FontSize":12,"TextAlign":0,"x":200,"width":50,"y":3,"height":68,"Location":"200, 3"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"P001","Background":"Transparent","BorderStyle":0,"Size":"90, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"code","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":69,"width":90,"y":3,"height":19,"Location":"69, 3"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"示例商品名称","Background":"Transparent","BorderStyle":0,"Size":"90, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"name","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":24,"width":90,"y":79,"height":19,"Location":"24, 79"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"食品饮料","Background":"Transparent","BorderStyle":0,"Size":"90, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_02","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":11,"width":90,"y":103,"height":19,"Location":"11, 103"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"60, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_03","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":69,"width":60,"y":103,"height":19,"Location":"69, 103"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"500g","Background":"Transparent","BorderStyle":0,"Size":"10, 2","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_04","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":240,"width":10,"y":120,"height":2,"Location":"240, 120"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"50, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_05","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":200,"width":50,"y":7,"height":19,"Location":"200, 7"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"50, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_06","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":200,"width":50,"y":75,"height":19,"Location":"200, 75"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"0.8","Background":"Transparent","BorderStyle":0,"Size":"50, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_07","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":200,"width":50,"y":103,"height":19,"Location":"200, 103"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"50, 19","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_08","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":200,"width":50,"y":103,"height":19,"Location":"200, 103"}],"rgb":"3","wext":"0","Name":"2","height":"122"}
 
-2_1C.json
-{
-  "TagType": "06",
-  "Version": 10,
-  "Size": "250, 122",
-  "width": "250",
-  "hext": "6",
-  "Items": [],
-  "rgb": "3",
-  "wext": "0",
-  "Name": "2",
-  "height": "122"
-}
+这是合成后在AP上的数据
 
 
-这是你合成出来的模板？是不是哪里不对？
-以下是官方模板
-U_06.json
+
+以下是官方示例
 {
     "Items": [
         {
@@ -136,117 +124,11 @@ U_06.json
     "width": "250"
 }
 
-首先你合成出来不对的地方在于TagType应该为
-    "TagType": "06",
-2.13T 对应 06
-4.20T 对应 1C
-4.20F 对应 1D
-里面外面要对应上。
-其次就是要其他各个数据结构类型基本上一致。
-
-就是既然里面的数据TagType是06了，那你外面的name命名就得是 2_06.json
-而且
-{
-  "panels": [
-    {
-      "index": 0,
-      "name": "2",
-      "paperType": "CUSTOM",
-      "height": 122,
-      "width": 250,
-      "paperHeader": 0,
-      "paperFooter": 345.82677165354335,
-      "printElements": [
-        {
-          "options": {
-            "left": 103.5,
-            "top": 136.5,
-            "height": 25.5,
-            "width": 120,
-            "title": "商品名称",
-            "field": "PRODUCT_NAME",
-            "testData": "示例商品名称",
-            "templateField": "name",
-            "fontWeight": "400",
-            "textAlign": "center",
-            "textContentVerticalAlign": "middle",
-            "coordinateSync": false,
-            "widthHeightSync": false,
-            "fontFamily": "SimSun",
-            "qrCodeLevel": 0
-          },
-          "printElementType": {
-            "title": "商品名称",
-            "type": "text"
-          }
-        }
-      ],
-      "paperNumberContinue": true,
-      "watermarkOptions": {}
-    }
-  ]
-}
-这是数据库的拓展json字段取出的数据，你应该要解析出来比如商品名称的绑定字段啊。
-转化的映射表也有。可以拿来就用，不在映射表的就不管他就行了啊
-这是映射字段表
-DROP TABLE IF EXISTS `esl_brand_field_mapping`;
-CREATE TABLE `esl_brand_field_mapping`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
-  `SORT_CODE` int NULL DEFAULT NULL COMMENT '排序码',
-  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
-  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
-  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `BRAND_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '品牌编码',
-  `TEMPLATE_FIELD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模板字段名',
-  `FIELD_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '系统字段编码',
-  `FORMAT_RULE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '格式化规则',
-  PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '品牌字段映射表' ROW_FORMAT = DYNAMIC;
 
 
-use eslplatform;
-SELECT * FROM esl_brand_field_mapping;
+然后！！！
 
-1946188424516816897	-1			NOT_DELETE	2025-07-18 20:40:54	1543837863788879871	2025-07-19 00:22:38	1543837863788879871	攀攀	code	PRODUCT_ID	商品名称
-1946188616733380609	-1			NOT_DELETE	2025-07-18 20:41:39	1543837863788879871	2025-07-19 00:22:35	1543837863788879871	攀攀	name	PRODUCT_NAME	商品名称
-1946230416441430018	-1			NOT_DELETE	2025-07-18 23:27:45	1543837863788879871	2025-07-19 00:22:31	1543837863788879871	攀攀	F_01	PRODUCT_RETAIL_PRICE	价格
-1946244176275132418	-1			NOT_DELETE	2025-07-19 00:22:26	1543837863788879871			攀攀	F_02	PRODUCT_CATEGORY	商品分类
-1946244319741300737	-1			NOT_DELETE	2025-07-19 00:23:00	1543837863788879871			攀攀	F_03	PRODUCT_COST_PRICE	商品成本价
-1946244382848798721	-1			NOT_DELETE	2025-07-19 00:23:15	1543837863788879871			攀攀	F_04	PRODUCT_SPECIFICATION	商品规格
-1946244450377093122	-1			NOT_DELETE	2025-07-19 00:23:31	1543837863788879871			攀攀	F_05	PRODUCT_MEMBERSHIP_PRICE	商品会员价
-1946244527699087362	-1			NOT_DELETE	2025-07-19 00:23:50	1543837863788879871			攀攀	F_06	PRODUCT_DISCOUNT_PRICE	商品折扣价
-1946244599702704129	-1			NOT_DELETE	2025-07-19 00:24:07	1543837863788879871			攀攀	F_07	PRODUCT_DISCOUNT	商品折扣（例如：0.8 表示8折）
-1946244674935934978	-1			NOT_DELETE	2025-07-19 00:24:25	1543837863788879871			攀攀	F_08	PRODUCT_WHOLESALE_PRICE	商品批发
-1946244741017194498	-1			NOT_DELETE	2025-07-19 00:24:40	1543837863788879871			攀攀	F_09	PRODUCT_MATERIAL	商品材质
-1946244808008617986	-1			NOT_DELETE	2025-07-19 00:24:56	1543837863788879871			攀攀	F_10	PRODUCT_IMAGE	商品图片（路径或URL）
-1946244885259309057	-1			NOT_DELETE	2025-07-19 00:25:15	1543837863788879871			攀攀	F_11	PRODUCT_ORIGIN	商品产地
-1946244968667238402	-1			NOT_DELETE	2025-07-19 00:25:35	1543837863788879871			攀攀	F_20	PRODUCT_DESCRIPTION	商品描述
-1946245050686853122	-1			NOT_DELETE	2025-07-19 00:25:54	1543837863788879871			攀攀	F_12	PRODUCT_UNIT	商品单位（如：个、件、瓶等）
-1946245165296209922	-1			NOT_DELETE	2025-07-19 00:26:22	1543837863788879871			攀攀	F_13	PRODUCT_WEIGHT	产品重量（单位：kg）
-1946245224305872898	-1			NOT_DELETE	2025-07-19 00:26:36	1543837863788879871			攀攀	F_14	PRODUCT_STATUS	商品状态（如：上架、下架、预售等）
-1946245284653518849	-1			NOT_DELETE	2025-07-19 00:26:50	1543837863788879871			攀攀	F_32	PRODUCT_STOCK	商品库存
+这是数据库拓展字段的原数据
+{"designConfig":{"panels":[{"index":0,"name":"2","paperType":"CUSTOM","height":122,"width":250,"paperHeader":0,"paperFooter":345.82677165354335,"printElements":[{"options":{"left":27,"top":0,"height":339,"width":666,"right":525.75,"bottom":338.25,"vCenter":276,"hCenter":168.75},"printElementType":{"title":"矩形","type":"rect"}},{"options":{"left":9,"top":0,"height":90,"width":90,"right":99,"bottom":90,"vCenter":54,"hCenter":45},"printElementType":{"title":"椭圆","type":"oval"}},{"options":{"left":0,"top":249,"height":90,"width":90},"printElementType":{"title":"椭圆","type":"oval"}},{"options":{"left":619.5,"top":252,"height":90,"width":90},"printElementType":{"title":"椭圆","type":"oval"}},{"options":{"left":619.5,"top":4.5,"height":90,"width":90},"printElementType":{"title":"椭圆","type":"oval"}},{"options":{"left":91.5,"top":4.5,"height":25.5,"width":120,"title":"商品编号","field":"PRODUCT_ID","testData":"P001","templateField":"code","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品编号","type":"text"}},{"options":{"left":31.5,"top":105,"height":25.5,"width":120,"title":"商品名称","field":"PRODUCT_NAME","testData":"示例商品名称","templateField":"name","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品名称","type":"text"}},{"options":{"left":15,"top":220.5,"height":25.5,"width":120,"title":"商品分类","field":"PRODUCT_CATEGORY","testData":"食品饮料","templateField":"F_02","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品分类","type":"text"}},{"options":{"left":91.5,"top":316.5,"height":25.5,"width":80,"title":"商品成本价","field":"PRODUCT_COST_PRICE","testData":"100.00","templateField":"F_03","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品成本价","type":"text"}},{"options":{"left":319.5,"top":160.5,"height":25.5,"width":120,"title":"商品规格","field":"PRODUCT_SPECIFICATION","testData":"500g","templateField":"F_04","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品规格","type":"text"}},{"options":{"left":543,"top":9,"height":25.5,"width":80,"title":"商品会员价","field":"PRODUCT_MEMBERSHIP_PRICE","testData":"100.00","templateField":"F_05","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品会员价","type":"text"}},{"options":{"left":612,"top":100.5,"height":25.5,"width":80,"title":"商品折扣价","field":"PRODUCT_DISCOUNT_PRICE","testData":"100.00","templateField":"F_06","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品折扣价","type":"text"}},{"options":{"left":600,"top":228,"height":25.5,"width":120,"title":"商品折扣","field":"PRODUCT_DISCOUNT","testData":"0.8","templateField":"F_07","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品折扣","type":"text"}},{"options":{"left":535.5,"top":321,"height":25.5,"width":80,"title":"商品批发价","field":"PRODUCT_WHOLESALE_PRICE","testData":"100.00","templateField":"F_08","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","hideTitle":false},"printElementType":{"title":"商品批发价","type":"text"}}],"paperNumberContinue":true,"watermarkOptions":{}}]}}
 
-
-字段的绑定通过这个来实现，模板转化。
-
-printElements得到的方式是数据表print_template_design的EXT_JSON字段获取。
-
-
-mysql> use eslplatform;
-Database changed
-mysql> SELECT * FROM print_template_design;
-+---------------------+-----------+------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------+---------------------+---------------------+---------------------+---------------------+
-| ID                  | TENANT_ID | NAME | CODE                  | CONTENT                                                                                                                                                                                                                                                                                                                                            | CATEGORY | SORT_CODE | EXT_JSON                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | DELETE_FLAG | CREATE_TIME         | CREATE_USER         | UPDATE_TIME         | UPDATE_USER         |
-+---------------------+-----------+------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------+---------------------+---------------------+---------------------+---------------------+
-| 1946122678071738370 | -1        | 2    | NULL                  | {"panels":[{"index":0,"name":"2","paperType":"CUSTOM","width":250,"height":122,"paperHeader":0,"paperFooter":345.82677165354335,"printElements":[],"paperNumberContinue":true,"eslConfig":{"screenType":"2.13T","pixelWidth":250,"pixelHeight":122,"colorMode":{"black":true,"white":true,"red":true,"yellow":false},"orientation":"LANDSCAPE"}}]} | 2.13T    |        99 | {"designConfig":{"panels":[{"index":0,"name":"2","paperType":"CUSTOM","height":122,"width":250,"paperHeader":0,"paperFooter":345.82677165354335,"printElements":[{"options":{"left":103.5,"top":136.5,"height":25.5,"width":120,"title":"商品名称","field":"PRODUCT_NAME","testData":"示例商品名称","templateField":"name","fontWeight":"400","textAlign":"center","textContentVerticalAlign":"middle","coordinateSync":false,"widthHeightSync":false,"fontFamily":"SimSun","qrCodeLevel":0},"printElementType":{"title":"商品名称","type":"text"}}],"paperNumberContinue":true,"watermarkOptions":{}}]}} | NOT_DELETE  | 2025-07-18 16:19:38 | 1543837863788879871 | 2025-07-19 03:14:20 | 1543837863788879871 |
-| 1946129644835848194 | -1        | 2    | PTD-1752828439254-705 | {"panels":[{"index":0,"name":"2","paperType":"CUSTOM","width":250,"height":122,"paperHeader":0,"paperFooter":345.82677165354335,"printElements":[],"paperNumberContinue":true,"eslConfig":{"screenType":"2.13T","pixelWidth":250,"pixelHeight":122,"colorMode":{"black":true,"white":true,"red":true,"yellow":false},"orientation":"LANDSCAPE"}}]} | 2.13T    |        99 | NULL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | NOT_DELETE  | 2025-07-18 16:47:19 | 1543837863788879871 | NULL                | NULL                |
-| 1946136975640395777 | -1        | 2    | PTD-1752830187028-406 | {"panels":[{"index":0,"name":"2","paperType":"CUSTOM","width":250,"height":122,"paperHeader":0,"paperFooter":345.82677165354335,"printElements":[],"paperNumberContinue":true,"eslConfig":{"screenType":"2.13T","pixelWidth":250,"pixelHeight":122,"colorMode":{"black":true,"white":true,"red":true,"yellow":false},"orientation":"LANDSCAPE"}}]} | 2.13T    |        99 | NULL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | NOT_DELETE  | 2025-07-18 17:16:27 | 1543837863788879871 | NULL                | NULL                |
-+---------------------+-----------+------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------+---------------------+---------------------+---------------------+---------------------+
-3 rows in set (0.01 sec)
-
-mysql>
-
+你发现问题没有没有？。电子价签的没绑定内容的东西和图片（方框横线等。都没有正确显示出来，。而且，是不是因为转化错误导致的，只有左上角的那部分内容的文字稍微正确位置。其他方向的都被挤压压缩的糊在一起胡在一起了。群攻修复）

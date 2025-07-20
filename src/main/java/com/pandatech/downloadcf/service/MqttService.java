@@ -416,13 +416,51 @@ public class MqttService {
         item.put("TextAlign", defaultConfig.getTextAlign());
         item.put("DataKeyStyle", defaultConfig.getDataKeyStyle());
         
-        // 位置和尺寸 (处理浮点数)
-        int x = options.has("left") ? (int) options.get("left").asDouble() : 0;
-        int y = options.has("top") ? (int) options.get("top").asDouble() : 0;
-        int width = options.has("width") ? (int) options.get("width").asDouble() : 50;
-        int height = options.has("height") ? (int) options.get("height").asDouble() : 20;
+        // 获取画布尺寸（默认值）
+        int canvasWidth = defaultConfig.getWidth();
+        int canvasHeight = defaultConfig.getHeight();
         
-        log.debug("位置和尺寸 - x: {}, y: {}, width: {}, height: {}", x, y, width, height);
+        // 位置和尺寸转换：pt转px并进行边界检查
+        double leftPt = options.has("left") ? options.get("left").asDouble() : 0;
+        double topPt = options.has("top") ? options.get("top").asDouble() : 0;
+        double widthPt = options.has("width") ? options.get("width").asDouble() : 50;
+        double heightPt = options.has("height") ? options.get("height").asDouble() : 20;
+        
+        // pt转px的转换比例（1pt ≈ 0.75px，这是常用的转换比例）
+        double ptToPxRatio = 0.75;
+        
+        // 转换为px并取整
+        int x = (int) Math.round(leftPt * ptToPxRatio);
+        int y = (int) Math.round(topPt * ptToPxRatio);
+        int width = (int) Math.round(widthPt * ptToPxRatio);
+        int height = (int) Math.round(heightPt * ptToPxRatio);
+        
+        // 边界检查和自动调整
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+        
+        // 确保元素不超出画布右边界
+        if (x + width > canvasWidth) {
+            if (x >= canvasWidth) {
+                x = canvasWidth - Math.min(width, 50); // 至少保留50px宽度
+            }
+            width = canvasWidth - x;
+        }
+        
+        // 确保元素不超出画布下边界
+        if (y + height > canvasHeight) {
+            if (y >= canvasHeight) {
+                y = canvasHeight - Math.min(height, 20); // 至少保留20px高度
+            }
+            height = canvasHeight - y;
+        }
+        
+        // 确保最小尺寸
+        if (width < 1) width = 1;
+        if (height < 1) height = 1;
+        
+        log.debug("坐标转换 - 原始(pt): left={}, top={}, width={}, height={}", leftPt, topPt, widthPt, heightPt);
+        log.debug("转换后(px): x={}, y={}, width={}, height={}, 画布: {}x{}", x, y, width, height, canvasWidth, canvasHeight);
         
         item.put("x", x);
         item.put("y", y);
