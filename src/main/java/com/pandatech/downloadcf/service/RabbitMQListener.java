@@ -56,8 +56,9 @@ public class RabbitMQListener {
             log.info("从RabbitMQ接收到刷新消息: {}", message);
             RefreshDto refreshDto = objectMapper.readValue(message, RefreshDto.class);
             
-            // TODO: 根据新数据库结构重新实现价签刷新逻辑
-            log.warn("价签刷新功能暂时禁用，需要根据新数据库结构重新实现。价签ID: {}", refreshDto.getEslId());
+            // 注意：价签刷新功能需要根据新数据库结构重新实现
+            // 当前实现为临时方案，直接发送刷新命令到MQTT
+            log.warn("价签刷新功能使用临时实现。价签ID: {}", refreshDto.getEslId());
             
             // 暂时直接发送刷新消息到MQTT（可选）
             // 构造刷新消息格式

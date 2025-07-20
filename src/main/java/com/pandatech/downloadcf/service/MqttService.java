@@ -54,48 +54,16 @@ public class MqttService {
     @SuppressWarnings("unchecked")
     public void handleMessage(@Header(MqttHeaders.RECEIVED_TOPIC) String topic, String payload) {
         log.info("接收到MQTT消息 - 主题: {}, 内容: {}", topic, payload);
-        // TODO: 根据新的数据库结构重新实现
+        // 注意：MQTT消息处理功能需要根据新数据库结构重新实现
         log.warn("MQTT消息处理功能暂时禁用，需要根据新数据库结构重新实现");
-        /*
-        // 假设 /templ/loadtemple 是一个特定的主题或包含在payload中用于区分
-        if (topic.contains("loadtemple")) {
-            try {
-                // 这里模拟根据payload（可能是价签ID）加载模板和产品数据
-                // 实际场景中，payload的格式需要根据业务确定
-                @SuppressWarnings("unchecked")
-                Map<String, Object> request = objectMapper.readValue(payload, HashMap.class);
-                String eslId = (String) request.get("eslId");
-
-                // TODO: 根据新的数据库结构重新实现
-                // 处理模板下发
-                processTemplateDownload(eslId);
-                log.info("成功为价签 {} 处理模板下发", eslId);
-
-            } catch (Exception e) {
-                log.error("处理MQTT消息失败", e);
-            }
-        }
-        */
     }
 
     @Qualifier("mqttOutboundChannel")
     private final MessageChannel mqttOutboundChannel;
 
-    /*
-    // TODO: 根据新的数据库结构重新实现这些方法
-    public void processTemplateDownload(String eslId) {
-        // 暂时注释掉，需要根据新的数据库结构重新实现
-    }
-
-    public void processRefresh(String eslId) {
-        // 暂时注释掉，需要根据新的数据库结构重新实现
-    }
-    */
-
     private String getCachedChecksum(String templateId) {
-        // TODO: 实现实际缓存逻辑
-        // 实现从缓存或数据库获取checksum的逻辑
-        return null;  // 示例，返回null表示未缓存
+        // 暂时返回null，表示未缓存，每次都重新生成
+        return null;
     }
 
     
@@ -712,44 +680,11 @@ public class MqttService {
     
 
 
-    /*
-    // TODO: 需要根据新数据库结构重新实现此方法
-    // 新结构使用 ProductEslBinding 来管理产品和价签的绑定关系
-    // 使用 EslModel 来管理价签型号信息
-    private String generateWtagJson(PandaEsl esl, PandaProduct product, PrintTemplateDesignWithBLOBs template, String md5) {
-        try {
-            Map<String, Object> json = new HashMap<>();
-            json.put("command", "wtag");
-            List<Map<String, Object>> dataList = new ArrayList<>();
-            Map<String, Object> data = new HashMap<>();
-            data.put("tag", esl.getEslId());
-            data.put("tmpl", template.getId());
-            data.put("model", convertModel(esl.getEslModel()));
-            data.put("checksum", md5);
-            data.put("forcefrash", 1);
-            Map<String, Object> value = new HashMap<>();
-            value.put("GOODS_NAME", product.getProductName());
-            value.put("GOODS_PRICE", product.getProductSalePrice());
-            value.put("GOODS_SPEC", product.getGoodsSpec() != null ? product.getGoodsSpec() : "");
-            value.put("GOODS_UNIT", product.getGoodsUnit() != null ? product.getGoodsUnit() : "");
-            value.put("GOODS_ORIGIN", product.getGoodsOrigin() != null ? product.getGoodsOrigin() : "");
-            value.put("GOODS_PROMOTION", product.getGoodsPromotion() != null ? product.getGoodsPromotion() : "");
-            // 添加所有必要的字段映射，根据PandaProduct实体
-            data.put("value", value);
-            data.put("taskid", UUID.randomUUID().toString());
-            data.put("token", UUID.randomUUID().toString());
-            dataList.add(data);
-            json.put("data", dataList);
-            json.put("id", UUID.randomUUID().toString());
-            json.put("timestamp", System.currentTimeMillis() / 1000);
-            json.put("shop", product.getStoreCode());
-            return objectMapper.writeValueAsString(json);
-        } catch (JsonProcessingException e) {
-            log.error("生成wtag JSON失败", e);
-            return "{}";
-        }
-    }
-    */
+    /**
+     * 生成价签JSON数据
+     * 注意：此方法需要根据新数据库结构重新实现
+     */
+    // 暂时移除，需要根据新数据库结构重新实现
 
     private String convertModel(String model) {
         Map<String, String> modelconvert = new HashMap<>();
