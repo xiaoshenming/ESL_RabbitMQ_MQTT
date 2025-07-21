@@ -155,8 +155,8 @@ public class TemplateValidator {
         
         // 验证FontFamily
         JsonNode fontFamily = item.get("FontFamily");
-        if (fontFamily != null && !"Zfull-GB".equals(fontFamily.asText())) {
-            result.addWarning(prefix + "FontFamily建议使用Zfull-GB");
+        if (fontFamily != null && !"阿里普惠".equals(fontFamily.asText())) {
+            result.addWarning(prefix + "FontFamily建议使用阿里普惠");
         }
     }
     

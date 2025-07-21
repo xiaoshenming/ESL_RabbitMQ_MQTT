@@ -52,7 +52,7 @@ public class TemplateConfig {
         private int rgb = 3;
         private int wext = 0;
         private int width = 250;
-        private String fontFamily = "Zfull-GB";
+        private String fontFamily = "阿里普惠";
         private String fontColor = "Black";
         private String background = "Transparent";
         private String borderColor = "Transparent";

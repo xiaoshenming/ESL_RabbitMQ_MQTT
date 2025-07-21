@@ -103,7 +103,7 @@ public class TemplateConversionTest {
             "Items": [
                 {
                     "Type": "text",
-                    "FontFamily": "Zfull-GB",
+                    "FontFamily": "阿里普惠",
                     "FontSize": 12,
                     "FontColor": "#000000",
                     "Background": "#FFFFFF",
@@ -146,7 +146,7 @@ public class TemplateConversionTest {
         
         JsonNode firstItem = items.get(0);
         assertEquals("text", firstItem.get("Type").asText());
-        assertEquals("Zfull-GB", firstItem.get("FontFamily").asText());
+        assertEquals("阿里普惠", firstItem.get("FontFamily").asText());
         assertEquals("productName", firstItem.get("DataKey").asText());
     }
 }

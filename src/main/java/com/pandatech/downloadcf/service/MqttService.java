@@ -116,7 +116,7 @@ public class MqttService {
             // 检查是否已经是官方格式（包含Items字段）
             if (rootNode.has("Items")) {
                 log.debug("检测到官方格式模板，直接返回");
-                // 确保FontFamily都是Zfull-GB
+                // 确保FontFamily都是阿里普惠
                 String result = ensureCorrectFontFamily(jsonToParse);
                  // 验证模板
                  TemplateValidator.ValidationResult validation = templateValidator.validateTemplateContent(result);

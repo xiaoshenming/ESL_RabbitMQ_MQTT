@@ -253,7 +253,7 @@ client-id=data_server_1
       "DataKey": "GOODS_CODE",
       "DataKeyStyle": 0,
       "FontColor": "Black",
-      "FontFamily": "Zfull-GB",
+      "FontFamily": "阿里普惠",
       "FontSize": 14,
       "FontSpace": 0,
       "FontStyle": 0,
@@ -274,7 +274,7 @@ client-id=data_server_1
       "DataKey": "F_5",
       "DataKeyStyle": 0,
       "FontColor": "Black",
-      "FontFamily": "Zfull-GB",
+      "FontFamily": "阿里普惠",
       "FontSize": 12,
       "FontSpace": 0,
       "FontStyle": 0,
@@ -356,7 +356,7 @@ mqtt发送:
 | md5     | 是      | string   | 模板md5校验 |
 | id      | 是      | string   | 模板id    |
 
-唯一要注意的一点是所有的FontFamily都改成"FontFamily": "Zfull-GB"默认字体，避免字体显示不出来.
+唯一要注意的一点是所有的FontFamily都改成"FontFamily": "阿里普惠"默认字体，避免字体显示不出来.
  "shop": "ZH01"是商品号码
 
 
