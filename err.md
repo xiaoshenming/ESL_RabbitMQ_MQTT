@@ -1,172 +1,232 @@
-curl 'http://localhost:8999/api/res/templ/refresh' \
-  -H 'Accept-Language: zh-CN,zh;q=0.9' \
-  -H 'Connection: keep-alive' \
-  -H 'Content-Type: application/json' \
-  -b 'JSESSIONID=AC9AA0889488569DA6ACCC0FA9EDFCB0' \
-  -H 'Origin: http://localhost:8999' \
-  -H 'Referer: http://localhost:8999/swagger-ui/index.html' \
-  -H 'Sec-Fetch-Dest: empty' \
-  -H 'Sec-Fetch-Mode: cors' \
-  -H 'Sec-Fetch-Site: same-origin' \
-  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
-  -H 'accept: text/plain' \
-  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
-  -H 'sec-ch-ua-mobile: ?0' \
-  -H 'sec-ch-ua-platform: "Windows"' \
-  --data-raw $'{\n  "eslId": "1947223724923940865"\n}'
-  这个api通过查找
-  DROP TABLE IF EXISTS `PANDA_ESL`;
-CREATE TABLE `PANDA_ESL`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
-  `SORT_CODE` int(11) NULL DEFAULT NULL COMMENT '排序码',
-  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
-  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
-  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `ESL_ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签编号',
-  `STORE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
-  `AP_SN` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
-  `ESL_MODEL` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签型号',
-  `BOUND_PRODUCT` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '绑定商品',
-  `BATTERY_LEVEL` float NULL DEFAULT NULL COMMENT '电子价签电量（百分比）',
-  `TEMPERATURE` float NULL DEFAULT NULL COMMENT '电子价签温度（摄氏度）',
-  `SIGNAL_STRENGTH` int(11) NULL DEFAULT NULL COMMENT '信号值',
-  `COMMUNICATION_COUNT` int(11) NULL DEFAULT NULL COMMENT '通讯次数',
-  `FAILURE_COUNT` int(11) NULL DEFAULT NULL COMMENT '失败次数',
-  `ESL_CATEGORY` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'ESL分类',
-  `ESL_STATUS` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签状态',
-  `SCREEN_COLOR` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签屏幕颜色',
-  `COMMUNICATION_METHOD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签通讯方式（蓝牙/NFC/Wifi/ZigBee）',
-  `VERSION` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '版本',
-  `HARDWARE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '硬件',
-  PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+{"TagType":"1C","Version":10,"Size":"400, 300","width":"400","hext":"6","Items":[{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"塑料","Background":"Transparent","BorderStyle":0,"Size":"41, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_09","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":53,"width":41,"y":90,"height":9,"Location":"53, 90"},{"FontStyle":0,"Size":"135, 18","BorderColor":"Transparent","DataKey":"QRCODE","TextAlign":1,"height":18,"FontFamily":"阿里普惠","DataKeyStyle":0,"Barwidth":1,"DataDefault":"1234567890123","Background":"Transparent","BorderStyle":0,"FontColor":"Black","FontSpace":0,"Barheight":20,"Type":"barcode","Bartype":"code128","FontSize":12,"Barformat":0,"x":39,"width":135,"y":104,"Showtext":1,"Fontinval":1,"Location":"39, 104"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"https://example.com","Background":"Transparent","BorderStyle":0,"Size":"140, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"QRCODE","FontSpace":0,"Type":"qrcode","FontSize":12,"TextAlign":1,"x":47,"width":140,"y":121,"height":1,"Location":"47, 121"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"默认值","Background":"Transparent","BorderStyle":0,"Size":"38, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_11","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":212,"width":38,"y":121,"height":1,"Location":"212, 121"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"4, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_08","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":246,"width":4,"y":121,"height":1,"Location":"246, 121"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"500g","Background":"Transparent","BorderStyle":0,"Size":"11, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_04","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":239,"width":11,"y":121,"height":1,"Location":"239, 121"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"示例商品名称","Background":"Transparent","BorderStyle":0,"Size":"1, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"name","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":249,"width":1,"y":121,"height":1,"Location":"249, 121"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"示例商品名称","Background":"Transparent","BorderStyle":0,"Size":"1, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"name","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":249,"width":1,"y":121,"height":1,"Location":"249, 121"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"1, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_01","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":249,"width":1,"y":121,"height":1,"Location":"249, 121"},{"FontFamily":"阿里普惠","DataKeyStyle":0,"FontStyle":0,"DataDefault":"默认值","Background":"Transparent","BorderStyle":0,"Size":"1, 1","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_11","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":249,"width":1,"y":121,"height":1,"Location":"249, 121"}],"rgb":"3","wext":"0","Name":"3","height":"300"}
 
-这张表的ID来查找到
-ESL_ID-电子价签编号（06000000195A）
-BOUND_PRODUCT-商品id（1947222838805917697）
-STORE_CODE-门店编码（0002）
-ESL_MODEL-电子价签型号（2.13T）
-然后用BOUND_PRODUCT-商品id（1947222838805917697）进行联表查询
-联动这张表
-panda_product
-DROP TABLE IF EXISTS `PANDA_PRODUCT`;
-CREATE TABLE `PANDA_PRODUCT`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
-  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
-  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
-  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `PRODUCT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品编号',
-  `STORE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '门店编码',
-  `PRODUCT_NAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品名称',
-  `PRODUCT_CATEGORY` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品分类',
-  `PRODUCT_SPECIFICATION` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品规格',
-  `PRODUCT_BRAND` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品品牌',
-  `PRODUCT_COST_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品成本价',
-  `PRODUCT_RETAIL_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品零售价',
-  `PRODUCT_MEMBERSHIP_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品会员价',
-  `PRODUCT_DISCOUNT_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品折扣价',
-  `PRODUCT_DISCOUNT` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品折扣',
-  `PRODUCT_WHOLESALE_PRICE` decimal(10, 2) NULL DEFAULT NULL COMMENT '商品批发价',
-  `PRODUCT_MATERIAL` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品材质',
-  `PRODUCT_IMAGE` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品图片',
-  `PRODUCT_ORIGIN` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品产地',
-  `PRODUCT_DESCRIPTION` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '商品描述',
-  `PRODUCT_QRCODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '二维码',
-  `PRODUCT_BARCODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '条形码',
-  `PRODUCT_UNIT` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品单位',
-  `PRODUCT_WEIGHT` decimal(10, 2) NULL DEFAULT NULL COMMENT '产品重量（kg）',
-  `PRODUCT_STATUS` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商品状态',
-  `PRODUCT_STOCK` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '商品库存',
-  `ESL_TEMPLATE_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子价签模版',
-  PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
-
-拿到详细的商品数据。然后通过这张表
-DROP TABLE IF EXISTS `ESL_BRAND_FIELD_MAPPING`;
-CREATE TABLE `ESL_BRAND_FIELD_MAPPING`  (
-  `ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `TENANT_ID` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
-  `SORT_CODE` int(11) NULL DEFAULT NULL COMMENT '排序码',
-  `EXT_JSON` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `DELETE_FLAG` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除标志',
-  `CREATE_TIME` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `CREATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `UPDATE_TIME` datetime NULL DEFAULT NULL COMMENT '修改时间',
-  `UPDATE_USER` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
-  `BRAND_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '品牌编码',
-  `TEMPLATE_FIELD` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模板字段名',
-  `FIELD_CODE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '系统字段编码',
-  `FORMAT_RULE` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '格式化规则',
-  PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '品牌字段映射表' ROW_FORMAT = DYNAMIC;
-里面的
-FIELD_CODE-系统字段编码来转化成TEMPLATE_FIELD
-这是目前的数据
-code	PRODUCT_ID
-name	PRODUCT_NAME
-F_01	PRODUCT_RETAIL_PRICE
-F_02	PRODUCT_CATEGORY
-F_03	PRODUCT_COST_PRICE
-F_04	PRODUCT_SPECIFICATION
-F_05	PRODUCT_MEMBERSHIP_PRICE
-F_06	PRODUCT_DISCOUNT_PRICE
-F_07	PRODUCT_DISCOUNT
-F_08	PRODUCT_WHOLESALE_PRICE
-F_09	PRODUCT_MATERIAL
-F_10	PRODUCT_IMAGE
-F_11	PRODUCT_ORIGIN
-F_20	PRODUCT_DESCRIPTION
-F_12	PRODUCT_UNIT
-F_13	PRODUCT_WEIGHT
-F_14	PRODUCT_STATUS
-F_32	PRODUCT_STOCK
-QRCODE	PRODUCT_QRCODE
-QRCODE	PRODUCT_BARCODE
-最后把数据整合之后
-
-转化为这种格式
+这是被录入到ap的字段，
 {
-	"command": "wtag",
-	"data": [{
-		"tag": 6597069770841,
-		"tmpl": "PRICEPROMO",
-		"model": 6,
-		"checksum": "b3359abd8cd0c923afe88f539e750871",
-		"forcefrash": 1,
-		"value": {
-			"GOODS_NAME": "商品名称",（名称）
-			"GOODS_CODE": "6902538004045",（编码）
-			"F_1": "10.80",
-			"F_2": "",
-			"F_3": null,
-			"F_4": null,
-			"F_5": null,
-			"F_6": null,
-			"F_7": null,
-			"F_8": null,
-			"F_9": null,
-			"QRCODE": "esl.wdyc.cn",
-			"F_11": null,
-			"F_20": null
-		},
-		"taskid": 39138,
-		"token": 161986
-	}],
-	"id": "3db4b81b-da87-4aa1-b8bb-ab2adf785558",
-	"timestamp": 1706512513.5774696,
-	"shop": "ZH01"（获取到的门店编码）
+  "panels": [
+    {
+      "index": 0,
+      "name": "3",
+      "paperType": "CUSTOM",
+      "height": 300,
+      "width": 400,
+      "paperHeader": 0,
+      "paperFooter": 850.3937007874016,
+      "printElements": [
+        {
+          "options": {
+            "left": 156,
+            "top": 265.5,
+            "height": 25.5,
+            "width": 120,
+            "title": "商品材质",
+            "field": "PRODUCT_MATERIAL",
+            "testData": "塑料",
+            "templateField": "F_09",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false
+          },
+          "printElementType": {
+            "title": "商品材质",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 114,
+            "top": 306,
+            "height": 115.5,
+            "width": 399,
+            "title": "条形码",
+            "field": "PRODUCT_BARCODE",
+            "testData": "1234567890123",
+            "templateField": "QRCODE",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false,
+            "barcodeType": "code128",
+            "textType": "barcode",
+            "right": 513,
+            "bottom": 421.5,
+            "vCenter": 313.5,
+            "hCenter": 363.75
+          },
+          "printElementType": {
+            "title": "条形码",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 625.5,
+            "top": 360,
+            "height": 163.5,
+            "width": 120,
+            "title": "商品产地",
+            "field": "PRODUCT_ORIGIN",
+            "testData": "默认值",
+            "templateField": "F_11",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false
+          },
+          "printElementType": {
+            "title": "商品产地",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 858,
+            "top": 403.5,
+            "height": 25.5,
+            "width": 120,
+            "title": "商品产地",
+            "field": "PRODUCT_ORIGIN",
+            "testData": "默认值",
+            "templateField": "F_11",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false
+          },
+          "printElementType": {
+            "title": "商品产地",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 139.5,
+            "top": 453,
+            "height": 414,
+            "width": 414,
+            "title": "二维码",
+            "field": "PRODUCT_QRCODE",
+            "testData": "https://example.com",
+            "templateField": "QRCODE",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false,
+            "textType": "qrcode"
+          },
+          "printElementType": {
+            "title": "二维码",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 912,
+            "top": 568.5,
+            "height": 25.5,
+            "width": 120,
+            "title": "商品名称",
+            "field": "PRODUCT_NAME",
+            "testData": "示例商品名称",
+            "templateField": "name",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false,
+            "right": 977.25,
+            "bottom": 665.25,
+            "vCenter": 917.25,
+            "hCenter": 652.5
+          },
+          "printElementType": {
+            "title": "商品名称",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 726,
+            "top": 591,
+            "height": 25.5,
+            "width": 80,
+            "title": "商品批发价",
+            "field": "PRODUCT_WHOLESALE_PRICE",
+            "testData": "100.00",
+            "templateField": "F_08",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false
+          },
+          "printElementType": {
+            "title": "商品批发价",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 705,
+            "top": 687,
+            "height": 25.5,
+            "width": 120,
+            "title": "商品规格",
+            "field": "PRODUCT_SPECIFICATION",
+            "testData": "500g",
+            "templateField": "F_04",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false
+          },
+          "printElementType": {
+            "title": "商品规格",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 834,
+            "top": 696,
+            "height": 25.5,
+            "width": 120,
+            "title": "商品名称",
+            "field": "PRODUCT_NAME",
+            "testData": "示例商品名称",
+            "templateField": "name",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false
+          },
+          "printElementType": {
+            "title": "商品名称",
+            "type": "text"
+          }
+        },
+        {
+          "options": {
+            "left": 741,
+            "top": 787.5,
+            "height": 25.5,
+            "width": 80,
+            "title": "商品零售价",
+            "field": "PRODUCT_RETAIL_PRICE",
+            "testData": "100.00",
+            "templateField": "F_01",
+            "fontWeight": "400",
+            "textAlign": "center",
+            "textContentVerticalAlign": "middle",
+            "hideTitle": false
+          },
+          "printElementType": {
+            "title": "商品零售价",
+            "type": "text"
+          }
+        }
+      ],
+      "paperNumberContinue": true,
+      "watermarkOptions": {}
+    }
+  ]
 }
-生产者发送到到rabbitmq队列然后被消费者消费到mqtt里面去。
-其中要注意的是这个mqtt消息里面的所有字段格式都必须严格一致按照数据库的对应映射
-除了！！！！			
-"GOODS_NAME": "商品名称",（名称）
-"GOODS_CODE": "6902538004045",（编码）
-这两个属于AP的固定格式，必须是GOODS_NAME跟GOODS_CODE，所以这两个不需要按照数据库的格式转化，而是强制转化。
+这是数据库的原拓展字段，转化的时候出问题了。已知2.13T的转化没有问题，但是4.20Td1转化就有问题了，很多东西都挤成一坨，影响使用。
