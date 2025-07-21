@@ -220,3 +220,50 @@ mysql>
 	"timestamp": 1706512513.5774696,(不重复值)
 	"shop": "ZH01"(合成出来的)
 }
+
+
+现在他还是到这一步
+Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7cd81fc3]
+2025-07-21T20:21:45.500+08:00  WARN 36944 --- [nio-8999-exec-1] c.p.d.service.EslRefreshServiceImpl      : 未找到品牌编码 DEFAULT 的字段映射配置，使用默认品牌编码
+2025-07-21T20:21:45.509+08:00  INFO 36944 --- [nio-8999-exec-1] c.p.d.service.EslRefreshServiceImpl      : 构造MQTT消息成功，ESL ID: 1947223724923940865, 门店: 0002
+2025-07-21T20:21:45.544+08:00  INFO 36944 --- [nio-8999-exec-1] c.p.d.service.EslRefreshServiceImpl      : 发送价签刷新消息到队列成功: {"command":"wtag","data":[{"tag":6597069773146,"tmpl":"1946122678071738370","model":6,"checksum":"a6538d65f13a0665068595e2c8484aa4","forcefrash":1,"value":{"PRODUCT_DESCRIPTION":"<p>测试描述</p>","GOODS_NAME":"测试商品","GOODS_CODE":"001","EXT_JSON":null,"SERIAL_VERSION_U_I_D":1},"taskid":5502,"token":849477}],"id":"15f9cdb9-7529-4947-9850-6db994f413c5","timestamp":1.753100505502E9,"shop":"0002"}
+
+出错了。
+Topic: esl/server/refresh/nullQoS: 0
+{"eslId":null,"command":"refresh","timestamp":1753100505}
+
+mqtt的小写也有问题
+
+按照我的数据库内容。其最终的输出应该是
+esl/server/data/0002
+{
+	"command": "wtag",
+	"data": [{
+		"tag": 6597069773146,
+		"tmpl": "2",
+		"model": 6,
+		"checksum": "b3359abd8cd0c923afe88f539e750871",
+		"forcefrash": 1,
+		"value": {
+			"GOODS_NAME": "测试商品",
+			"GOODS_CODE": "001",
+			"F_1": "99.99",
+			"F_2": "测试分类",
+			"F_3": 9.99,
+			"F_4": PRODUCT_FRUIT,
+			"F_5": 99.90,
+			"F_6": 99.00,
+			"F_7": 0.09,
+			"F_8": 99.00,
+			"F_9": 测试材质,
+			"QRCODE": "www.baidu.com",
+			"F_11": 测试产地,
+			"F_20": "<p>测试描述</p>"
+		},
+		"taskid": 39138,
+		"token": 161986
+	}],
+	"id": "3db4b81b-da87-4aa1-b8bb-ab2adf785558",
+	"timestamp": 1706512513.5774696,
+	"shop": "0002"
+}
