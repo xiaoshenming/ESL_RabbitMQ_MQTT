@@ -105,8 +105,8 @@ public class TemplateController {
         }
     )
     public ResponseEntity<byte[]> loadTemple(@RequestBody LoadTemplateRequest request) {
-        // 优先使用name查找，如果name为空则使用id
-        String searchKey = request.getName() != null ? request.getName() : request.getId();
+        // 优先使用id查找，如果id为空则使用name
+        String searchKey = request.getId() != null ? request.getId() : request.getName();
         
         if (searchKey == null || searchKey.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();

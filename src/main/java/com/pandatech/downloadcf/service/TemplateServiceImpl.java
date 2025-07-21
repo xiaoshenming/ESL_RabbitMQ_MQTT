@@ -209,9 +209,25 @@ public class TemplateServiceImpl implements TemplateService {
     public byte[] loadTemple(LoadTemplateRequest request) {
         PrintTemplateDesignWithBLOBs template = null;
         
-        // 优先使用name查找，如果name为空则使用id
-        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+        // 优先使用id查找，如果id为空则使用name
+        if (request.getId() != null && !request.getId().trim().isEmpty()) {
+            String templateId = request.getId().trim();
+            log.info("通过ID查找模板: {}", templateId);
+            
+            // 直接通过ID查找模板
+            template = printTemplateDesignMapper.selectByPrimaryKey(templateId);
+            
+            if (template != null) {
+                log.info("通过ID找到模板: {}, 名称: {}", templateId, template.getName());
+            } else {
+                log.warn("通过ID未找到模板: {}", templateId);
+            }
+        }
+        
+        // 如果通过ID未找到，且提供了name，则尝试通过name查找
+        if (template == null && request.getName() != null && !request.getName().trim().isEmpty()) {
             String searchName = request.getName();
+            log.info("通过name查找模板: {}", searchName);
             
             // 处理带.json后缀的文件名
             if (searchName.toLowerCase().endsWith(".json")) {
@@ -233,8 +249,6 @@ public class TemplateServiceImpl implements TemplateService {
             if (template == null) {
                 template = findTemplateByNameLike(baseName);
             }
-        } else if (request.getId() != null && !request.getId().trim().isEmpty()) {
-            template = printTemplateDesignMapper.selectByPrimaryKey(request.getId());
         }
 
         if (template == null || template.getContent() == null) {

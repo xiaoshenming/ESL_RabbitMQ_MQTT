@@ -435,8 +435,42 @@ public class MqttService {
         if (width < 1) width = 1;
         if (height < 1) height = 1;
         
+        // 检查是否为二维码或条形码（通过textType字段判断）
+        String textType = null;
+        if (options.has("textType")) {
+            textType = options.get("textType").asText();
+        }
+        
         // 针对不同元素类型进行特殊处理
-        if ("rect".equals(elementType) || "oval".equals(elementType)) {
+        if ("qrcode".equals(textType)) {
+            // 二维码特殊处理
+            item.put("Type", "qrcode");
+            item.put("Background", "Transparent");
+            item.put("BorderColor", "Transparent");
+            item.put("BorderStyle", 0);
+            log.debug("识别为二维码元素");
+        } else if ("barcode".equals(textType)) {
+            // 条形码特殊处理
+            item.put("Type", "barcode");
+            item.put("Background", "Transparent");
+            item.put("BorderColor", "Transparent");
+            item.put("BorderStyle", 0);
+            
+            // 条形码特有属性
+            String barcodeType = "code128"; // 默认类型
+            if (options.has("barcodeType")) {
+                barcodeType = options.get("barcodeType").asText();
+            } else if (options.has("barcodeMode")) {
+                barcodeType = options.get("barcodeMode").asText();
+            }
+            item.put("Bartype", barcodeType);
+            item.put("Barformat", 0);
+            item.put("Barheight", 20);
+            item.put("Barwidth", 1);
+            item.put("Showtext", 1);
+            item.put("Fontinval", 1);
+            log.debug("识别为条形码元素，类型: {}", barcodeType);
+        } else if ("rect".equals(elementType) || "oval".equals(elementType)) {
             // 图形元素设置边框样式
             item.put("BorderStyle", 1); // 显示边框
             item.put("BorderColor", "Black");
