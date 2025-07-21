@@ -54,28 +54,27 @@ public class RabbitMQListener {
     public void receiveRefreshMessage(String message) {
         try {
             log.info("从RabbitMQ接收到刷新消息: {}", message);
-            RefreshDto refreshDto = objectMapper.readValue(message, RefreshDto.class);
             
-            // 注意：价签刷新功能需要根据新数据库结构重新实现
-            // 当前实现为临时方案，直接发送刷新命令到MQTT
-            log.warn("价签刷新功能使用临时实现。价签ID: {}", refreshDto.getEslId());
+            // 直接将完整的MQTT消息发送到MQTT
+            // 解析消息获取门店编码
+            @SuppressWarnings("unchecked")
+            Map<String, Object> messageMap = objectMapper.readValue(message, Map.class);
+            String storeCode = (String) messageMap.get("shop");
             
-            // 暂时直接发送刷新消息到MQTT（可选）
-            // 构造刷新消息格式
-            Map<String, Object> refreshMessage = new HashMap<>();
-            refreshMessage.put("command", "refresh");
-            refreshMessage.put("eslId", refreshDto.getEslId());
-            refreshMessage.put("timestamp", System.currentTimeMillis() / 1000);
+            if (storeCode == null) {
+                log.error("刷新消息中缺少shop字段，无法确定MQTT主题");
+                return;
+            }
             
-            String refreshJson = objectMapper.writeValueAsString(refreshMessage);
+            // 构造正确的MQTT主题：esl/server/data/{storeCode}
+            String mqttTopic = "esl/server/data/" + storeCode;
             
-            // 发送到MQTT（需要确定正确的主题）
-            String mqttTopic = "esl/server/refresh/" + refreshDto.getEslId();
-            Message<String> mqttMessage = MessageBuilder.withPayload(refreshJson)
+            // 将完整的MQTT消息发送到MQTT
+            Message<String> mqttMessage = MessageBuilder.withPayload(message)
                     .setHeader("mqtt_topic", mqttTopic)
                     .build();
             mqttOutboundChannel.send(mqttMessage);
-            log.info("刷新消息已发送到MQTT主题 {}: {}", mqttTopic, refreshJson);
+            log.info("刷新消息已发送到MQTT主题 {}: {}", mqttTopic, message);
             
         } catch (Exception e) {
             log.error("处理刷新消息并推送到MQTT失败", e);

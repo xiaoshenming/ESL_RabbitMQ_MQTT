@@ -13,8 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -34,59 +37,158 @@ public class EslRefreshServiceImpl implements EslRefreshService {
     
     @Override
     public MqttMessageDto buildRefreshMessage(RefreshDto refreshDto) {
+        log.debug("开始构造MQTT刷新消息: eslId={}, productId={}", 
+                refreshDto.getEslId(), refreshDto.getProductId());
+        
         try {
-            // 1. 根据ESL ID查找价签信息
+            // 1. 参数验证
+            if (refreshDto == null) {
+                log.error("刷新请求参数不能为空");
+                return null;
+            }
+            if (refreshDto.getEslId() == null || refreshDto.getEslId().trim().isEmpty()) {
+                log.error("ESL ID不能为空");
+                return null;
+            }
+            
+            // 2. 查找价签信息
             PandaEsl eslInfo = findEslById(refreshDto.getEslId());
             if (eslInfo == null) {
-                log.error("未找到ESL信息，ESL ID: {}", refreshDto.getEslId());
+                log.error("未找到价签信息: eslId={}", refreshDto.getEslId());
                 return null;
             }
+            log.debug("找到价签信息: eslId={}, model={}, storeCode={}", 
+                    eslInfo.getEslId(), eslInfo.getEslModel(), eslInfo.getStoreCode());
             
-            // 2. 根据绑定的商品ID查找商品信息
-            PandaProductWithBLOBs productInfo = findProductById(eslInfo.getBoundProduct());
+            // 3. 查找商品信息
+            String productId = refreshDto.getProductId();
+            if (productId == null || productId.trim().isEmpty()) {
+                // 如果请求中没有商品ID，使用价签绑定的商品
+                productId = eslInfo.getBoundProduct();
+            }
+            
+            PandaProductWithBLOBs productInfo = findProductById(productId);
             if (productInfo == null) {
-                log.error("未找到商品信息，商品ID: {}", eslInfo.getBoundProduct());
+                log.error("未找到商品信息: productId={}", productId);
                 return null;
             }
+            log.debug("找到商品信息: productId={}, name={}, brand={}, price={}", 
+                    productInfo.getProductId(), productInfo.getProductName(), 
+                    productInfo.getProductBrand(), productInfo.getProductRetailPrice());
             
-            // 3. 获取字段映射配置
-            List<EslBrandFieldMapping> fieldMappings = getFieldMappings(eslInfo);
+            // 4. 获取字段映射配置
+            List<EslBrandFieldMapping> fieldMappings = getFieldMappings(eslInfo, productInfo);
+            log.debug("获取到字段映射配置数量: {}", fieldMappings.size());
             
-            // 4. 构造MQTT消息
+            // 5. 构造MQTT消息
             MqttMessageDto mqttMessage = new MqttMessageDto();
             mqttMessage.setCommand("wtag");
             mqttMessage.setId(UUID.randomUUID().toString());
             mqttMessage.setTimestamp(System.currentTimeMillis() / 1000.0);
-            mqttMessage.setShop(eslInfo.getStoreCode() != null ? eslInfo.getStoreCode() : 
-                    eslRefreshProperties.getRefresh().getDefaultStoreCode());
             
-            // 5. 构造数据部分
+            String storeCode = eslInfo.getStoreCode();
+            if (storeCode == null || storeCode.trim().isEmpty()) {
+                storeCode = eslRefreshProperties.getRefresh().getDefaultStoreCode();
+                log.warn("价签门店编码为空，使用默认门店编码: {}", storeCode);
+            }
+            mqttMessage.setShop(storeCode);
+            
+            // 6. 构造数据部分
             MqttDataDto dataDto = new MqttDataDto();
+            
             // 将十六进制的ESL ID转换为十进制Long类型
-            dataDto.setTag(convertHexEslIdToLong(eslInfo.getEslId()));
-            dataDto.setTmpl(productInfo.getEslTemplateCode() != null ? productInfo.getEslTemplateCode() : 
-                    eslRefreshProperties.getRefresh().getDefaultTemplateId());
-            dataDto.setModel(getModelFromEslModel(eslInfo.getEslModel()));
+            Long tagValue = convertHexEslIdToLong(eslInfo.getEslId());
+            if (tagValue == null) {
+                log.error("ESL ID转换失败: eslId={}", eslInfo.getEslId());
+                return null;
+            }
+            dataDto.setTag(tagValue);
+            
+            // 处理模板字段
+            String templateCode = productInfo.getEslTemplateCode();
+            if (templateCode == null || templateCode.trim().isEmpty() || "为空".equals(templateCode.trim())) {
+                templateCode = eslRefreshProperties.getRefresh().getDefaultTemplateId();
+                log.debug("商品模板为空，使用默认模板: {}", templateCode);
+            } else {
+                // 如果模板代码是数字ID，需要查询对应的模板CODE
+                try {
+                    Long templateId = Long.parseLong(templateCode);
+                    // 这里应该查询print_template_design表获取CODE字段
+                    // 暂时使用默认模板，后续可以添加模板查询逻辑
+                    templateCode = eslRefreshProperties.getRefresh().getDefaultTemplateId();
+                    log.debug("模板ID {} 转换为默认模板代码: {}", templateId, templateCode);
+                } catch (NumberFormatException e) {
+                    log.debug("使用商品配置的模板代码: {}", templateCode);
+                }
+            }
+            dataDto.setTmpl(templateCode);
+            
+            // 获取价签型号
+            Integer modelValue = getModelFromEslModel(eslInfo.getEslModel());
+            if (modelValue == null) {
+                log.error("无法获取价签型号: eslModel={}", eslInfo.getEslModel());
+                return null;
+            }
+            dataDto.setModel(modelValue);
+            
             dataDto.setForcefrash(eslRefreshProperties.getRefresh().getForceRefresh() ? 1 : 0);
             dataDto.setTaskid(generateTaskId());
             dataDto.setToken(generateToken());
             
-            // 6. 构造value字段映射
+            // 7. 构造value字段映射
             Map<String, Object> valueMap = buildValueMap(productInfo, fieldMappings);
+            if (valueMap == null || valueMap.isEmpty()) {
+                log.warn("字段映射为空，ESL ID: {}", refreshDto.getEslId());
+                valueMap = new HashMap<>();
+            }
             dataDto.setValue(valueMap);
             
-            // 7. 计算checksum
+            // 8. 计算checksum
             String checksum = calculateChecksum(dataDto);
+            if (checksum == null || checksum.trim().isEmpty()) {
+                log.error("计算checksum失败");
+                return null;
+            }
             dataDto.setChecksum(checksum);
             
             mqttMessage.setData(Arrays.asList(dataDto));
             
-            log.info("构造MQTT消息成功，ESL ID: {}, 门店: {}", refreshDto.getEslId(), eslInfo.getStoreCode());
+            log.info("构造MQTT消息成功: messageId={}, eslId={}, tag={}, template={}, model={}, storeCode={}, valueFields={}", 
+                    mqttMessage.getId(), refreshDto.getEslId(), dataDto.getTag(), 
+                    dataDto.getTmpl(), dataDto.getModel(), storeCode, valueMap.size());
+            
             return mqttMessage;
             
         } catch (Exception e) {
             log.error("构造MQTT消息失败，ESL ID: {}", refreshDto.getEslId(), e);
             return null;
+        }
+    }
+    
+    @Override
+    public void refreshEsl(RefreshDto refreshDto) {
+        log.info("开始处理价签刷新请求: eslId={}, productId={}", 
+                refreshDto.getEslId(), refreshDto.getProductId());
+        
+        try {
+            // 1. 构造MQTT消息
+            MqttMessageDto mqttMessage = buildRefreshMessage(refreshDto);
+            if (mqttMessage == null) {
+                log.error("构造MQTT消息失败: eslId={}, productId={}", 
+                        refreshDto.getEslId(), refreshDto.getProductId());
+                return;
+            }
+            
+            // 2. 发送刷新消息
+            sendRefreshMessage(mqttMessage);
+            
+            log.info("价签刷新请求处理完成: eslId={}, productId={}, messageId={}", 
+                    refreshDto.getEslId(), refreshDto.getProductId(), mqttMessage.getId());
+                    
+        } catch (Exception e) {
+            log.error("处理价签刷新请求失败: eslId={}, productId={}", 
+                    refreshDto.getEslId(), refreshDto.getProductId(), e);
+            throw new RuntimeException("价签刷新失败: " + e.getMessage(), e);
         }
     }
     
@@ -136,20 +238,32 @@ public class EslRefreshServiceImpl implements EslRefreshService {
     /**
      * 获取字段映射配置
      */
-    private List<EslBrandFieldMapping> getFieldMappings(PandaEsl esl) {
+    private List<EslBrandFieldMapping> getFieldMappings(PandaEsl esl, PandaProductWithBLOBs product) {
         try {
-            // 优先使用价签的品牌编码，如果没有则使用默认品牌编码
-            String brandCode = esl.getEslCategory() != null ? esl.getEslCategory() : 
-                    eslRefreshProperties.getFieldMapping().getDefaultBrandCode();
+            // 优先使用商品的品牌编码
+            String brandCode = product.getProductBrand();
+            if (brandCode == null || brandCode.trim().isEmpty()) {
+                // 如果商品品牌为空，使用价签的品牌编码
+                brandCode = esl.getEslCategory();
+                if (brandCode == null || brandCode.trim().isEmpty()) {
+                    // 如果价签品牌也为空，使用默认品牌编码
+                    brandCode = eslRefreshProperties.getFieldMapping().getDefaultBrandCode();
+                    log.debug("商品和价签品牌都为空，使用默认品牌编码: {}", brandCode);
+                } else {
+                    log.debug("商品品牌为空，使用价签品牌编码: {}", brandCode);
+                }
+            } else {
+                log.debug("使用商品品牌编码: {}", brandCode);
+            }
             
             // 根据品牌编码查询字段映射
-            List<EslBrandFieldMapping> mappings = eslBrandFieldMappingMapper.findByBrandCode(brandCode);
+            List<EslBrandFieldMapping> mappings = eslBrandFieldMappingMapper.selectByBrandCode(brandCode);
             
             if (mappings.isEmpty()) {
                 log.warn("未找到品牌编码 {} 的字段映射配置，使用默认品牌编码", brandCode);
                 // 如果没有找到，尝试使用默认品牌编码
                 if (!brandCode.equals(eslRefreshProperties.getFieldMapping().getDefaultBrandCode())) {
-                    mappings = eslBrandFieldMappingMapper.findByBrandCode(
+                    mappings = eslBrandFieldMappingMapper.selectByBrandCode(
                             eslRefreshProperties.getFieldMapping().getDefaultBrandCode());
                 }
             }
@@ -227,61 +341,151 @@ public class EslRefreshServiceImpl implements EslRefreshService {
             }
             
             valueMap.put(templateField, fieldValue);
+            log.debug("映射字段: {} -> {} = {}", fieldCode, templateField, fieldValue);
         }
         
-        log.debug("构造value映射完成，字段数量: {}", valueMap.size());
+        // 如果没有字段映射配置，添加默认的F_1到F_20字段
+        if (fieldMappings.isEmpty()) {
+            log.debug("没有字段映射配置，使用默认字段映射");
+            for (int i = 1; i <= 20; i++) {
+                String fieldKey = "F_" + i;
+                Object defaultValue = getDefaultFieldValue(product, i);
+                if (defaultValue != null) {
+                    valueMap.put(fieldKey, defaultValue);
+                }
+            }
+            
+            // 添加QRCODE字段
+            if (product.getProductQrcode() != null) {
+                valueMap.put("QRCODE", product.getProductQrcode());
+            }
+        }
+        
+        log.debug("构造value映射完成，字段数量: {}, 内容: {}", valueMap.size(), valueMap);
         return valueMap;
+    }
+    
+    /**
+     * 获取默认字段值（F_1到F_20）
+     */
+    private Object getDefaultFieldValue(PandaProductWithBLOBs product, int fieldNumber) {
+        switch (fieldNumber) {
+            case 1:
+                return product.getProductRetailPrice(); // F_1 通常是零售价
+            case 2:
+                return product.getProductMembershipPrice(); // F_2 会员价
+            case 3:
+                return product.getProductCostPrice(); // F_3 成本价
+            case 4:
+                return product.getProductDiscountPrice(); // F_4 折扣价
+            case 5:
+                return product.getProductWholesalePrice(); // F_5 批发价
+            case 6:
+                return product.getProductUnit(); // F_6 单位
+            case 7:
+                return product.getProductWeight(); // F_7 重量
+            case 8:
+                return product.getProductSpecification(); // F_8 规格
+            case 9:
+                return product.getProductOrigin(); // F_9 产地
+            case 10:
+                return product.getProductBrand(); // F_10 品牌
+            case 11:
+                return product.getProductBarcode(); // F_11 条形码
+            case 20:
+                return product.getProductStock(); // F_20 库存
+            default:
+                return null; // 其他字段默认为null
+        }
     }
     
     /**
      * 根据字段编码获取商品字段值
      */
     private Object getProductFieldValue(PandaProductWithBLOBs product, String fieldCode) {
-        if (product == null) {
+        if (product == null || fieldCode == null) {
             return null;
         }
         
-        switch (fieldCode) {
+        switch (fieldCode.toUpperCase()) {
+            // 基本信息
             case "PRODUCT_ID":
+            case "GOODS_CODE":
                 return product.getProductId();
             case "PRODUCT_NAME":
+            case "GOODS_NAME":
                 return product.getProductName();
+            case "PRODUCT_BARCODE":
+            case "BARCODE":
+                return product.getProductBarcode();
+            case "PRODUCT_QRCODE":
+            case "QRCODE":
+                return product.getProductQrcode();
+                
+            // 价格相关
             case "PRODUCT_RETAIL_PRICE":
+            case "RETAIL_PRICE":
+            case "PRICE":
                 return product.getProductRetailPrice();
-            case "PRODUCT_CATEGORY":
-                return product.getProductCategory();
-            case "PRODUCT_COST_PRICE":
-                return product.getProductCostPrice();
-            case "PRODUCT_SPECIFICATION":
-                return product.getProductSpecification();
             case "PRODUCT_MEMBERSHIP_PRICE":
+            case "MEMBERSHIP_PRICE":
+            case "MEMBER_PRICE":
                 return product.getProductMembershipPrice();
+            case "PRODUCT_COST_PRICE":
+            case "COST_PRICE":
+                return product.getProductCostPrice();
             case "PRODUCT_DISCOUNT_PRICE":
+            case "DISCOUNT_PRICE":
                 return product.getProductDiscountPrice();
             case "PRODUCT_DISCOUNT":
+            case "DISCOUNT":
                 return product.getProductDiscount();
             case "PRODUCT_WHOLESALE_PRICE":
+            case "WHOLESALE_PRICE":
                 return product.getProductWholesalePrice();
-            case "PRODUCT_MATERIAL":
-                return product.getProductMaterial();
-            case "PRODUCT_IMAGE":
-                return product.getProductImage();
-            case "PRODUCT_ORIGIN":
-                return product.getProductOrigin();
-            case "PRODUCT_DESCRIPTION":
-                return product.getProductDescription();
+                
+            // 商品属性
             case "PRODUCT_UNIT":
+            case "UNIT":
                 return product.getProductUnit();
             case "PRODUCT_WEIGHT":
+            case "WEIGHT":
                 return product.getProductWeight();
-            case "PRODUCT_STATUS":
-                return product.getProductStatus();
+            case "PRODUCT_SPECIFICATION":
+            case "SPECIFICATION":
+            case "SPEC":
+                return product.getProductSpecification();
+            case "PRODUCT_ORIGIN":
+            case "ORIGIN":
+                return product.getProductOrigin();
+            case "PRODUCT_BRAND":
+            case "BRAND":
+                return product.getProductBrand();
             case "PRODUCT_STOCK":
+            case "STOCK":
                 return product.getProductStock();
-            case "PRODUCT_QRCODE":
-                return product.getProductQrcode();
-            case "PRODUCT_BARCODE":
-                return product.getProductBarcode();
+            case "PRODUCT_MATERIAL":
+            case "MATERIAL":
+                return product.getProductMaterial();
+                
+            // 分类相关
+            case "PRODUCT_CATEGORY":
+            case "CATEGORY":
+                return product.getProductCategory();
+                
+            // 状态相关
+            case "PRODUCT_STATUS":
+            case "STATUS":
+                return product.getProductStatus();
+                
+            // 其他字段
+            case "PRODUCT_DESCRIPTION":
+            case "DESCRIPTION":
+                return product.getProductDescription();
+            case "PRODUCT_IMAGE":
+            case "IMAGE":
+                return product.getProductImage();
+                
             default:
                 log.warn("未知的字段编码: {}", fieldCode);
                 return null;
@@ -292,9 +496,182 @@ public class EslRefreshServiceImpl implements EslRefreshService {
      * 应用格式化规则
      */
     private Object applyFormatRule(Object value, String formatRule) {
-        // 这里可以根据格式化规则对值进行处理
-        // 例如：价格保留两位小数、日期格式化等
-        return value;
+        if (value == null || formatRule == null || formatRule.trim().isEmpty()) {
+            return value;
+        }
+        
+        try {
+            String rule = formatRule.trim().toLowerCase();
+            
+            // 价格格式化规则
+            if (rule.startsWith("price")) {
+                return formatPrice(value, rule);
+            }
+            // 文本格式化规则
+            else if (rule.startsWith("text")) {
+                return formatText(value, rule);
+            }
+            // 数字格式化规则
+            else if (rule.startsWith("number")) {
+                return formatNumber(value, rule);
+            }
+            // 日期格式化规则
+            else if (rule.startsWith("date")) {
+                return formatDate(value, rule);
+            }
+            // 自定义格式化规则
+            else if (rule.contains("format:")) {
+                return customFormat(value, rule);
+            }
+            
+            log.debug("未识别的格式化规则: {}, 返回原值", formatRule);
+            return value;
+            
+        } catch (Exception e) {
+            log.error("应用格式化规则失败: {}, 原值: {}", formatRule, value, e);
+            return value;
+        }
+    }
+    
+    /**
+     * 价格格式化
+     */
+    private Object formatPrice(Object value, String rule) {
+        if (value == null) return null;
+        
+        try {
+            java.math.BigDecimal price = new java.math.BigDecimal(value.toString());
+            
+            if (rule.contains("yuan")) {
+                // 格式化为元，保留2位小数
+                return String.format("%.2f元", price);
+            } else if (rule.contains("fen")) {
+                // 转换为分
+                return price.multiply(new java.math.BigDecimal("100")).intValue();
+            } else if (rule.contains("decimal:")) {
+                // 指定小数位数
+                String[] parts = rule.split("decimal:");
+                if (parts.length > 1) {
+                    int decimals = Integer.parseInt(parts[1].trim());
+                    return price.setScale(decimals, java.math.RoundingMode.HALF_UP);
+                }
+            }
+            
+            // 默认保留2位小数
+            return price.setScale(2, java.math.RoundingMode.HALF_UP);
+            
+        } catch (Exception e) {
+            log.warn("价格格式化失败: {}", value, e);
+            return value;
+        }
+    }
+    
+    /**
+     * 文本格式化
+     */
+    private Object formatText(Object value, String rule) {
+        if (value == null) return null;
+        
+        String text = value.toString();
+        
+        if (rule.contains("upper")) {
+            return text.toUpperCase();
+        } else if (rule.contains("lower")) {
+            return text.toLowerCase();
+        } else if (rule.contains("trim")) {
+            return text.trim();
+        } else if (rule.contains("maxlength:")) {
+            String[] parts = rule.split("maxlength:");
+            if (parts.length > 1) {
+                try {
+                    int maxLength = Integer.parseInt(parts[1].trim());
+                    return text.length() > maxLength ? text.substring(0, maxLength) : text;
+                } catch (NumberFormatException e) {
+                    log.warn("解析最大长度失败: {}", parts[1]);
+                }
+            }
+        }
+        
+        return text;
+    }
+    
+    /**
+     * 数字格式化
+     */
+    private Object formatNumber(Object value, String rule) {
+        if (value == null) return null;
+        
+        try {
+            if (rule.contains("int")) {
+                return Integer.valueOf(value.toString());
+            } else if (rule.contains("long")) {
+                return Long.valueOf(value.toString());
+            } else if (rule.contains("double")) {
+                return Double.valueOf(value.toString());
+            }
+            
+            return value;
+            
+        } catch (Exception e) {
+            log.warn("数字格式化失败: {}", value, e);
+            return value;
+        }
+    }
+    
+    /**
+     * 日期格式化
+     */
+    private Object formatDate(Object value, String rule) {
+        if (value == null) return null;
+        
+        try {
+            if (rule.contains("yyyy-mm-dd")) {
+                if (value instanceof java.util.Date) {
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                    return sdf.format((java.util.Date) value);
+                }
+            } else if (rule.contains("timestamp")) {
+                if (value instanceof java.util.Date) {
+                    return ((java.util.Date) value).getTime();
+                }
+            }
+            
+            return value;
+            
+        } catch (Exception e) {
+            log.warn("日期格式化失败: {}", value, e);
+            return value;
+        }
+    }
+    
+    /**
+     * 自定义格式化
+     */
+    private Object customFormat(Object value, String rule) {
+        if (value == null) return null;
+        
+        try {
+            String[] parts = rule.split("format:");
+            if (parts.length > 1) {
+                String format = parts[1].trim();
+                
+                // 支持简单的字符串模板替换
+                if (format.contains("{value}")) {
+                    return format.replace("{value}", value.toString());
+                }
+                
+                // 支持printf风格的格式化
+                if (format.startsWith("%")) {
+                    return String.format(format, value);
+                }
+            }
+            
+            return value;
+            
+        } catch (Exception e) {
+            log.warn("自定义格式化失败: {}", value, e);
+            return value;
+        }
     }
     
     /**
