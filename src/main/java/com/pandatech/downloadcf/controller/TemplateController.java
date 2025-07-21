@@ -106,29 +106,21 @@ public class TemplateController {
     )
     public ResponseEntity<byte[]> loadTemple(@RequestBody LoadTemplateRequest request) {
         // 优先使用id查找，如果id为空则使用name
-        String searchKey = request.getId() != null ? request.getId() : request.getName();
-        
-        if (searchKey == null || searchKey.trim().isEmpty()) {
+        if ((request.getId() == null || request.getId().trim().isEmpty()) && 
+            (request.getName() == null || request.getName().trim().isEmpty())) {
             return ResponseEntity.badRequest().build();
         }
         
-        // 处理带.json后缀的文件名（参考downloadJsonFileByFilename的逻辑）
-        String templateName = searchKey;
-        String downloadFileName = searchKey;
-        
-        if (searchKey.toLowerCase().endsWith(".json")) {
-            // 移除.json后缀用于数据库查找
-            templateName = searchKey.substring(0, searchKey.length() - 5);
-            // 保留原始文件名用于下载
-            downloadFileName = searchKey;
-        } else {
-            // 如果没有.json后缀，下载时自动添加
-            downloadFileName = searchKey + ".json";
-        }
-
+        // 获取模板内容
         byte[] templateContent = templateService.loadTemple(request);
         if (templateContent == null) {
             return ResponseEntity.notFound().build();
+        }
+        
+        // 获取模板名称，保持原有的 {模板名称}_{屏幕类型}.json 格式
+        String downloadFileName = templateService.getTemplateFileName(request);
+        if (!downloadFileName.toLowerCase().endsWith(".json")) {
+            downloadFileName += ".json";
         }
 
         // 设置响应头，使用处理后的文件名
@@ -136,6 +128,7 @@ public class TemplateController {
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDispositionFormData("attachment", downloadFileName);
         headers.setContentLength(templateContent.length);
+
 
         return new ResponseEntity<>(templateContent, headers, HttpStatus.OK);
     }

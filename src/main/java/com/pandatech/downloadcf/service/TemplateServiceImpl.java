@@ -207,6 +207,60 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public byte[] loadTemple(LoadTemplateRequest request) {
+        PrintTemplateDesignWithBLOBs template = findTemplate(request);
+
+        if (template == null || template.getContent() == null) {
+            return null;
+        }
+
+        try {
+            // 将数据库中的模板内容（JSON字符串）转换为官方模板格式
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            return officialTemplateJson.getBytes();
+        } catch (JsonProcessingException e) {
+            log.error("Error converting template to official format for ID: {} or Name: {}", request.getId(), request.getName(), e);
+            return null;
+        }
+    }
+    
+    @Override
+    public String getTemplateFileName(LoadTemplateRequest request) {
+        PrintTemplateDesignWithBLOBs template = findTemplate(request);
+        
+        if (template == null) {
+            // 如果找不到模板，返回原始请求的名称或ID
+            return request.getName() != null ? request.getName() : request.getId();
+        }
+        
+        try {
+            // 从模板内容中提取屏幕类型
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            String tagType = extractTagTypeFromOfficialTemplate(officialTemplateJson);
+            
+            if (tagType == null) {
+                // 如果无法从官方模板中提取TagType，尝试从EXT_JSON中提取
+                tagType = extractScreenTypeFromExtJson(template.getExtJson());
+            }
+            
+            // 如果仍然无法获取屏幕类型，使用默认值
+            if (tagType == null) {
+                tagType = "06"; // 默认屏幕类型
+            }
+            
+            // 返回格式化的文件名：{模板名称}_{屏幕类型}
+            return template.getName() + "_" + tagType;
+            
+        } catch (JsonProcessingException e) {
+            log.error("Error generating template file name for ID: {} or Name: {}", request.getId(), request.getName(), e);
+            // 出错时返回原始模板名称
+            return template.getName();
+        }
+    }
+    
+    /**
+     * 根据请求查找模板
+     */
+    private PrintTemplateDesignWithBLOBs findTemplate(LoadTemplateRequest request) {
         PrintTemplateDesignWithBLOBs template = null;
         
         // 优先使用id查找，如果id为空则使用name
@@ -250,19 +304,8 @@ public class TemplateServiceImpl implements TemplateService {
                 template = findTemplateByNameLike(baseName);
             }
         }
-
-        if (template == null || template.getContent() == null) {
-            return null;
-        }
-
-        try {
-            // 将数据库中的模板内容（JSON字符串）转换为官方模板格式
-            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
-            return officialTemplateJson.getBytes();
-        } catch (JsonProcessingException e) {
-            log.error("Error converting template to official format for ID: {} or Name: {}", request.getId(), request.getName(), e);
-            return null;
-        }
+        
+        return template;
     }
     
     /**

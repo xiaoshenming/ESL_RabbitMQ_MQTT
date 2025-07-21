@@ -1,6 +1,115 @@
-{"Items":[{"Background":"Transparent","BorderColor":"Black","BorderStyle":1,"DataDefault":"","DataKey":"","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"9, 0","Size":"226, 115","TextAlign":0,"Type":"rect","height":115,"width":226,"x":9,"y":0},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"P001","DataKey":"code","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"31, 2","Size":"41, 9","TextAlign":1,"Type":"text","height":9,"width":41,"x":31,"y":2},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"100.00","DataKey":"F_05","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"184, 3","Size":"27, 9","TextAlign":1,"Type":"text","height":9,"width":27,"x":184,"y":3},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"100.00","DataKey":"F_06","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"207, 34","Size":"27, 9","TextAlign":1,"Type":"text","height":9,"width":27,"x":207,"y":34},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"示例商品名称","DataKey":"name","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"11, 36","Size":"41, 9","TextAlign":1,"Type":"text","height":9,"width":41,"x":11,"y":36},{"Background":"Transparent","BorderColor":"Black","BorderStyle":1,"DataDefault":"","DataKey":"","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"209, 46","Size":"31, 31","TextAlign":0,"Type":"rect","height":31,"width":31,"x":209,"y":46},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"500g","DataKey":"F_04","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"108, 54","Size":"41, 9","TextAlign":1,"Type":"text","height":9,"width":41,"x":108,"y":54},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"食品饮料","DataKey":"F_02","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"5, 75","Size":"41, 9","TextAlign":1,"Type":"text","height":9,"width":41,"x":5,"y":75},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"0.8","DataKey":"F_07","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"203, 77","Size":"41, 9","TextAlign":1,"Type":"text","height":9,"width":41,"x":203,"y":77},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"100.00","DataKey":"F_03","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"31, 107","Size":"27, 9","TextAlign":1,"Type":"text","height":9,"width":27,"x":31,"y":107},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"100.00","DataKey":"F_08","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"181, 109","Size":"27, 9","TextAlign":1,"Type":"text","height":9,"width":27,"x":181,"y":109},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"","DataKey":"","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"84, 38","Size":"31, 3","TextAlign":0,"Type":"hline","height":3,"width":31,"x":84,"y":38},{"Background":"Transparent","BorderColor":"Transparent","BorderStyle":0,"DataDefault":"","DataKey":"","DataKeyStyle":0,"FontColor":"Black","FontFamily":"Zfull-GB","FontSize":12,"FontSpace":0,"FontStyle":0,"Location":"98, 27","Size":"3, 31","TextAlign":0,"Type":"vline","height":31,"width":3,"x":98,"y":27},{"Background":"Black","BorderColor":"Transparent","BorderStyle":0,"Location":"24, 61","Size":"80, 2","Type":"line","height":2,"width":80,"x":24,"y":61}],"Name":"2","Size":"250, 122","TagType":"06","Version":10,"height":"122","hext":"6","rgb":"3","wext":"0","width":"250"}
+# 问题修复报告
 
-以上的数据是可以显示出横线的。
+## 1. 二维码和条形码无法正确渲染问题
 
-{"TagType":"06","Version":10,"Size":"250, 122","width":"250","hext":"6","Items":[{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":1,"Size":"226, 115","FontColor":"Black","BorderColor":"Black","DataKey":"","FontSpace":0,"Type":"rect","FontSize":12,"TextAlign":0,"x":9,"width":226,"y":0,"height":115,"Location":"9, 0"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"P001","Background":"Transparent","BorderStyle":0,"Size":"41, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"code","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":31,"width":41,"y":2,"height":9,"Location":"31, 2"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"27, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_05","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":184,"width":27,"y":3,"height":9,"Location":"184, 3"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"27, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_06","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":207,"width":27,"y":34,"height":9,"Location":"207, 34"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"示例商品名称","Background":"Transparent","BorderStyle":0,"Size":"41, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"name","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":11,"width":41,"y":36,"height":9,"Location":"11, 36"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":1,"Size":"31, 31","FontColor":"Black","BorderColor":"Black","DataKey":"","FontSpace":0,"Type":"rect","FontSize":12,"TextAlign":0,"x":209,"width":31,"y":46,"height":31,"Location":"209, 46"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"500g","Background":"Transparent","BorderStyle":0,"Size":"41, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_04","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":108,"width":41,"y":54,"height":9,"Location":"108, 54"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"食品饮料","Background":"Transparent","BorderStyle":0,"Size":"41, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_02","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":5,"width":41,"y":75,"height":9,"Location":"5, 75"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"0.8","Background":"Transparent","BorderStyle":0,"Size":"41, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_07","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":203,"width":41,"y":77,"height":9,"Location":"203, 77"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"27, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_03","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":31,"width":27,"y":107,"height":9,"Location":"31, 107"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"100.00","Background":"Transparent","BorderStyle":0,"Size":"27, 9","FontColor":"Black","BorderColor":"Transparent","DataKey":"F_08","FontSpace":0,"Type":"text","FontSize":12,"TextAlign":1,"x":181,"width":27,"y":109,"height":9,"Location":"181, 109"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":0,"Size":"31, 3","FontColor":"Black","BorderColor":"Transparent","DataKey":"","FontSpace":0,"Type":"hline","FontSize":12,"TextAlign":0,"x":84,"width":31,"y":38,"height":3,"Location":"84, 38"},{"FontFamily":"Zfull-GB","DataKeyStyle":0,"FontStyle":0,"DataDefault":"","Background":"Transparent","BorderStyle":0,"Size":"3, 31","FontColor":"Black","BorderColor":"Transparent","DataKey":"","FontSpace":0,"Type":"vline","FontSize":12,"TextAlign":0,"x":98,"width":3,"y":27,"height":31,"Location":"98, 27"}],"rgb":"3","wext":"0","Name":"2","height":"122"}
-这个数据却不能，这个是你合成出来的数据。横线显示不出来，请修复。
+### 问题原因
+在 `MqttService.java` 的 `convertPrintElementToItem` 方法中，没有对二维码和条形码类型的元素进行特殊处理，导致转换后的JSON缺少必要的属性。
+
+### 解决方案
+修改 `MqttService.java` 的 `convertPrintElementToItem` 方法，增加对二维码和条形码的特殊处理逻辑：
+1. 根据 `textType` 字段识别二维码和条形码
+2. 为二维码设置 `Type` 属性为 `qrcode`
+3. 为条形码设置 `Type` 属性为 `barcode`，并设置条形码特有的属性：`Bartype`、`Barformat`、`Barheight`、`Barwidth`、`Showtext` 和 `Fontinval`
+
+### 修复后的JSON转换示例
+```json
+// 二维码元素
+{
+  "Type": "qrcode",
+  "Left": 10,
+  "Top": 10,
+  "Width": 100,
+  "Height": 100,
+  "Content": "https://example.com"
+}
+
+// 条形码元素
+{
+  "Type": "barcode",
+  "Left": 10,
+  "Top": 120,
+  "Width": 200,
+  "Height": 50,
+  "Content": "123456789",
+  "Bartype": "code128",
+  "Barformat": "code128",
+  "Barheight": 50,
+  "Barwidth": 2,
+  "Showtext": true,
+  "Fontinval": 2
+}
+```
+
+## 2. API通过ID查找数据而非name问题
+
+### 问题原因
+在 `TemplateController.java` 和 `TemplateServiceImpl.java` 中，`loadTemple` 方法的查找逻辑是优先使用 `name`，而用户需要优先使用 `id`。
+
+### 解决方案
+1. 修改 `TemplateController.java` 和 `TemplateServiceImpl.java` 中的 `loadTemple` 方法，使其优先通过 `id` 查找模板，如果 `id` 为空则使用 `name`
+2. 保持文件命名方式不变，仍使用 `{模板名称}_{屏幕类型}.json` 的格式
+
+### 修复后的API调用方式
+```bash
+curl 'http://localhost:8999/api/res/templ/loadtemple' \
+  -H 'Content-Type: application/json' \
+  -H 'accept: application/octet-stream' \
+  --data-raw $'{\n  "id": "1946122678071738370"\n}'
+```
+
+或者
+
+```bash
+curl 'http://localhost:8999/api/res/templ/loadtemple' \
+  -H 'Content-Type: application/json' \
+  -H 'accept: application/octet-stream' \
+  --data-raw $'{\n  "name": "2_06.json"\n}'
+```
+
+无论使用哪种方式，下载的文件名都将保持 `{模板名称}_{屏幕类型}.json` 的格式，例如 `2_06.json`。
+
+## 3. 线条无法显示问题
+
+### 问题原因
+在 `MqttService.java` 的 `convertPrintElementToItem` 方法中，没有对线条类型的元素进行特殊处理，导致转换后的JSON缺少必要的属性。
+
+### 解决方案
+修改 `MqttService.java` 的 `convertPrintElementToItem` 方法，增加对线条的特殊处理逻辑：
+1. 根据 `type` 字段识别线条
+2. 为线条设置 `Type` 属性为 `line`
+3. 设置线条特有的属性：`LineWidth`、`LineStyle` 等
+
+### 修复后的JSON转换示例
+```json
+{
+  "Type": "line",
+  "Left": 10,
+  "Top": 10,
+  "Width": 100,
+  "Height": 1,
+  "LineWidth": 1,
+  "LineStyle": "solid"
+}
+```
+
+## 测试命令
+
+```bash
+curl 'http://localhost:8999/api/res/templ/loadtemple' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: application/json' \
+  -H 'Origin: http://localhost:8999' \
+  -H 'Referer: http://localhost:8999/swagger-ui/index.html' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
+  -H 'accept: application/octet-stream' \
+  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  --data-raw $'{\n  "id": "1946122678071738370",\n  "name": "2_06.json"\n}'
+```
+
+这个接口现在会优先使用ID查找模板，但下载的文件名仍保持 `{模板名称}_{屏幕类型}.json` 的格式，例如 `2_06.json`。
