@@ -47,6 +47,11 @@ public class EslRefreshProperties {
         private String defaultTemplateId = "PRICEPROMO";
 
         /**
+         * 默认模板名称（当价签没有绑定模板时使用）
+         */
+        private String defaultTemplateName = "2";
+
+        /**
          * 校验码计算方式（md5, crc32等）
          */
         private String checksumAlgorithm = "md5";

@@ -18,7 +18,7 @@ public class MqttDataDto {
     private String tmpl;
     
     @JsonProperty("model")
-    private Integer model;
+    private String model;
     
     @JsonProperty("checksum")
     private String checksum;

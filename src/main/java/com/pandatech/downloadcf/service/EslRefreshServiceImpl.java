@@ -31,6 +31,7 @@ public class EslRefreshServiceImpl implements EslRefreshService {
     private final PandaEslMapper pandaEslMapper;
     private final PandaProductMapper pandaProductMapper;
     private final EslBrandFieldMappingMapper eslBrandFieldMappingMapper;
+    private final PrintTemplateDesignMapper printTemplateDesignMapper;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     private final EslRefreshProperties eslRefreshProperties;
@@ -68,13 +69,30 @@ public class EslRefreshServiceImpl implements EslRefreshService {
             // 将十六进制的ESL ID转换为十进制Long类型
             dataDto.setTag(convertHexEslIdToLong(eslInfo.getEslId()));
 
-            // 处理模板字段，如果为空或"为空"则使用默认模板
+            // 处理模板字段，根据模板ID查询模板名称
             String templateCode = productInfo.getEslTemplateCode();
-            if (templateCode == null || templateCode.trim().isEmpty() || "为空".equals(templateCode.trim())) {
-                templateCode = eslRefreshProperties.getRefresh().getDefaultTemplateId();
-                log.info("商品模板为空，使用默认模板: {}", templateCode);
+            String templateName = null;
+            
+            if (templateCode != null && !templateCode.trim().isEmpty() && !"为空".equals(templateCode.trim())) {
+                // 根据模板ID查询模板信息获取模板名称
+                PrintTemplateDesignWithBLOBs template = printTemplateDesignMapper.selectByPrimaryKey(templateCode);
+                if (template != null) {
+                    templateName = template.getName();
+                    log.info("找到模板，ID: {}, 名称: {}", templateCode, templateName);
+                } else {
+                    log.warn("未找到模板，ID: {}, 使用默认模板", templateCode);
+                }
             }
-            dataDto.setTmpl(templateCode);
+            
+            // 如果没有找到模板名称，使用默认模板名称
+            if (templateName == null || templateName.trim().isEmpty()) {
+                templateName = eslRefreshProperties.getRefresh().getDefaultTemplateName();
+                if (templateName == null || templateName.trim().isEmpty()) {
+                    templateName = "2"; // 默认模板名称
+                }
+                log.info("使用默认模板名称: {}", templateName);
+            }
+            dataDto.setTmpl(templateName);
 
             dataDto.setModel(getModelFromEslModel(eslInfo.getEslModel()));
             dataDto.setForcefrash(eslRefreshProperties.getRefresh().getForceRefresh() ? 1 : 0);
@@ -173,21 +191,21 @@ public class EslRefreshServiceImpl implements EslRefreshService {
     }
 
     /**
-     * 根据ESL型号获取model值
+     * 根据ESL型号获取model值（字符串类型）
      */
-    private Integer getModelFromEslModel(String eslModel) {
-        if (eslModel == null) return 6;
+    private String getModelFromEslModel(String eslModel) {
+        if (eslModel == null) return "6";
 
         // 根据ESL型号映射到model值
         switch (eslModel.toLowerCase()) {
             case "2.13t":
-                return 6;
+                return "6";
             case "2.9t":
-                return 7;
+                return "7";
             case "4.2t":
-                return 8;
+                return "8";
             default:
-                return 6;
+                return "6";
         }
     }
 
@@ -239,8 +257,8 @@ public class EslRefreshServiceImpl implements EslRefreshService {
             valueMap.put(templateField, fieldValue);
         }
 
-        // 添加默认的F_1到F_20字段（如果没有通过映射配置）
-        for (int i = 1; i <= 20; i++) {
+        // 添加默认的F_1到F_32字段（如果没有通过映射配置）
+        for (int i = 1; i <= 32; i++) {
             String fieldKey = "F_" + i;
             if (!valueMap.containsKey(fieldKey)) {
                 // 根据字段编号映射到不同的商品属性
@@ -251,7 +269,15 @@ public class EslRefreshServiceImpl implements EslRefreshService {
 
         // 添加QRCODE字段（如果没有通过映射配置）
         if (!valueMap.containsKey("QRCODE")) {
-            valueMap.put("QRCODE", product.getProductQrcode());
+            // 优先使用二维码，如果没有则使用条形码，最后使用商品ID
+            String qrcode = product.getProductQrcode();
+            if (qrcode == null || qrcode.trim().isEmpty()) {
+                qrcode = product.getProductBarcode();
+                if (qrcode == null || qrcode.trim().isEmpty()) {
+                    qrcode = product.getProductId();
+                }
+            }
+            valueMap.put("QRCODE", qrcode);
         }
 
         log.debug("构造value映射完成，字段数量: {}", valueMap.size());
@@ -260,33 +286,42 @@ public class EslRefreshServiceImpl implements EslRefreshService {
     
     /**
      * 获取默认字段值（F_1到F_20）
+     * 根据数据库中的字段映射配置来设置默认值
      */
     private Object getDefaultFieldValue(PandaProductWithBLOBs product, int fieldNumber) {
         switch (fieldNumber) {
             case 1:
-                return product.getProductRetailPrice(); // F_1 通常是零售价
+                return product.getProductRetailPrice(); // F_1 零售价
             case 2:
-                return product.getProductMembershipPrice(); // F_2 会员价
+                return product.getProductCategory(); // F_2 商品分类
             case 3:
                 return product.getProductCostPrice(); // F_3 成本价
             case 4:
-                return product.getProductDiscountPrice(); // F_4 折扣价
+                return product.getProductSpecification(); // F_4 商品规格
             case 5:
-                return product.getProductWholesalePrice(); // F_5 批发价
+                return product.getProductMembershipPrice(); // F_5 会员价
             case 6:
-                return product.getProductUnit(); // F_6 单位
+                return product.getProductBrand(); // F_6 品牌
             case 7:
-                return product.getProductWeight(); // F_7 重量
+                return product.getProductDiscount(); // F_7 折扣
             case 8:
-                return product.getProductSpecification(); // F_8 规格
+                return product.getProductWholesalePrice(); // F_8 批发价
             case 9:
-                return product.getProductOrigin(); // F_9 产地
+                return product.getProductMaterial(); // F_9 材质
             case 10:
-                return product.getProductBrand(); // F_10 品牌
+                return product.getProductUnit(); // F_10 单位
             case 11:
-                return product.getProductBarcode(); // F_11 条形码
+                return product.getProductOrigin(); // F_11 产地
+            case 12:
+                return product.getProductUnit(); // F_12 单位
+            case 13:
+                return product.getProductWeight(); // F_13 重量
+            case 14:
+                return product.getProductStatus(); // F_14 状态
             case 20:
-                return product.getProductStock(); // F_20 库存
+                return product.getProductDescription(); // F_20 描述
+            case 32:
+                return product.getProductStock(); // F_32 库存
             default:
                 return null; // 其他字段默认为null
         }
