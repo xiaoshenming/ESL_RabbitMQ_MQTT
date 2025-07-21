@@ -61,3 +61,24 @@ springdoc:
 app:
   template:
     base-url: http://10.3.36.36:8999/api/res/templ/loadtemple
+  esl:
+    # 价签刷新配置
+    refresh:
+      # 默认租户ID
+      default-tenant-id: "396a5189-53d8-4354-bcfa-27d57d9d69ad"
+      # 默认门店编码
+      default-store-code: "STORE001"
+      # 强制刷新标志
+      force-refresh: true
+      # 默认模板ID（当价签没有绑定模板时使用）
+      default-template-id: "default_template"
+      # 校验码计算方式（md5, crc32等）
+      checksum-algorithm: "md5"
+    # 字段映射配置
+    field-mapping:
+      # 默认品牌编码
+      default-brand-code: "DEFAULT"
+      # 强制转换字段列表
+      force-convert-fields:
+        - "GOODS_NAME"
+        - "GOODS_CODE"

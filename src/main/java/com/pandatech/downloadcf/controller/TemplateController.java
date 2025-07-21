@@ -57,7 +57,7 @@ public class TemplateController {
     @PostMapping("/refresh")
     @Operation(
         summary = "刷新价签", 
-        description = "向指定的价签发送刷新指令。此操作会将消息放入RabbitMQ队列，由后端服务处理后通过MQTT推送。",
+        description = "根据价签ID查询PANDA_ESL表获取价签信息，联查PANDA_PRODUCT表获取商品数据，通过ESL_BRAND_FIELD_MAPPING表进行字段映射，构造符合MQTT协议的刷新消息并发送到RabbitMQ队列。消息包含商品信息、模板信息、校验码等，最终通过MQTT推送到价签设备进行数据刷新。",
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200", 
@@ -71,7 +71,7 @@ public class TemplateController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400", 
-                description = "请求参数错误"
+                description = "请求参数错误或价签ID不存在"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "500", 

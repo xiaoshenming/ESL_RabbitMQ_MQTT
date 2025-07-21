@@ -29,6 +29,7 @@ public class TemplateServiceImpl implements TemplateService {
     private final MqttService mqttService;
     private final PrintTemplateDesignMapper printTemplateDesignMapper;
     private final ScreenTypeConverter screenTypeConverter;
+    private final EslRefreshService eslRefreshService;
     
     @Value("${app.template.base-url}")
     private String baseUrl;
@@ -196,13 +197,7 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public void refreshEsl(RefreshDto refreshDto) {
-        try {
-            String message = objectMapper.writeValueAsString(refreshDto);
-            rabbitTemplate.convertAndSend(RabbitMQConfig.REFRESH_QUEUE, message);
-            log.info("发送刷新消息到队列: {}", message);
-        } catch (Exception e) {
-            log.error("发送刷新消息失败", e);
-        }
+        eslRefreshService.sendRefreshMessage(refreshDto);
     }
 
     @Override
