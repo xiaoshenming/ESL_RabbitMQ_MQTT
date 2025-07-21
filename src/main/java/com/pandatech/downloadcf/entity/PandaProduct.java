@@ -29,19 +29,29 @@ public class PandaProduct implements Serializable {
 
     private String productSpecification;
 
+    private String productBrand;
+
     private BigDecimal productCostPrice;
 
     private BigDecimal productRetailPrice;
 
-    private BigDecimal productSalePrice;
+    private BigDecimal productMembershipPrice;
 
     private BigDecimal productDiscountPrice;
+
+    private BigDecimal productDiscount;
 
     private BigDecimal productWholesalePrice;
 
     private String productMaterial;
 
     private String productImage;
+
+    private String productOrigin;
+
+    private String productQrcode;
+
+    private String productBarcode;
 
     private String productUnit;
 
@@ -51,21 +61,7 @@ public class PandaProduct implements Serializable {
 
     private Integer productStock;
 
-    private String eslTemplate;
-
-    private String eslTemplateId;
-
-    private String storeCodeId;
-
-    private String goodsSpec;
-
-    private String goodsUnit;
-
-    private String goodsOrigin;
-
-    private String goodsPromotion;
-
-    private String model;
+    private String eslTemplateCode;
 
     private static final long serialVersionUID = 1L;
 
@@ -165,6 +161,14 @@ public class PandaProduct implements Serializable {
         this.productSpecification = productSpecification == null ? null : productSpecification.trim();
     }
 
+    public String getProductBrand() {
+        return productBrand;
+    }
+
+    public void setProductBrand(String productBrand) {
+        this.productBrand = productBrand == null ? null : productBrand.trim();
+    }
+
     public BigDecimal getProductCostPrice() {
         return productCostPrice;
     }
@@ -181,12 +185,12 @@ public class PandaProduct implements Serializable {
         this.productRetailPrice = productRetailPrice;
     }
 
-    public BigDecimal getProductSalePrice() {
-        return productSalePrice;
+    public BigDecimal getProductMembershipPrice() {
+        return productMembershipPrice;
     }
 
-    public void setProductSalePrice(BigDecimal productSalePrice) {
-        this.productSalePrice = productSalePrice;
+    public void setProductMembershipPrice(BigDecimal productMembershipPrice) {
+        this.productMembershipPrice = productMembershipPrice;
     }
 
     public BigDecimal getProductDiscountPrice() {
@@ -195,6 +199,14 @@ public class PandaProduct implements Serializable {
 
     public void setProductDiscountPrice(BigDecimal productDiscountPrice) {
         this.productDiscountPrice = productDiscountPrice;
+    }
+
+    public BigDecimal getProductDiscount() {
+        return productDiscount;
+    }
+
+    public void setProductDiscount(BigDecimal productDiscount) {
+        this.productDiscount = productDiscount;
     }
 
     public BigDecimal getProductWholesalePrice() {
@@ -219,6 +231,30 @@ public class PandaProduct implements Serializable {
 
     public void setProductImage(String productImage) {
         this.productImage = productImage == null ? null : productImage.trim();
+    }
+
+    public String getProductOrigin() {
+        return productOrigin;
+    }
+
+    public void setProductOrigin(String productOrigin) {
+        this.productOrigin = productOrigin == null ? null : productOrigin.trim();
+    }
+
+    public String getProductQrcode() {
+        return productQrcode;
+    }
+
+    public void setProductQrcode(String productQrcode) {
+        this.productQrcode = productQrcode == null ? null : productQrcode.trim();
+    }
+
+    public String getProductBarcode() {
+        return productBarcode;
+    }
+
+    public void setProductBarcode(String productBarcode) {
+        this.productBarcode = productBarcode == null ? null : productBarcode.trim();
     }
 
     public String getProductUnit() {
@@ -253,68 +289,12 @@ public class PandaProduct implements Serializable {
         this.productStock = productStock;
     }
 
-    public String getEslTemplate() {
-        return eslTemplate;
+    public String getEslTemplateCode() {
+        return eslTemplateCode;
     }
 
-    public void setEslTemplate(String eslTemplate) {
-        this.eslTemplate = eslTemplate == null ? null : eslTemplate.trim();
-    }
-
-    public String getEslTemplateId() {
-        return eslTemplateId;
-    }
-
-    public void setEslTemplateId(String eslTemplateId) {
-        this.eslTemplateId = eslTemplateId == null ? null : eslTemplateId.trim();
-    }
-
-    public String getStoreCodeId() {
-        return storeCodeId;
-    }
-
-    public void setStoreCodeId(String storeCodeId) {
-        this.storeCodeId = storeCodeId == null ? null : storeCodeId.trim();
-    }
-
-    public String getGoodsSpec() {
-        return goodsSpec;
-    }
-
-    public void setGoodsSpec(String goodsSpec) {
-        this.goodsSpec = goodsSpec;
-    }
-
-    public String getGoodsUnit() {
-        return goodsUnit;
-    }
-
-    public void setGoodsUnit(String goodsUnit) {
-        this.goodsUnit = goodsUnit;
-    }
-
-    public String getGoodsOrigin() {
-        return goodsOrigin;
-    }
-
-    public void setGoodsOrigin(String goodsOrigin) {
-        this.goodsOrigin = goodsOrigin;
-    }
-
-    public String getGoodsPromotion() {
-        return goodsPromotion;
-    }
-
-    public void setGoodsPromotion(String goodsPromotion) {
-        this.goodsPromotion = goodsPromotion;
-    }
-
-    public String getModel() {
-        return model;
-    }
-
-    public void setModel(String model) {
-        this.model = model;
+    public void setEslTemplateCode(String eslTemplateCode) {
+        this.eslTemplateCode = eslTemplateCode == null ? null : eslTemplateCode.trim();
     }
 
     @Override
@@ -335,20 +315,23 @@ public class PandaProduct implements Serializable {
         sb.append(", productName=").append(productName);
         sb.append(", productCategory=").append(productCategory);
         sb.append(", productSpecification=").append(productSpecification);
+        sb.append(", productBrand=").append(productBrand);
         sb.append(", productCostPrice=").append(productCostPrice);
         sb.append(", productRetailPrice=").append(productRetailPrice);
-        sb.append(", productSalePrice=").append(productSalePrice);
+        sb.append(", productMembershipPrice=").append(productMembershipPrice);
         sb.append(", productDiscountPrice=").append(productDiscountPrice);
+        sb.append(", productDiscount=").append(productDiscount);
         sb.append(", productWholesalePrice=").append(productWholesalePrice);
         sb.append(", productMaterial=").append(productMaterial);
         sb.append(", productImage=").append(productImage);
+        sb.append(", productOrigin=").append(productOrigin);
+        sb.append(", productQrcode=").append(productQrcode);
+        sb.append(", productBarcode=").append(productBarcode);
         sb.append(", productUnit=").append(productUnit);
         sb.append(", productWeight=").append(productWeight);
         sb.append(", productStatus=").append(productStatus);
         sb.append(", productStock=").append(productStock);
-        sb.append(", eslTemplate=").append(eslTemplate);
-        sb.append(", eslTemplateId=").append(eslTemplateId);
-        sb.append(", storeCodeId=").append(storeCodeId);
+        sb.append(", eslTemplateCode=").append(eslTemplateCode);
         sb.append("]");
         return sb.toString();
     }

@@ -2,7 +2,6 @@ package com.pandatech.downloadcf.mapper;
 
 import com.pandatech.downloadcf.entity.PandaEsl;
 import com.pandatech.downloadcf.entity.PandaEslExample;
-import com.pandatech.downloadcf.entity.PandaEslWithBLOBs;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.RowBounds;
@@ -14,29 +13,29 @@ public interface PandaEslMapper {
 
     int deleteByPrimaryKey(String id);
 
-    int insert(PandaEslWithBLOBs row);
+    int insert(PandaEsl row);
 
-    int insertSelective(PandaEslWithBLOBs row);
+    int insertSelective(PandaEsl row);
 
-    List<PandaEslWithBLOBs> selectByExampleWithBLOBsWithRowbounds(PandaEslExample example, RowBounds rowBounds);
+    List<PandaEsl> selectByExampleWithBLOBsWithRowbounds(PandaEslExample example, RowBounds rowBounds);
 
-    List<PandaEslWithBLOBs> selectByExampleWithBLOBs(PandaEslExample example);
+    List<PandaEsl> selectByExampleWithBLOBs(PandaEslExample example);
 
     List<PandaEsl> selectByExampleWithRowbounds(PandaEslExample example, RowBounds rowBounds);
 
     List<PandaEsl> selectByExample(PandaEslExample example);
 
-    PandaEslWithBLOBs selectByPrimaryKey(String id);
+    PandaEsl selectByPrimaryKey(String id);
 
-    int updateByExampleSelective(@Param("row") PandaEslWithBLOBs row, @Param("example") PandaEslExample example);
+    int updateByExampleSelective(@Param("row") PandaEsl row, @Param("example") PandaEslExample example);
 
-    int updateByExampleWithBLOBs(@Param("row") PandaEslWithBLOBs row, @Param("example") PandaEslExample example);
+    int updateByExampleWithBLOBs(@Param("row") PandaEsl row, @Param("example") PandaEslExample example);
 
     int updateByExample(@Param("row") PandaEsl row, @Param("example") PandaEslExample example);
 
-    int updateByPrimaryKeySelective(PandaEslWithBLOBs row);
+    int updateByPrimaryKeySelective(PandaEsl row);
 
-    int updateByPrimaryKeyWithBLOBs(PandaEslWithBLOBs row);
+    int updateByPrimaryKeyWithBLOBs(PandaEsl row);
 
     int updateByPrimaryKey(PandaEsl row);
 }

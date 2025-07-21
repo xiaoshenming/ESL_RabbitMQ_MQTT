@@ -43,36 +43,41 @@
             <property name="enableSubPackages" value="true"/>
         </javaClientGenerator>
 
-        <table tableName="print_template_design" domainObjectName="PrintTemplateDesign"
+        <!-- ESL电子价签表 -->
+        <table tableName="panda_esl" domainObjectName="PandaEsl"
                enableCountByExample="true"
                enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
         </table>
+
+        <!-- 商品表 -->
+        <table tableName="panda_product" domainObjectName="PandaProduct"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+
+        <!-- 品牌字段映射表 -->
         <table tableName="esl_brand_field_mapping" domainObjectName="EslBrandFieldMapping"
                enableCountByExample="true"
                enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
         </table>
-        <table tableName="esl_brand" domainObjectName="EslBrand"
-               enableCountByExample="true"
-               enableUpdateByExample="true"
-               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
-        </table>
-        <table tableName="esl_field_definition" domainObjectName="EslFieldDefinition"
-               enableCountByExample="true"
-               enableUpdateByExample="true"
-               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
-        </table>
-        <table tableName="esl_model" domainObjectName="EslModel"
-               enableCountByExample="true"
-               enableUpdateByExample="true"
-               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
-        </table>
+
+        <!-- 商品-ESL绑定关系表 -->
         <table tableName="product_esl_binding" domainObjectName="ProductEslBinding"
                enableCountByExample="true"
                enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
         </table>
+
+        <!-- 打印模板设计表 -->
+        <table tableName="print_template_design" domainObjectName="PrintTemplateDesign"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+
     </context>
 
 </generatorConfiguration>
