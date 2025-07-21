@@ -441,6 +441,25 @@ public class MqttService {
             item.put("BorderStyle", 1); // 显示边框
             item.put("BorderColor", "Black");
             item.put("Background", "Transparent");
+        } else if ("line".equals(elementType) || "hline".equals(elementType) || "vline".equals(elementType)) {
+            // 线条元素特殊处理
+            item.put("Background", "Black"); // 线条背景设为黑色以显示线条
+            item.put("BorderColor", "Transparent");
+            item.put("BorderStyle", 0);
+            
+            // 根据线条类型调整尺寸
+            if ("hline".equals(elementType)) {
+                // 水平线：高度较小，宽度较大
+                if (height > width / 10) {
+                    height = Math.max(1, width / 20); // 高度设为宽度的1/20，最小为1
+                }
+            } else if ("vline".equals(elementType)) {
+                // 垂直线：宽度较小，高度较大
+                if (width > height / 10) {
+                    width = Math.max(1, height / 20); // 宽度设为高度的1/20，最小为1
+                }
+            }
+            // 对于普通line类型，保持原有尺寸比例
         }
         
         log.debug("坐标转换 - 原始: left={}, top={}, width={}, height={}", leftPt, topPt, widthPt, heightPt);
