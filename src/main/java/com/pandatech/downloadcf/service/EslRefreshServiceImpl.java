@@ -62,7 +62,8 @@ public class EslRefreshServiceImpl implements EslRefreshService {
             
             // 5. 构造数据部分
             MqttDataDto dataDto = new MqttDataDto();
-            dataDto.setTag(Long.parseLong(eslInfo.getEslId()));
+            // 将十六进制的ESL ID转换为十进制Long类型
+            dataDto.setTag(convertHexEslIdToLong(eslInfo.getEslId()));
             dataDto.setTmpl(productInfo.getEslTemplateCode() != null ? productInfo.getEslTemplateCode() : 
                     eslRefreshProperties.getRefresh().getDefaultTemplateId());
             dataDto.setModel(getModelFromEslModel(eslInfo.getEslModel()));
@@ -330,6 +331,51 @@ public class EslRefreshServiceImpl implements EslRefreshService {
         } catch (NoSuchAlgorithmException e) {
             log.error("计算checksum失败", e);
             return "default_checksum";
+        }
+    }
+    
+    /**
+     * 将十六进制的ESL ID转换为十进制Long类型
+     * 例如：将 "06000000195A" 转换为对应的十进制数字
+     */
+    private Long convertHexEslIdToLong(String hexEslId) {
+        if (hexEslId == null || hexEslId.trim().isEmpty()) {
+            log.warn("ESL ID为空，使用默认值0");
+            return 0L;
+        }
+        
+        try {
+            // 移除可能的前缀和空格
+            String cleanHexId = hexEslId.trim().toUpperCase();
+            
+            // 如果包含0x前缀，移除它
+            if (cleanHexId.startsWith("0X")) {
+                cleanHexId = cleanHexId.substring(2);
+            }
+            
+            // 将十六进制字符串转换为Long
+            Long result = Long.parseUnsignedLong(cleanHexId, 16);
+            log.debug("ESL ID转换成功: {} -> {}", hexEslId, result);
+            return result;
+            
+        } catch (NumberFormatException e) {
+            log.error("ESL ID转换失败，无效的十六进制格式: {}", hexEslId, e);
+            // 如果转换失败，尝试提取数字部分
+            try {
+                String numericPart = hexEslId.replaceAll("[^0-9A-Fa-f]", "");
+                if (!numericPart.isEmpty()) {
+                    Long result = Long.parseUnsignedLong(numericPart, 16);
+                    log.warn("使用提取的数字部分进行转换: {} -> {}", numericPart, result);
+                    return result;
+                }
+            } catch (Exception ex) {
+                log.error("提取数字部分转换也失败", ex);
+            }
+            
+            // 最后的备用方案：返回hashCode的绝对值
+            long fallback = Math.abs(hexEslId.hashCode());
+            log.warn("使用hashCode作为备用方案: {} -> {}", hexEslId, fallback);
+            return fallback;
         }
     }
 }
