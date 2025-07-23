@@ -139,7 +139,7 @@ public class MessageProducerService {
         
         // 严格按照标准格式的字段顺序：tag, tmpl, model, checksum, forcefrash, value, taskid, token
         dataItem.put("tag", convertEslIdToDecimal(outputData.getActualEslId())); // 使用真正的ESL设备ID进行转换
-        dataItem.put("tmpl", getTemplateName(outputData.getTemplateId())); // 模板名称（从数据库获取）
+        dataItem.put("tmpl", getTemplateName(outputData.getEslId())); // 根据ESL ID获取模板名称
         dataItem.put("model", "6"); // 按照标准格式，固定为"6"
         dataItem.put("checksum", outputData.getChecksum() != null ? outputData.getChecksum() : "");
         dataItem.put("forcefrash", 1); // 保持原有拼写（按照标准格式）
@@ -151,73 +151,71 @@ public class MessageProducerService {
     }
     
     /**
-     * 将十六进制ESL ID转换为十进制 - 按照标准格式要求
+     * 将十六进制ESL ID转换为十进制 - 严格按照标准格式要求
      * 例如：06000000195A → 6597069773146
+     * 参考原始代码的convertHexEslIdToLong方法实现
      */
     private long convertEslIdToDecimal(String eslId) {
-        if (eslId == null || eslId.isEmpty()) {
-            log.warn("ESL ID为空，使用默认值");
+        if (eslId == null || eslId.trim().isEmpty()) {
+            log.warn("ESL ID为空，使用默认值0");
             return 0L;
         }
         
         try {
-            // 清理ESL ID，移除所有非十六进制字符
-            String cleanEslId = eslId.trim().toUpperCase();
+            // 移除可能的前缀和空格
+            String cleanHexId = eslId.trim().toUpperCase();
             
-            // 移除0x前缀（如果存在）
-            if (cleanEslId.startsWith("0X")) {
-                cleanEslId = cleanEslId.substring(2);
+            // 如果包含0x前缀，移除它
+            if (cleanHexId.startsWith("0X")) {
+                cleanHexId = cleanHexId.substring(2);
             }
             
-            // 移除所有非十六进制字符（保留0-9, A-F）
-            cleanEslId = cleanEslId.replaceAll("[^0-9A-F]", "");
-            
-            if (cleanEslId.isEmpty()) {
-                log.warn("ESL ID格式错误，清理后为空: {}", eslId);
-                return 0L;
-            }
-            
-            // 如果是纯数字且长度较短，可能已经是十进制
-            if (cleanEslId.matches("\\d+") && cleanEslId.length() <= 10) {
-                long decimalValue = Long.parseLong(cleanEslId);
-                log.debug("ESL ID已是十进制格式: {} → {}", eslId, decimalValue);
-                return decimalValue;
-            }
-            
-            // 转换十六进制为十进制
-            long decimalValue = Long.parseUnsignedLong(cleanEslId, 16);
-            log.debug("ESL ID十六进制转十进制: {} → {} → {}", eslId, cleanEslId, decimalValue);
-            return decimalValue;
+            // 将十六进制字符串转换为Long
+            Long result = Long.parseUnsignedLong(cleanHexId, 16);
+            log.debug("ESL ID转换成功: {} -> {}", eslId, result);
+            return result;
             
         } catch (NumberFormatException e) {
-            log.error("ESL ID转换失败: {}", eslId, e);
-            return 0L;
+            log.error("ESL ID转换失败，无效的十六进制格式: {}", eslId, e);
+            // 如果转换失败，尝试提取数字部分
+            try {
+                String numericPart = eslId.replaceAll("[^0-9A-Fa-f]", "");
+                if (!numericPart.isEmpty()) {
+                    Long result = Long.parseUnsignedLong(numericPart, 16);
+                    log.warn("使用提取的数字部分进行转换: {} -> {}", numericPart, result);
+                    return result;
+                }
+            } catch (Exception ex) {
+                log.error("提取数字部分转换也失败", ex);
+            }
+            
+            // 最后的备用方案：返回hashCode的绝对值
+            long fallback = Math.abs(eslId.hashCode());
+            log.warn("使用hashCode作为备用方案: {} -> {}", eslId, fallback);
+            return fallback;
         }
     }
     
     /**
-     * 获取模板名称 - 从数据库获取模板的name字段
-     * 根据err.md的要求，tmpl字段应该是模板的name（如"2"），而不是"panda"
+     * 获取模板名称 - 严格按照标准格式要求
+     * 根据ESL ID获取对应的模板名称，参考原始代码实现
      */
-    private String getTemplateName(String templateId) {
-        if (templateId == null || templateId.isEmpty()) {
-            return "2"; // 默认模板名称，按照标准格式示例
-        }
-        
+    private String getTemplateName(String eslId) {
         try {
-            // 通过DataService获取模板信息
-            PrintTemplateDesignWithBLOBs template = dataService.getTemplateById(templateId);
-            if (template != null && template.getName() != null) {
-                return template.getName(); // 返回模板的name字段
+            // 通过ESL ID获取模板信息
+            PrintTemplateDesignWithBLOBs template = dataService.getTemplateByEslId(eslId);
+            if (template != null && template.getName() != null && !template.getName().trim().isEmpty()) {
+                String templateName = template.getName().trim();
+                log.debug("获取到模板名称: ESL ID={}, 模板名称={}", eslId, templateName);
+                return templateName;
             }
             
-            // 如果没有找到模板，返回默认值
-            log.warn("未找到模板信息: {}", templateId);
+            log.warn("未找到ESL ID对应的模板或模板名称为空: {}, 使用默认模板名称: 2", eslId);
             return "2"; // 默认模板名称
             
         } catch (Exception e) {
-            log.error("获取模板名称失败: {}", templateId, e);
-            return "2"; // 默认模板名称
+            log.error("获取模板名称时发生异常: ESL ID={}", eslId, e);
+            return "2"; // 异常时返回默认模板名称
         }
     }
     

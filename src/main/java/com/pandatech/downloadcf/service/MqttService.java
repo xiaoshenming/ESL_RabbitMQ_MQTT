@@ -60,13 +60,16 @@ public class MqttService {
 
             String officialJson = convertToOfficialTemplate(template);
             String md5 = calculateMD5(officialJson);
+            
+            // 从官方模板JSON中提取TagType
+            String tagType = extractTagTypeFromOfficialTemplate(officialJson);
 
             String topic = "esl/server/data/" + shop;
-            String message = buildTmplListMessage(shop, templateId, templateName, md5);
+            String message = buildTmplListMessage(shop, templateId, templateName, md5, tagType);
 
             sendMqttMessage(topic, message.getBytes());
 
-            log.info("模板消息发送成功 - 主题: {}, 模板ID: {}", topic, templateId);
+            log.info("模板消息发送成功 - 主题: {}, 模板ID: {}, TagType: {}", topic, templateId, tagType);
         } catch (Exception e) {
             log.error("发送模板到MQTT失败: {}", e.getMessage(), e);
             throw new RuntimeException("MQTT发送失败", e);
@@ -76,7 +79,7 @@ public class MqttService {
     /**
      * 构建tmpllist格式消息 - 严格匹配用户指定结构
      */
-    private String buildTmplListMessage(String shop, String templateId, String templateName, String md5) throws JsonProcessingException {
+    private String buildTmplListMessage(String shop, String templateId, String templateName, String md5, String tagType) throws JsonProcessingException {
         Map<String, Object> message = new HashMap<>();
         message.put("shop", shop);
         message.put("id", UUID.randomUUID().toString());
@@ -85,17 +88,30 @@ public class MqttService {
 
         Map<String, Object> data = new HashMap<>();
         data.put("url", templateBaseUrl);
-        data.put("tid", "396a5189-53d8-4354-bcfa-27d57d9d69ad");
+        data.put("tid", UUID.randomUUID().toString()); // 使用随机UUID
 
         List<Map<String, String>> tmpls = new ArrayList<>();
         Map<String, String> tmpl = new HashMap<>();
-        tmpl.put("name", templateName + "_06.json");
+        
+        // 构建正确的文件名格式：{templateName}_{tagType}.json
+        String fileName;
+        if (tagType != null && !tagType.isEmpty()) {
+            fileName = templateName + "_" + tagType + ".json";
+        } else {
+            // 如果TagType为空，使用默认值06
+            fileName = templateName + "_06.json";
+            log.warn("TagType为空，使用默认值06: templateId={}, templateName={}", templateId, templateName);
+        }
+        
+        tmpl.put("name", fileName);
         tmpl.put("id", templateId);
         tmpl.put("md5", md5);
         tmpls.add(tmpl);
         data.put("tmpls", tmpls);
 
         message.put("data", data);
+        
+        log.debug("构建tmpllist消息: templateId={}, fileName={}, md5={}", templateId, fileName, md5);
         return objectMapper.writeValueAsString(message);
     }
 
@@ -601,6 +617,25 @@ public class MqttService {
         template.put("Items", new ArrayList<>());
         
         return objectMapper.writeValueAsString(template);
+    }
+
+    /**
+     * 从官方模板JSON中提取TagType
+     */
+    private String extractTagTypeFromOfficialTemplate(String officialJson) {
+        try {
+            JsonNode rootNode = objectMapper.readTree(officialJson);
+            if (rootNode.has("TagType")) {
+                String tagType = rootNode.get("TagType").asText();
+                log.debug("从官方模板中提取TagType: {}", tagType);
+                return tagType;
+            }
+            log.warn("官方模板JSON中未找到TagType字段，使用默认值06");
+            return "06";
+        } catch (Exception e) {
+            log.error("解析官方模板JSON失败，使用默认TagType: 06", e);
+            return "06";
+        }
     }
 
     /**

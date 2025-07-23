@@ -239,17 +239,32 @@ public class TemplateServiceImpl implements TemplateService {
             data.put("url", baseUrl); // 模板下载URL
             data.put("tid", java.util.UUID.randomUUID().toString()); // 事务ID
             
+            // 获取模板的官方格式并提取TagType
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            String tagType = extractTagTypeFromTemplate(officialTemplateJson);
+            
+            // 构建正确的文件名格式：{templateName}_{tagType}.json
+            String templateName = template.getName() != null ? template.getName() : "2";
+            String fileName;
+            if (tagType != null && !tagType.isEmpty()) {
+                fileName = templateName + "_" + tagType + ".json";
+            } else {
+                // 如果无法获取TagType，使用默认值06
+                fileName = templateName + "_06.json";
+                log.warn("无法获取模板TagType，使用默认值06: templateId={}", template.getId());
+            }
+            
             // 构建tmpls数组
             Map<String, Object> tmplItem = new HashMap<>();
             tmplItem.put("id", template.getId());
-            tmplItem.put("name", template.getName() != null ? template.getName() : "");
+            tmplItem.put("name", fileName); // 使用正确的文件名格式
             tmplItem.put("md5", calculateTemplateMd5(template));
             
             data.put("tmpls", List.of(tmplItem));
             message.put("data", data);
             
-            log.debug("构建模板下发消息完成: templateId={}, storeCode={}, brandCode={}", 
-                    template.getId(), storeCode, brandCode);
+            log.debug("构建模板下发消息完成: templateId={}, fileName={}, storeCode={}, brandCode={}", 
+                    template.getId(), fileName, storeCode, brandCode);
             
             return message;
             
