@@ -11,6 +11,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,9 +39,56 @@ public class RabbitMQListener {
             // 解析消息
             @SuppressWarnings("unchecked")
             Map<String, Object> messageMap = objectMapper.readValue(message, Map.class);
+            log.debug("解析后的消息Map: {}", messageMap);
+            
             String shop = (String) messageMap.get("shop");
-            String templateId = (String) messageMap.get("templateId");
-            String templateName = (String) messageMap.get("templateName");
+            Object idObj = messageMap.get("id");
+            String templateId = idObj != null ? idObj.toString() : null; // 确保转换为字符串
+            log.debug("提取的字段 - shop: {}, id对象: {}, templateId: {}", shop, idObj, templateId);
+            
+            // 从data.tmpls[0].name中提取模板名称（去掉后缀）
+            String templateName = null;
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
+                log.debug("data字段: {}", data);
+                if (data != null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> tmpls = (List<Map<String, Object>>) data.get("tmpls");
+                    log.debug("tmpls字段: {}", tmpls);
+                    if (tmpls != null && !tmpls.isEmpty()) {
+                        String fileName = (String) tmpls.get(0).get("name");
+                        log.debug("文件名: {}", fileName);
+                        if (fileName != null) {
+                            // 从文件名中提取模板名称（去掉_XX.json后缀）
+                            int underscoreIndex = fileName.lastIndexOf('_');
+                            if (underscoreIndex > 0) {
+                                templateName = fileName.substring(0, underscoreIndex);
+                            } else {
+                                // 如果没有下划线，去掉.json后缀
+                                templateName = fileName.replace(".json", "");
+                            }
+                            log.debug("提取的模板名称: {}", templateName);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析模板名称失败: {}", e.getMessage());
+            }
+            
+            // 验证必要参数
+            if (shop == null || shop.trim().isEmpty()) {
+                log.error("门店编码为空，消息: {}", message);
+                throw new IllegalArgumentException("门店编码不能为空");
+            }
+            
+            if (templateId == null || templateId.trim().isEmpty()) {
+                log.error("模板ID为空，消息: {}", message);
+                throw new IllegalArgumentException("模板ID不能为空");
+            }
+            
+            // 模板名称可以为空，MqttService会处理
+            log.info("解析消息成功 - 门店: {}, 模板ID: {}, 模板名称: {}", shop, templateId, templateName);
             
             // 调用MqttService发送优化后的tmpllist消息
             mqttService.sendTemplateToMqtt(shop, templateId, templateName);
@@ -48,6 +96,7 @@ public class RabbitMQListener {
             
         } catch (Exception e) {
             log.error("处理模板消息失败: {}", e.getMessage(), e);
+            // 可以考虑将失败的消息发送到死信队列或重试队列
         }
     }
 
