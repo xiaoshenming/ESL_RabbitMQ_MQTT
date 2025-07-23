@@ -101,7 +101,7 @@ public class PandaBrandAdapter implements BrandAdapter {
     }
     
     /**
-     * 构建数据映射 - 按照标准格式
+     * 构建数据映射 - 按照PANDA标准格式
      */
     private Map<String, Object> buildDataMap(EslCompleteData completeData) {
         Map<String, Object> dataMap = new HashMap<>();
@@ -112,20 +112,31 @@ public class PandaBrandAdapter implements BrandAdapter {
             return dataMap;
         }
         
-        // 基础商品信息映射 - 使用标准字段名称
-        putIfNotNull(dataMap, "GOODS_NAME", product.getProductName());
+        // 按照PANDA标准字段映射格式构建数据
+        // 基础商品信息 - 使用标准字段编码
         putIfNotNull(dataMap, "GOODS_CODE", product.getProductId());
-        putIfNotNull(dataMap, "PRICE", formatPrice(product.getProductCostPrice()));
-        putIfNotNull(dataMap, "CATEGORY", product.getProductCategory());
-        putIfNotNull(dataMap, "BRAND", product.getProductBrand());
-        putIfNotNull(dataMap, "SPECIFICATION", product.getProductSpecification());
+        putIfNotNull(dataMap, "GOODS_NAME", product.getProductName());
+        putIfNotNull(dataMap, "QRCODE", product.getProductBarcode() != null ? product.getProductBarcode() : "www.baidu.com");
         
-        // 添加常用的标准字段
-        putIfNotNull(dataMap, "PRODUCT_NAME", product.getProductName());
-        putIfNotNull(dataMap, "PRODUCT_CODE", product.getProductId());
-        putIfNotNull(dataMap, "UNIT_PRICE", formatPrice(product.getProductCostPrice()));
+        // 按照字段映射表进行标准化映射
+        putIfNotNull(dataMap, "F_1", formatPrice(product.getProductRetailPrice())); // 零售价
+        putIfNotNull(dataMap, "F_2", product.getProductCategory()); // 分类
+        putIfNotNull(dataMap, "F_3", formatPrice(product.getProductCostPrice())); // 成本价
+        putIfNotNull(dataMap, "F_4", product.getProductSpecification()); // 规格
+        putIfNotNull(dataMap, "F_5", formatPrice(product.getProductMembershipPrice())); // 会员价
+        putIfNotNull(dataMap, "F_6", product.getProductBrand()); // 品牌
+        putIfNotNull(dataMap, "F_7", formatDiscount(product.getProductDiscount())); // 折扣
+        putIfNotNull(dataMap, "F_8", formatPrice(product.getProductWholesalePrice())); // 批发价
+        putIfNotNull(dataMap, "F_9", product.getProductMaterial()); // 材质
+        putIfNotNull(dataMap, "F_10", product.getProductImage()); // 图片
+        putIfNotNull(dataMap, "F_11", product.getProductOrigin()); // 产地
+        putIfNotNull(dataMap, "F_12", product.getProductUnit()); // 单位
+        putIfNotNull(dataMap, "F_13", formatWeight(product.getProductWeight())); // 重量
+        putIfNotNull(dataMap, "F_14", product.getProductStatus()); // 状态
+        putIfNotNull(dataMap, "F_20", product.getProductDescription()); // 描述
+        putIfNotNull(dataMap, "F_32", formatStock(product.getProductStock())); // 库存
         
-        // 根据字段映射配置进行转换
+        // 根据字段映射配置进行额外转换
         if (completeData.getFieldMappings() != null) {
             for (EslBrandFieldMapping mapping : completeData.getFieldMappings()) {
                 String sourceField = mapping.getSourceField();
@@ -134,14 +145,21 @@ public class PandaBrandAdapter implements BrandAdapter {
                 if (sourceField != null && targetField != null) {
                     Object value = getProductFieldValue(product, sourceField);
                     if (value != null) {
-                        // 确保值是字符串格式
                         dataMap.put(targetField, formatFieldValue(value));
                     }
                 }
             }
         }
         
-        log.debug("构建数据映射完成: {}", dataMap);
+        // 确保所有F_字段都有值，空值设为null（按照标准格式）
+        for (int i = 15; i <= 31; i++) {
+            String fieldKey = "F_" + i;
+            if (!dataMap.containsKey(fieldKey)) {
+                dataMap.put(fieldKey, null);
+            }
+        }
+        
+        log.debug("构建PANDA标准数据映射完成: {}", dataMap);
         return dataMap;
     }
     
@@ -178,6 +196,57 @@ public class PandaBrandAdapter implements BrandAdapter {
         } catch (NumberFormatException e) {
             log.warn("价格格式错误: {}", price);
             return "0.00";
+        }
+    }
+    
+    /**
+     * 格式化折扣
+     */
+    private Object formatDiscount(Object discount) {
+        if (discount == null) {
+            return null;
+        }
+        
+        try {
+            double discountValue = Double.parseDouble(discount.toString());
+            return discountValue;
+        } catch (NumberFormatException e) {
+            log.warn("折扣格式错误: {}", discount);
+            return null;
+        }
+    }
+    
+    /**
+     * 格式化重量
+     */
+    private Object formatWeight(Object weight) {
+        if (weight == null) {
+            return null;
+        }
+        
+        try {
+            double weightValue = Double.parseDouble(weight.toString());
+            return weightValue;
+        } catch (NumberFormatException e) {
+            log.warn("重量格式错误: {}", weight);
+            return null;
+        }
+    }
+    
+    /**
+     * 格式化库存
+     */
+    private Object formatStock(Object stock) {
+        if (stock == null) {
+            return null;
+        }
+        
+        try {
+            int stockValue = Integer.parseInt(stock.toString());
+            return stockValue;
+        } catch (NumberFormatException e) {
+            log.warn("库存格式错误: {}", stock);
+            return null;
         }
     }
     
@@ -229,12 +298,42 @@ public class PandaBrandAdapter implements BrandAdapter {
                 return product.getProductId();
             case "PRODUCT_COST_PRICE":
                 return product.getProductCostPrice();
+            case "PRODUCT_RETAIL_PRICE":
+                return product.getProductRetailPrice();
+            case "PRODUCT_MEMBERSHIP_PRICE":
+                return product.getProductMembershipPrice();
+            case "PRODUCT_DISCOUNT_PRICE":
+                return product.getProductDiscountPrice();
+            case "PRODUCT_DISCOUNT":
+                return product.getProductDiscount();
+            case "PRODUCT_WHOLESALE_PRICE":
+                return product.getProductWholesalePrice();
             case "PRODUCT_CATEGORY":
                 return product.getProductCategory();
             case "PRODUCT_BRAND":
                 return product.getProductBrand();
             case "PRODUCT_SPECIFICATION":
                 return product.getProductSpecification();
+            case "PRODUCT_MATERIAL":
+                return product.getProductMaterial();
+            case "PRODUCT_IMAGE":
+                return product.getProductImage();
+            case "PRODUCT_ORIGIN":
+                return product.getProductOrigin();
+            case "PRODUCT_QRCODE":
+                return product.getProductQrcode();
+            case "PRODUCT_BARCODE":
+                return product.getProductBarcode();
+            case "PRODUCT_UNIT":
+                return product.getProductUnit();
+            case "PRODUCT_WEIGHT":
+                return product.getProductWeight();
+            case "PRODUCT_STATUS":
+                return product.getProductStatus();
+            case "PRODUCT_STOCK":
+                return product.getProductStock();
+            case "PRODUCT_DESCRIPTION":
+                return product.getProductDescription();
             default:
                 log.warn("未知的商品字段: {}", fieldName);
                 return null;

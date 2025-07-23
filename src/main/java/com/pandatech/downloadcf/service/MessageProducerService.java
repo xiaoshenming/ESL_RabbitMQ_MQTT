@@ -113,7 +113,7 @@ public class MessageProducerService {
     }
     
     /**
-     * 构建MQTT载荷 - 严格按照标准格式
+     * 构建MQTT载荷 - 严格按照PANDA标准格式
      */
     private Object buildMqttPayload(BrandOutputData outputData) {
         Map<String, Object> payload = new HashMap<>();
@@ -122,29 +122,51 @@ public class MessageProducerService {
         payload.put("command", "wtag");
         payload.put("data", buildDataArray(outputData));
         payload.put("id", outputData.getEslId());
-        payload.put("timestamp", System.currentTimeMillis() / 1000);
+        payload.put("timestamp", (double) (System.currentTimeMillis() / 1000.0)); // 科学计数法格式
         payload.put("shop", outputData.getStoreCode());
         
         return payload;
     }
     
     /**
-     * 构建data数组 - 严格按照标准格式
+     * 构建data数组 - 严格按照PANDA标准格式
      */
     private List<Map<String, Object>> buildDataArray(BrandOutputData outputData) {
         Map<String, Object> dataItem = new HashMap<>();
         
         // 严格按照标准格式的字段顺序：tag, tmpl, model, checksum, forcefrash, value, taskid, token
         dataItem.put("tag", Long.parseLong(outputData.getEslId())); // 转换为数字格式
-        dataItem.put("tmpl", outputData.getTemplateId()); // 模板ID
-        dataItem.put("model", "213"); // 字符串格式，按照标准
+        dataItem.put("tmpl", getTemplateNumber(outputData.getTemplateId())); // 模板编号（字符串格式，如"2"）
+        dataItem.put("model", "6"); // 按照标准格式，应该是"6"而不是"213"
         dataItem.put("checksum", outputData.getChecksum() != null ? outputData.getChecksum() : "");
-        dataItem.put("forcefrash", 1); // 按照标准格式的拼写
-        dataItem.put("value", buildStandardValueMapping(outputData.getDataMap()));
+        dataItem.put("forcefrash", 1); // 保持原有拼写（按照标准格式）
+        dataItem.put("value", outputData.getDataMap()); // 直接使用已经格式化的数据映射
         dataItem.put("taskid", generateTaskId()); // 生成任务ID
         dataItem.put("token", generateToken()); // 生成令牌
         
         return List.of(dataItem);
+    }
+    
+    /**
+     * 获取模板编号 - 将模板ID转换为简单的编号格式
+     */
+    private String getTemplateNumber(String templateId) {
+        if (templateId == null || templateId.isEmpty()) {
+            return "1"; // 默认模板编号
+        }
+        
+        // 简化模板ID为编号（实际项目中可能需要查询数据库获取对应的编号）
+        try {
+            // 如果是长ID，取后几位作为编号
+            if (templateId.length() > 10) {
+                return String.valueOf(Math.abs(templateId.hashCode()) % 100 + 1);
+            } else {
+                return templateId;
+            }
+        } catch (Exception e) {
+            log.warn("模板ID格式错误: {}", templateId);
+            return "1";
+        }
     }
     
     /**
