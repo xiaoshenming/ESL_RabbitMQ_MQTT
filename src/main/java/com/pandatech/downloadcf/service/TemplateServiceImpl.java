@@ -15,6 +15,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -219,26 +221,68 @@ public class TemplateServiceImpl implements TemplateService {
     }
 
     /**
-     * 构建模板下发消息
+     * 构建模板下发消息 - 按照标准格式
      */
     private Map<String, Object> buildTemplateMessage(PrintTemplateDesignWithBLOBs template, String storeCode, String brandCode) {
         try {
-            // 转换为官方格式
-            String officialTemplate = mqttService.convertToOfficialTemplate(template);
+            // 构建标准的模板下发MQTT消息格式
+            Map<String, Object> message = new HashMap<>();
             
-            // 构建MQTT消息格式
-            Map<String, Object> message = objectMapper.readValue(officialTemplate, Map.class);
-            message.put("shop", storeCode);  // 使用"shop"字段以匹配RabbitMQListener
-            message.put("templateId", template.getId());
-            message.put("templateName", template.getName());
-            message.put("brandCode", brandCode != null ? brandCode : "PANDA"); // 添加品牌编码，默认为PANDA
-            message.put("timestamp", System.currentTimeMillis());
+            // 按照标准格式的字段顺序
+            message.put("command", "tmpllist");
+            message.put("id", template.getId());
+            message.put("timestamp", System.currentTimeMillis() / 1000);
+            message.put("shop", storeCode);
+            
+            // 构建data字段
+            Map<String, Object> data = new HashMap<>();
+            data.put("url", baseUrl); // 模板下载URL
+            data.put("tid", java.util.UUID.randomUUID().toString()); // 事务ID
+            
+            // 构建tmpls数组
+            Map<String, Object> tmplItem = new HashMap<>();
+            tmplItem.put("id", template.getId());
+            tmplItem.put("name", template.getName() != null ? template.getName() : "");
+            tmplItem.put("md5", calculateTemplateMd5(template));
+            
+            data.put("tmpls", List.of(tmplItem));
+            message.put("data", data);
+            
+            log.debug("构建模板下发消息完成: templateId={}, storeCode={}, brandCode={}", 
+                    template.getId(), storeCode, brandCode);
             
             return message;
             
         } catch (Exception e) {
             log.error("构建模板消息失败，模板ID: {}, 错误: {}", template.getId(), e.getMessage(), e);
             throw new BusinessException("BUILD_MESSAGE_ERROR", "构建模板消息失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 计算模板MD5校验码
+     */
+    private String calculateTemplateMd5(PrintTemplateDesignWithBLOBs template) {
+        try {
+            String content = template.getContent();
+            if (content == null || content.isEmpty()) {
+                content = template.getExtJson();
+            }
+            if (content == null) {
+                content = "";
+            }
+            
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] messageDigest = md.digest(content.getBytes());
+            java.math.BigInteger no = new java.math.BigInteger(1, messageDigest);
+            String hashtext = no.toString(16);
+            while (hashtext.length() < 32) {
+                hashtext = "0" + hashtext;
+            }
+            return hashtext;
+        } catch (Exception e) {
+            log.error("计算模板MD5失败", e);
+            return "";
         }
     }
 }

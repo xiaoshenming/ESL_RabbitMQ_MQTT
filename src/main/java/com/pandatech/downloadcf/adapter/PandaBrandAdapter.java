@@ -101,7 +101,7 @@ public class PandaBrandAdapter implements BrandAdapter {
     }
     
     /**
-     * 构建数据映射
+     * 构建数据映射 - 按照标准格式
      */
     private Map<String, Object> buildDataMap(EslCompleteData completeData) {
         Map<String, Object> dataMap = new HashMap<>();
@@ -112,13 +112,18 @@ public class PandaBrandAdapter implements BrandAdapter {
             return dataMap;
         }
         
-        // 基础商品信息映射
-        dataMap.put("GOODS_NAME", product.getProductName());
-        dataMap.put("GOODS_CODE", product.getProductId());
-        dataMap.put("PRICE", product.getProductCostPrice());
-        dataMap.put("CATEGORY", product.getProductCategory());
-        dataMap.put("BRAND", product.getProductBrand());
-        dataMap.put("SPECIFICATION", product.getProductSpecification());
+        // 基础商品信息映射 - 使用标准字段名称
+        putIfNotNull(dataMap, "GOODS_NAME", product.getProductName());
+        putIfNotNull(dataMap, "GOODS_CODE", product.getProductId());
+        putIfNotNull(dataMap, "PRICE", formatPrice(product.getProductCostPrice()));
+        putIfNotNull(dataMap, "CATEGORY", product.getProductCategory());
+        putIfNotNull(dataMap, "BRAND", product.getProductBrand());
+        putIfNotNull(dataMap, "SPECIFICATION", product.getProductSpecification());
+        
+        // 添加常用的标准字段
+        putIfNotNull(dataMap, "PRODUCT_NAME", product.getProductName());
+        putIfNotNull(dataMap, "PRODUCT_CODE", product.getProductId());
+        putIfNotNull(dataMap, "UNIT_PRICE", formatPrice(product.getProductCostPrice()));
         
         // 根据字段映射配置进行转换
         if (completeData.getFieldMappings() != null) {
@@ -129,7 +134,8 @@ public class PandaBrandAdapter implements BrandAdapter {
                 if (sourceField != null && targetField != null) {
                     Object value = getProductFieldValue(product, sourceField);
                     if (value != null) {
-                        dataMap.put(targetField, value);
+                        // 确保值是字符串格式
+                        dataMap.put(targetField, formatFieldValue(value));
                     }
                 }
             }
@@ -137,6 +143,42 @@ public class PandaBrandAdapter implements BrandAdapter {
         
         log.debug("构建数据映射完成: {}", dataMap);
         return dataMap;
+    }
+    
+    /**
+     * 安全地添加非空值到映射中
+     */
+    private void putIfNotNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, formatFieldValue(value));
+        }
+    }
+    
+    /**
+     * 格式化字段值为字符串
+     */
+    private String formatFieldValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toString().trim();
+    }
+    
+    /**
+     * 格式化价格
+     */
+    private String formatPrice(Object price) {
+        if (price == null) {
+            return "0.00";
+        }
+        
+        try {
+            double priceValue = Double.parseDouble(price.toString());
+            return String.format("%.2f", priceValue);
+        } catch (NumberFormatException e) {
+            log.warn("价格格式错误: {}", price);
+            return "0.00";
+        }
     }
     
     /**

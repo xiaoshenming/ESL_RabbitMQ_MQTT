@@ -106,36 +106,80 @@ public class MessageProducerService {
     }
     
     /**
-     * 构建MQTT主题
+     * 构建MQTT主题 - 按照标准格式
      */
     private String buildMqttTopic(String storeCode) {
-        return String.format("esl/%s/data", storeCode);
+        return String.format("esl/server/data/%s", storeCode);
     }
     
     /**
-     * 构建MQTT载荷
+     * 构建MQTT载荷 - 严格按照标准格式
      */
     private Object buildMqttPayload(BrandOutputData outputData) {
         Map<String, Object> payload = new HashMap<>();
+        
+        // 按照标准格式的字段顺序
         payload.put("command", "wtag");
+        payload.put("data", buildDataArray(outputData));
         payload.put("id", outputData.getEslId());
-        payload.put("timestamp", System.currentTimeMillis() / 1000.0);
+        payload.put("timestamp", System.currentTimeMillis() / 1000);
         payload.put("shop", outputData.getStoreCode());
         
-        // 构建data数组
-        Map<String, Object> dataItem = new HashMap<>();
-        dataItem.put("tag", Long.parseLong(outputData.getEslId()));
-        dataItem.put("tmpl", outputData.getTemplateId()); // 使用模板ID而不是模板内容
-        dataItem.put("model", "2.13"); // 默认型号
-        dataItem.put("checksum", outputData.getChecksum());
-        dataItem.put("forcefrash", 1);
-        dataItem.put("value", outputData.getDataMap());
-        dataItem.put("taskid", 1);
-        dataItem.put("token", 1);
-        
-        payload.put("data", List.of(dataItem));
-        
         return payload;
+    }
+    
+    /**
+     * 构建data数组 - 严格按照标准格式
+     */
+    private List<Map<String, Object>> buildDataArray(BrandOutputData outputData) {
+        Map<String, Object> dataItem = new HashMap<>();
+        
+        // 严格按照标准格式的字段顺序：tag, tmpl, model, checksum, forcefrash, value, taskid, token
+        dataItem.put("tag", Long.parseLong(outputData.getEslId())); // 转换为数字格式
+        dataItem.put("tmpl", outputData.getTemplateId()); // 模板ID
+        dataItem.put("model", "213"); // 字符串格式，按照标准
+        dataItem.put("checksum", outputData.getChecksum() != null ? outputData.getChecksum() : "");
+        dataItem.put("forcefrash", 1); // 按照标准格式的拼写
+        dataItem.put("value", buildStandardValueMapping(outputData.getDataMap()));
+        dataItem.put("taskid", generateTaskId()); // 生成任务ID
+        dataItem.put("token", generateToken()); // 生成令牌
+        
+        return List.of(dataItem);
+    }
+    
+    /**
+     * 生成任务ID
+     */
+    private int generateTaskId() {
+        return (int) (System.currentTimeMillis() % 100000);
+    }
+    
+    /**
+     * 生成令牌
+     */
+    private int generateToken() {
+        return (int) (Math.random() * 1000000);
+    }
+    
+    /**
+     * 构建标准的value映射格式
+     */
+    private Map<String, Object> buildStandardValueMapping(Map<String, Object> dataMap) {
+        Map<String, Object> standardValue = new HashMap<>();
+        
+        if (dataMap != null) {
+            // 确保所有值都是字符串格式
+            for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
+                Object value = entry.getValue();
+                if (value != null) {
+                    standardValue.put(entry.getKey(), value.toString());
+                } else {
+                    standardValue.put(entry.getKey(), "");
+                }
+            }
+        }
+        
+        return standardValue;
     }
     
     /**
