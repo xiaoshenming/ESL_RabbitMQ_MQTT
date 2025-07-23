@@ -41,13 +41,11 @@ public class PandaBrandAdapter implements BrandAdapter {
         outputData.setStoreCode(completeData.getStoreCode());
         
         // 设置真正的ESL设备ID（十六进制）
-        // 根据err.md，ESL_ID字段存储的是十六进制的ESL设备ID（如06000000195A）
-        if (completeData.getEsl().getEslId() != null && !completeData.getEsl().getEslId().trim().isEmpty()) {
-            outputData.setActualEslId(completeData.getEsl().getEslId().trim());
-            log.debug("设置ESL设备ID: {}", completeData.getEsl().getEslId());
+        if (completeData.getEsl().getEslId() != null) {
+            outputData.setActualEslId(completeData.getEsl().getEslId());
         } else {
             log.warn("ESL设备ID为空，使用默认值: eslId={}", completeData.getEsl().getId());
-            outputData.setActualEslId("06000000195A"); // 默认值
+            outputData.setActualEslId("06000000195A"); // 默认值，应该从数据库获取
         }
         
         // 1. 构建数据映射
@@ -124,16 +122,20 @@ public class PandaBrandAdapter implements BrandAdapter {
         }
         
         // 严格按照标准格式构建value字段内容
-        // 根据err.md中的标准格式，按照特定顺序初始化字段
+        // 根据err.md中的标准格式和esl_brand_field_mapping表进行映射
+        
+        // 首先初始化所有F_字段为null（按照标准格式的字段顺序）
+        for (int i = 1; i <= 32; i++) {
+            dataMap.put("F_" + i, null);
+        }
+        
+        // 初始化标准字段
+        dataMap.put("GOODS_CODE", null);
+        dataMap.put("GOODS_NAME", null);
+        dataMap.put("QRCODE", null);
         
         // 根据字段映射配置进行精确映射（这是核心逻辑）
         if (completeData.getFieldMappings() != null && !completeData.getFieldMappings().isEmpty()) {
-            log.info("使用数据库字段映射配置进行映射，映射数量: {}", completeData.getFieldMappings().size());
-            
-            // 先初始化所有可能的字段为null
-            initializeAllFields(dataMap);
-            
-            // 根据映射配置进行精确映射
             for (EslBrandFieldMapping mapping : completeData.getFieldMappings()) {
                 String templateField = mapping.getTemplateField(); // 目标字段 (如 F_01, code, name等)
                 String fieldCode = mapping.getFieldCode(); // 源字段 (如 PRODUCT_RETAIL_PRICE等)
@@ -153,99 +155,41 @@ public class PandaBrandAdapter implements BrandAdapter {
                 }
             }
         } else {
-            // 如果没有字段映射配置，使用默认映射（按照err.md中的标准格式示例）
+            // 如果没有字段映射配置，使用默认映射（按照标准格式示例）
             log.warn("没有找到字段映射配置，使用默认映射");
             
             // 按照err.md中的标准格式示例进行默认映射
-            buildDefaultMapping(dataMap, product);
+            dataMap.put("GOODS_CODE", formatStringField(product.getProductId()));
+            dataMap.put("GOODS_NAME", formatStringField(product.getProductName()));
+            dataMap.put("QRCODE", formatStringField(product.getProductQrcode()));
+            
+            // 按照标准格式示例中的字段分布
+            dataMap.put("F_1", formatPriceAsNumber(product.getProductRetailPrice())); // 零售价
+            dataMap.put("F_2", formatStringField(product.getProductCategory())); // 分类
+            dataMap.put("F_3", formatPriceAsNumber(product.getProductCostPrice())); // 成本价
+            dataMap.put("F_4", formatStringField(product.getProductSpecification())); // 规格
+            dataMap.put("F_5", formatPriceAsNumber(product.getProductMembershipPrice())); // 会员价
+            dataMap.put("F_6", formatStringField(product.getProductBrand())); // 品牌
+            dataMap.put("F_7", formatNumberField(product.getProductDiscount())); // 折扣
+            dataMap.put("F_8", formatPriceAsNumber(product.getProductWholesalePrice())); // 批发价
+            dataMap.put("F_9", formatStringField(product.getProductMaterial())); // 材质
+            dataMap.put("F_10", formatStringField(getSimplifiedImageValue(product.getProductImage()))); // 图片
+            dataMap.put("F_11", formatStringField(product.getProductOrigin())); // 产地
+            dataMap.put("F_12", formatStringField(product.getProductUnit())); // 单位
+            dataMap.put("F_13", formatNumberField(product.getProductWeight())); // 重量
+            dataMap.put("F_14", formatStringField(product.getProductStatus())); // 状态
+            dataMap.put("F_20", formatStringField(product.getProductDescription())); // 描述
+            dataMap.put("F_32", formatIntegerField(product.getProductStock())); // 库存
         }
         
-        log.debug("构建PANDA标准数据映射完成，字段数量: {}", dataMap.size());
+        log.debug("构建PANDA标准数据映射完成: {}", dataMap);
         return dataMap;
     }
     
     /**
-     * 初始化所有字段为null - 按照标准格式的字段顺序
+     * 获取简化的图片值 - 根据标准格式
      */
-    private void initializeAllFields(Map<String, Object> dataMap) {
-        // 按照err.md标准格式的字段顺序初始化
-        dataMap.put("F_9", null);
-        dataMap.put("F_29", null);
-        dataMap.put("GOODS_CODE", null);
-        dataMap.put("QRCODE", null);
-        dataMap.put("GOODS_NAME", null);
-        dataMap.put("F_31", null);
-        dataMap.put("F_30", null);
-        dataMap.put("F_11", null);
-        dataMap.put("F_10", null);
-        dataMap.put("F_32", null);
-        dataMap.put("F_13", null);
-        dataMap.put("F_12", null);
-        dataMap.put("F_15", null);
-        dataMap.put("F_14", null);
-        dataMap.put("F_17", null);
-        dataMap.put("F_16", null);
-        dataMap.put("F_19", null);
-        dataMap.put("F_18", null);
-        dataMap.put("F_20", null);
-        dataMap.put("F_2", null);
-        dataMap.put("F_22", null);
-        dataMap.put("F_1", null);
-        dataMap.put("F_21", null);
-        dataMap.put("F_4", null);
-        dataMap.put("F_24", null);
-        dataMap.put("F_3", null);
-        dataMap.put("F_23", null);
-        dataMap.put("F_6", null);
-        dataMap.put("F_26", null);
-        dataMap.put("F_5", null);
-        dataMap.put("F_25", null);
-        dataMap.put("F_8", null);
-        dataMap.put("F_28", null);
-        dataMap.put("F_7", null);
-        dataMap.put("F_27", null);
-    }
-    
-    /**
-     * 构建默认映射 - 按照err.md中的标准格式和字段映射表
-     */
-    private void buildDefaultMapping(Map<String, Object> dataMap, PandaProductWithBLOBs product) {
-        // 按照err.md中提供的字段映射表进行默认映射
-        // BRAND_CODE TEMPLATE_FIELD FIELD_CODE
-        
-        // 先初始化所有字段
-        initializeAllFields(dataMap);
-        
-        // 按照字段映射表进行映射
-        dataMap.put("GOODS_CODE", formatStringField(product.getProductId())); // code -> PRODUCT_ID
-        dataMap.put("GOODS_NAME", formatStringField(product.getProductName())); // name -> PRODUCT_NAME
-        dataMap.put("QRCODE", formatStringField(product.getProductQrcode())); // QRCODE -> PRODUCT_QRCODE
-        
-        // F_字段映射（按照映射表）
-        dataMap.put("F_1", formatPriceAsNumber(product.getProductRetailPrice())); // F_01 -> PRODUCT_RETAIL_PRICE
-        dataMap.put("F_2", formatStringField(product.getProductCategory())); // F_02 -> PRODUCT_CATEGORY
-        dataMap.put("F_3", formatPriceAsNumber(product.getProductCostPrice())); // F_03 -> PRODUCT_COST_PRICE
-        dataMap.put("F_4", formatStringField(product.getProductSpecification())); // F_04 -> PRODUCT_SPECIFICATION
-        dataMap.put("F_5", formatPriceAsNumber(product.getProductMembershipPrice())); // F_05 -> PRODUCT_MEMBERSHIP_PRICE
-        dataMap.put("F_6", formatPriceAsNumber(product.getProductDiscountPrice())); // F_06 -> PRODUCT_DISCOUNT_PRICE
-        dataMap.put("F_7", formatNumberField(product.getProductDiscount())); // F_07 -> PRODUCT_DISCOUNT
-        dataMap.put("F_8", formatPriceAsNumber(product.getProductWholesalePrice())); // F_08 -> PRODUCT_WHOLESALE_PRICE
-        dataMap.put("F_9", formatStringField(product.getProductMaterial())); // F_09 -> PRODUCT_MATERIAL
-        dataMap.put("F_10", formatImageField(product.getProductImage())); // F_10 -> PRODUCT_IMAGE
-        dataMap.put("F_11", formatStringField(product.getProductOrigin())); // F_11 -> PRODUCT_ORIGIN
-        dataMap.put("F_12", formatStringField(product.getProductUnit())); // F_12 -> PRODUCT_UNIT
-        dataMap.put("F_13", formatNumberField(product.getProductWeight())); // F_13 -> PRODUCT_WEIGHT
-        dataMap.put("F_14", formatStringField(product.getProductStatus())); // F_14 -> PRODUCT_STATUS
-        dataMap.put("F_20", formatStringField(product.getProductDescription())); // F_20 -> PRODUCT_DESCRIPTION
-        dataMap.put("F_32", formatIntegerField(product.getProductStock())); // F_32 -> PRODUCT_STOCK
-        
-        // 其他字段保持null（按照标准格式）
-    }
-    
-    /**
-     * 格式化图片字段 - 根据标准格式
-     */
-    private String formatImageField(String imageUrl) {
+    private String getSimplifiedImageValue(String imageUrl) {
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
             return "ge"; // 默认值，根据标准格式
         }
