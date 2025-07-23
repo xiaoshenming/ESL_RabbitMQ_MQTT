@@ -64,8 +64,6 @@
             <property name="trimStrings" value="true"/>
             <!-- 生成构造方法 -->
             <property name="constructorBased" value="false"/>
-            <!-- 为实体类添加@Data注解支持（需要Lombok） -->
-            <property name="rootClass" value=""/>
         </javaModelGenerator>
 
         <!-- XML映射文件生成器配置 -->

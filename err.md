@@ -1,0 +1,3 @@
+{"panels":[{"index":0,"name":"2","paperType":"CUSTOM","width":250,"height":122,"paperHeader":0,"paperFooter":345.82677165354335,"printElements":[],"paperNumberContinue":true,"eslConfig":{"screenType":"2.13T","pixelWidth":250,"pixelHeight":122,"colorMode":{"black":true,"white":true,"red":true,"yellow":false},"orientation":"LANDSCAPE"}}],"shop":"0002","templateId":"1946122678071738370","templateName":"2","timestamp":1753271926259}
+
+这是你合成的成果，不对，请修复。

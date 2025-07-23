@@ -82,3 +82,29 @@ app:
       force-convert-fields:
         - "GOODS_NAME"
         - "GOODS_CODE"
+    
+    # 品牌配置
+    brands:
+      panda:
+        name: 攀攀
+        code: PANDA
+        enabled: true
+        executor-type: MQTT
+        template-format: CUSTOM
+        
+    # 缓存配置
+    cache:
+      enabled: true
+      ttl: 300 # 5分钟
+      max-size: 1000
+      
+    # 批处理配置
+    batch:
+      size: 100
+      timeout: 30000 # 30秒
+      
+    # 重试配置
+    retry:
+      max-attempts: 3
+      delay: 1000 # 1秒
+      multiplier: 2.0
