@@ -55,10 +55,10 @@ esl/server/data/0002
   "shop": "0002"
 }
 
-
+这是你合成的消息
 Topic: esl/0002/dataQoS: 0
-{"shop":"0002","data":[{"tmpl":"{\n  \"Items\": [\n    {\n      \"Type\": \"Text\",\n      \"X\": 10,\n      \"Y\": 10,\n      \"Width\": 200,\n      \"Height\": 30,\n      \"FontFamily\": \"阿里普惠\",\n      \"FontSize\": 16,\n      \"Text\": \"{{GOODS_NAME}}\"\n    },\n    {\n      \"Type\": \"Text\",\n      \"X\": 10,\n      \"Y\": 50,\n      \"Width\": 100,\n      \"Height\": 25,\n      \"FontFamily\": \"阿里普惠\",\n      \"FontSize\": 14,\n      \"Text\": \"￥{{PRICE}}\"\n    }\n  ]\n}","forcefrash":1,"checksum":"12780dc2f9234a1406c5853435f7296a","model":"2.13","tag":1947223724923940865,"value":{"PRICE":9.99,"GOODS_NAME":"测试商品","CATEGORY":"测试分类","GOODS_CODE":"001","SPECIFICATION":"PRODUCT_FRUIT","BRAND":"攀攀"},"taskid":1,"token":1}],"id":"1947223724923940865","command":"wtag","timestamp":1.753274901112E9}
-但是这是你合成的消息，有问题，请修复。
+{"shop":"0002","data":[{"tmpl":"1946122678071738370","forcefrash":1,"checksum":"12780dc2f9234a1406c5853435f7296a","model":"2.13","tag":1947223724923940865,"value":{"PRICE":9.99,"GOODS_NAME":"测试商品","CATEGORY":"测试分类","GOODS_CODE":"001","SPECIFICATION":"PRODUCT_FRUIT","BRAND":"攀攀"},"taskid":1,"token":1}],"id":"1947223724923940865","command":"wtag","timestamp":1.753277204987E9}
+但是这是你合成的消息，有问题，请修复。订阅地址跟内容都错了。
 curl 'http://localhost:8999/api/res/templ/refresh' \
   -H 'Accept-Language: zh-CN,zh;q=0.9' \
   -H 'Connection: keep-alive' \
@@ -135,21 +135,3 @@ curl 'http://localhost:8999/api/res/templ/refresh' \
 
 一定要按照这个格式，这个是panda的格式。请发挥你的想象力，写出你认为最完美的答案。
 
-
-并且！
-curl 'http://localhost:8999/api/res/templ/send' \
-  -H 'Accept-Language: zh-CN,zh;q=0.9' \
-  -H 'Connection: keep-alive' \
-  -H 'Content-Type: application/json' \
-  -H 'Origin: http://localhost:8999' \
-  -H 'Referer: http://localhost:8999/swagger-ui/index.html' \
-  -H 'Sec-Fetch-Dest: empty' \
-  -H 'Sec-Fetch-Mode: cors' \
-  -H 'Sec-Fetch-Site: same-origin' \
-  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
-  -H 'accept: text/plain' \
-  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
-  -H 'sec-ch-ua-mobile: ?0' \
-  -H 'sec-ch-ua-platform: "Windows"' \
-  --data-raw $'{\n  "templateId": "1946122678071738370",\n  "storeCode": "0002"\n}'
-  这个接口也要增加brandCode字段来区分是攀攀还是雅量。目前雅量的暂不实现。目前写成功的是panda的案例。

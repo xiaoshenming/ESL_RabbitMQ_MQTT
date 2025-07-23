@@ -39,7 +39,8 @@ public class TemplateServiceImpl implements TemplateService {
     @Override
     public void sendTemplate(TemplateDto templateDto) {
         try {
-            log.info("开始下发模板，模板ID: {}, 门店编码: {}", templateDto.getTemplateId(), templateDto.getStoreCode());
+            log.info("开始下发模板，模板ID: {}, 门店编码: {}, 品牌编码: {}", 
+                    templateDto.getTemplateId(), templateDto.getStoreCode(), templateDto.getBrandCode());
             
             // 获取模板信息
             PrintTemplateDesignWithBLOBs template = dataService.getTemplateById(templateDto.getTemplateId());
@@ -49,18 +50,18 @@ public class TemplateServiceImpl implements TemplateService {
             }
 
             // 构建模板下发消息
-            Map<String, Object> templateMessage = buildTemplateMessage(template, templateDto.getStoreCode());
+            Map<String, Object> templateMessage = buildTemplateMessage(template, templateDto.getStoreCode(), templateDto.getBrandCode());
             
             // 将消息转换为JSON字符串后发送到RabbitMQ队列
             String jsonMessage = objectMapper.writeValueAsString(templateMessage);
             rabbitTemplate.convertAndSend("template.queue", jsonMessage);
             
-            log.info("模板下发消息已发送到队列，模板ID: {}, 门店编码: {}", 
-                    templateDto.getTemplateId(), templateDto.getStoreCode());
+            log.info("模板下发消息已发送到队列，模板ID: {}, 门店编码: {}, 品牌编码: {}", 
+                    templateDto.getTemplateId(), templateDto.getStoreCode(), templateDto.getBrandCode());
                     
         } catch (Exception e) {
-            log.error("模板下发失败，模板ID: {}, 门店编码: {}, 错误: {}", 
-                    templateDto.getTemplateId(), templateDto.getStoreCode(), e.getMessage(), e);
+            log.error("模板下发失败，模板ID: {}, 门店编码: {}, 品牌编码: {}, 错误: {}", 
+                    templateDto.getTemplateId(), templateDto.getStoreCode(), templateDto.getBrandCode(), e.getMessage(), e);
             throw new BusinessException("TEMPLATE_SEND_ERROR", "模板下发失败: " + e.getMessage(), e);
         }
     }
@@ -220,7 +221,7 @@ public class TemplateServiceImpl implements TemplateService {
     /**
      * 构建模板下发消息
      */
-    private Map<String, Object> buildTemplateMessage(PrintTemplateDesignWithBLOBs template, String storeCode) {
+    private Map<String, Object> buildTemplateMessage(PrintTemplateDesignWithBLOBs template, String storeCode, String brandCode) {
         try {
             // 转换为官方格式
             String officialTemplate = mqttService.convertToOfficialTemplate(template);
@@ -230,6 +231,7 @@ public class TemplateServiceImpl implements TemplateService {
             message.put("shop", storeCode);  // 使用"shop"字段以匹配RabbitMQListener
             message.put("templateId", template.getId());
             message.put("templateName", template.getName());
+            message.put("brandCode", brandCode != null ? brandCode : "PANDA"); // 添加品牌编码，默认为PANDA
             message.put("timestamp", System.currentTimeMillis());
             
             return message;

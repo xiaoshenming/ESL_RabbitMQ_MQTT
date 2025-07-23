@@ -19,4 +19,8 @@ public class TemplateDto {
     @Schema(description = "门店编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "009")
     @NotBlank(message = "门店编码不能为空")
     private String storeCode;
+    
+    @Schema(description = "品牌编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "PANDA", allowableValues = {"PANDA", "YALIANG"})
+    @NotBlank(message = "品牌编码不能为空")
+    private String brandCode;
 }

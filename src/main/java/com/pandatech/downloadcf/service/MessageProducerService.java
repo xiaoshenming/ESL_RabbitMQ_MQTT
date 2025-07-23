@@ -125,7 +125,7 @@ public class MessageProducerService {
         // 构建data数组
         Map<String, Object> dataItem = new HashMap<>();
         dataItem.put("tag", Long.parseLong(outputData.getEslId()));
-        dataItem.put("tmpl", outputData.getTemplateContent());
+        dataItem.put("tmpl", outputData.getTemplateId()); // 使用模板ID而不是模板内容
         dataItem.put("model", "2.13"); // 默认型号
         dataItem.put("checksum", outputData.getChecksum());
         dataItem.put("forcefrash", 1);
