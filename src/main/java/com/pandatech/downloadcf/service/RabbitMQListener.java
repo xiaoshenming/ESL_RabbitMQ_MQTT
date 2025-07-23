@@ -35,22 +35,16 @@ public class RabbitMQListener {
         try {
             log.info("从RabbitMQ接收到模板消息: {}", message);
             
-            // 解析消息获取门店编码
+            // 解析消息
             @SuppressWarnings("unchecked")
             Map<String, Object> messageMap = objectMapper.readValue(message, Map.class);
-            String storeCode = (String) messageMap.get("shop");
+            String shop = (String) messageMap.get("shop");
+            String templateId = (String) messageMap.get("templateId");
+            String templateName = (String) messageMap.get("templateName");
             
-            // 构造正确的MQTT主题：esl/server/data/{storeCode}
-            String mqttTopic = "esl/server/data/" + storeCode;
-            
-            // 发送到MQTT
-            Message<String> mqttMessage = MessageBuilder
-                    .withPayload(message)
-                    .setHeader("mqtt_topic", mqttTopic)
-                    .build();
-            
-            mqttOutboundChannel.send(mqttMessage);
-            log.info("模板消息已发送到MQTT主题: {}", mqttTopic);
+            // 调用MqttService发送优化后的tmpllist消息
+            mqttService.sendTemplateToMqtt(shop, templateId, templateName);
+            log.info("模板消息已通过MqttService发送到MQTT");
             
         } catch (Exception e) {
             log.error("处理模板消息失败: {}", e.getMessage(), e);
