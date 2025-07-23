@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pandatech.downloadcf.mapper.PandaEslMapper">
+  <resultMap id="BaseResultMap" type="com.pandatech.downloadcf.entity.PandaEsl">
+    <id column="ID" jdbcType="VARCHAR" property="id" />
+    <result column="TENANT_ID" jdbcType="VARCHAR" property="tenantId" />
+    <result column="SORT_CODE" jdbcType="INTEGER" property="sortCode" />
+    <result column="DELETE_FLAG" jdbcType="VARCHAR" property="deleteFlag" />
+    <result column="CREATE_TIME" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="CREATE_USER" jdbcType="VARCHAR" property="createUser" />
+    <result column="UPDATE_TIME" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="UPDATE_USER" jdbcType="VARCHAR" property="updateUser" />
+    <result column="ESL_ID" jdbcType="VARCHAR" property="eslId" />
+    <result column="STORE_CODE" jdbcType="VARCHAR" property="storeCode" />
+    <result column="AP_SN" jdbcType="VARCHAR" property="apSn" />
+    <result column="ESL_MODEL" jdbcType="VARCHAR" property="eslModel" />
+    <result column="BOUND_PRODUCT" jdbcType="VARCHAR" property="boundProduct" />
+    <result column="BATTERY_LEVEL" jdbcType="REAL" property="batteryLevel" />
+    <result column="TEMPERATURE" jdbcType="REAL" property="temperature" />
+    <result column="SIGNAL_STRENGTH" jdbcType="INTEGER" property="signalStrength" />
+    <result column="COMMUNICATION_COUNT" jdbcType="INTEGER" property="communicationCount" />
+    <result column="FAILURE_COUNT" jdbcType="INTEGER" property="failureCount" />
+    <result column="ESL_CATEGORY" jdbcType="VARCHAR" property="eslCategory" />
+    <result column="ESL_STATUS" jdbcType="VARCHAR" property="eslStatus" />
+    <result column="SCREEN_COLOR" jdbcType="VARCHAR" property="screenColor" />
+    <result column="COMMUNICATION_METHOD" jdbcType="VARCHAR" property="communicationMethod" />
+    <result column="VERSION" jdbcType="VARCHAR" property="version" />
+    <result column="HARDWARE" jdbcType="VARCHAR" property="hardware" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.pandatech.downloadcf.entity.PandaEsl">
+    <result column="EXT_JSON" jdbcType="LONGVARCHAR" property="extJson" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    ID, TENANT_ID, SORT_CODE, DELETE_FLAG, CREATE_TIME, CREATE_USER, UPDATE_TIME, UPDATE_USER, 
+    ESL_ID, STORE_CODE, AP_SN, ESL_MODEL, BOUND_PRODUCT, BATTERY_LEVEL, TEMPERATURE, 
+    SIGNAL_STRENGTH, COMMUNICATION_COUNT, FAILURE_COUNT, ESL_CATEGORY, ESL_STATUS, SCREEN_COLOR, 
+    COMMUNICATION_METHOD, VERSION, HARDWARE
+  </sql>
+  <sql id="Blob_Column_List">
+    EXT_JSON
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.String" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from panda_esl
+    where ID = #{id,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String">
+    delete from panda_esl
+    where ID = #{id,jdbcType=VARCHAR}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.pandatech.downloadcf.entity.PandaEslExample">
+    delete from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.pandatech.downloadcf.entity.PandaEsl">
+    insert into panda_esl (ID, TENANT_ID, SORT_CODE, 
+      DELETE_FLAG, CREATE_TIME, CREATE_USER, 
+      UPDATE_TIME, UPDATE_USER, ESL_ID, 
+      STORE_CODE, AP_SN, ESL_MODEL, 
+      BOUND_PRODUCT, BATTERY_LEVEL, TEMPERATURE, 
+      SIGNAL_STRENGTH, COMMUNICATION_COUNT, FAILURE_COUNT, 
+      ESL_CATEGORY, ESL_STATUS, SCREEN_COLOR, 
+      COMMUNICATION_METHOD, VERSION, HARDWARE, 
+      EXT_JSON)
+    values (#{id,jdbcType=VARCHAR}, #{tenantId,jdbcType=VARCHAR}, #{sortCode,jdbcType=INTEGER}, 
+      #{deleteFlag,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{createUser,jdbcType=VARCHAR}, 
+      #{updateTime,jdbcType=TIMESTAMP}, #{updateUser,jdbcType=VARCHAR}, #{eslId,jdbcType=VARCHAR}, 
+      #{storeCode,jdbcType=VARCHAR}, #{apSn,jdbcType=VARCHAR}, #{eslModel,jdbcType=VARCHAR}, 
+      #{boundProduct,jdbcType=VARCHAR}, #{batteryLevel,jdbcType=REAL}, #{temperature,jdbcType=REAL}, 
+      #{signalStrength,jdbcType=INTEGER}, #{communicationCount,jdbcType=INTEGER}, #{failureCount,jdbcType=INTEGER}, 
+      #{eslCategory,jdbcType=VARCHAR}, #{eslStatus,jdbcType=VARCHAR}, #{screenColor,jdbcType=VARCHAR}, 
+      #{communicationMethod,jdbcType=VARCHAR}, #{version,jdbcType=VARCHAR}, #{hardware,jdbcType=VARCHAR}, 
+      #{extJson,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.pandatech.downloadcf.entity.PandaEsl">
+    insert into panda_esl
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        ID,
+      </if>
+      <if test="tenantId != null">
+        TENANT_ID,
+      </if>
+      <if test="sortCode != null">
+        SORT_CODE,
+      </if>
+      <if test="deleteFlag != null">
+        DELETE_FLAG,
+      </if>
+      <if test="createTime != null">
+        CREATE_TIME,
+      </if>
+      <if test="createUser != null">
+        CREATE_USER,
+      </if>
+      <if test="updateTime != null">
+        UPDATE_TIME,
+      </if>
+      <if test="updateUser != null">
+        UPDATE_USER,
+      </if>
+      <if test="eslId != null">
+        ESL_ID,
+      </if>
+      <if test="storeCode != null">
+        STORE_CODE,
+      </if>
+      <if test="apSn != null">
+        AP_SN,
+      </if>
+      <if test="eslModel != null">
+        ESL_MODEL,
+      </if>
+      <if test="boundProduct != null">
+        BOUND_PRODUCT,
+      </if>
+      <if test="batteryLevel != null">
+        BATTERY_LEVEL,
+      </if>
+      <if test="temperature != null">
+        TEMPERATURE,
+      </if>
+      <if test="signalStrength != null">
+        SIGNAL_STRENGTH,
+      </if>
+      <if test="communicationCount != null">
+        COMMUNICATION_COUNT,
+      </if>
+      <if test="failureCount != null">
+        FAILURE_COUNT,
+      </if>
+      <if test="eslCategory != null">
+        ESL_CATEGORY,
+      </if>
+      <if test="eslStatus != null">
+        ESL_STATUS,
+      </if>
+      <if test="screenColor != null">
+        SCREEN_COLOR,
+      </if>
+      <if test="communicationMethod != null">
+        COMMUNICATION_METHOD,
+      </if>
+      <if test="version != null">
+        VERSION,
+      </if>
+      <if test="hardware != null">
+        HARDWARE,
+      </if>
+      <if test="extJson != null">
+        EXT_JSON,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="tenantId != null">
+        #{tenantId,jdbcType=VARCHAR},
+      </if>
+      <if test="sortCode != null">
+        #{sortCode,jdbcType=INTEGER},
+      </if>
+      <if test="deleteFlag != null">
+        #{deleteFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createUser != null">
+        #{createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateUser != null">
+        #{updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="eslId != null">
+        #{eslId,jdbcType=VARCHAR},
+      </if>
+      <if test="storeCode != null">
+        #{storeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="apSn != null">
+        #{apSn,jdbcType=VARCHAR},
+      </if>
+      <if test="eslModel != null">
+        #{eslModel,jdbcType=VARCHAR},
+      </if>
+      <if test="boundProduct != null">
+        #{boundProduct,jdbcType=VARCHAR},
+      </if>
+      <if test="batteryLevel != null">
+        #{batteryLevel,jdbcType=REAL},
+      </if>
+      <if test="temperature != null">
+        #{temperature,jdbcType=REAL},
+      </if>
+      <if test="signalStrength != null">
+        #{signalStrength,jdbcType=INTEGER},
+      </if>
+      <if test="communicationCount != null">
+        #{communicationCount,jdbcType=INTEGER},
+      </if>
+      <if test="failureCount != null">
+        #{failureCount,jdbcType=INTEGER},
+      </if>
+      <if test="eslCategory != null">
+        #{eslCategory,jdbcType=VARCHAR},
+      </if>
+      <if test="eslStatus != null">
+        #{eslStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="screenColor != null">
+        #{screenColor,jdbcType=VARCHAR},
+      </if>
+      <if test="communicationMethod != null">
+        #{communicationMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="version != null">
+        #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="hardware != null">
+        #{hardware,jdbcType=VARCHAR},
+      </if>
+      <if test="extJson != null">
+        #{extJson,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultType="java.lang.Long">
+    select count(*) from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update panda_esl
+    <set>
+      <if test="row.id != null">
+        ID = #{row.id,jdbcType=VARCHAR},
+      </if>
+      <if test="row.tenantId != null">
+        TENANT_ID = #{row.tenantId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.sortCode != null">
+        SORT_CODE = #{row.sortCode,jdbcType=INTEGER},
+      </if>
+      <if test="row.deleteFlag != null">
+        DELETE_FLAG = #{row.deleteFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="row.createTime != null">
+        CREATE_TIME = #{row.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.createUser != null">
+        CREATE_USER = #{row.createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="row.updateTime != null">
+        UPDATE_TIME = #{row.updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="row.updateUser != null">
+        UPDATE_USER = #{row.updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="row.eslId != null">
+        ESL_ID = #{row.eslId,jdbcType=VARCHAR},
+      </if>
+      <if test="row.storeCode != null">
+        STORE_CODE = #{row.storeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="row.apSn != null">
+        AP_SN = #{row.apSn,jdbcType=VARCHAR},
+      </if>
+      <if test="row.eslModel != null">
+        ESL_MODEL = #{row.eslModel,jdbcType=VARCHAR},
+      </if>
+      <if test="row.boundProduct != null">
+        BOUND_PRODUCT = #{row.boundProduct,jdbcType=VARCHAR},
+      </if>
+      <if test="row.batteryLevel != null">
+        BATTERY_LEVEL = #{row.batteryLevel,jdbcType=REAL},
+      </if>
+      <if test="row.temperature != null">
+        TEMPERATURE = #{row.temperature,jdbcType=REAL},
+      </if>
+      <if test="row.signalStrength != null">
+        SIGNAL_STRENGTH = #{row.signalStrength,jdbcType=INTEGER},
+      </if>
+      <if test="row.communicationCount != null">
+        COMMUNICATION_COUNT = #{row.communicationCount,jdbcType=INTEGER},
+      </if>
+      <if test="row.failureCount != null">
+        FAILURE_COUNT = #{row.failureCount,jdbcType=INTEGER},
+      </if>
+      <if test="row.eslCategory != null">
+        ESL_CATEGORY = #{row.eslCategory,jdbcType=VARCHAR},
+      </if>
+      <if test="row.eslStatus != null">
+        ESL_STATUS = #{row.eslStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="row.screenColor != null">
+        SCREEN_COLOR = #{row.screenColor,jdbcType=VARCHAR},
+      </if>
+      <if test="row.communicationMethod != null">
+        COMMUNICATION_METHOD = #{row.communicationMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="row.version != null">
+        VERSION = #{row.version,jdbcType=VARCHAR},
+      </if>
+      <if test="row.hardware != null">
+        HARDWARE = #{row.hardware,jdbcType=VARCHAR},
+      </if>
+      <if test="row.extJson != null">
+        EXT_JSON = #{row.extJson,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update panda_esl
+    set ID = #{row.id,jdbcType=VARCHAR},
+      TENANT_ID = #{row.tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{row.sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{row.deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{row.createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{row.createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{row.updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{row.updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{row.eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{row.storeCode,jdbcType=VARCHAR},
+      AP_SN = #{row.apSn,jdbcType=VARCHAR},
+      ESL_MODEL = #{row.eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{row.boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{row.batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{row.temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{row.signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{row.communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{row.failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{row.eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{row.eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{row.screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{row.communicationMethod,jdbcType=VARCHAR},
+      VERSION = #{row.version,jdbcType=VARCHAR},
+      HARDWARE = #{row.hardware,jdbcType=VARCHAR},
+      EXT_JSON = #{row.extJson,jdbcType=LONGVARCHAR}
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update panda_esl
+    set ID = #{row.id,jdbcType=VARCHAR},
+      TENANT_ID = #{row.tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{row.sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{row.deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{row.createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{row.createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{row.updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{row.updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{row.eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{row.storeCode,jdbcType=VARCHAR},
+      AP_SN = #{row.apSn,jdbcType=VARCHAR},
+      ESL_MODEL = #{row.eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{row.boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{row.batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{row.temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{row.signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{row.communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{row.failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{row.eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{row.eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{row.screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{row.communicationMethod,jdbcType=VARCHAR},
+      VERSION = #{row.version,jdbcType=VARCHAR},
+      HARDWARE = #{row.hardware,jdbcType=VARCHAR}
+    <if test="example != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.pandatech.downloadcf.entity.PandaEsl">
+    update panda_esl
+    <set>
+      <if test="tenantId != null">
+        TENANT_ID = #{tenantId,jdbcType=VARCHAR},
+      </if>
+      <if test="sortCode != null">
+        SORT_CODE = #{sortCode,jdbcType=INTEGER},
+      </if>
+      <if test="deleteFlag != null">
+        DELETE_FLAG = #{deleteFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createUser != null">
+        CREATE_USER = #{createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateUser != null">
+        UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="eslId != null">
+        ESL_ID = #{eslId,jdbcType=VARCHAR},
+      </if>
+      <if test="storeCode != null">
+        STORE_CODE = #{storeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="apSn != null">
+        AP_SN = #{apSn,jdbcType=VARCHAR},
+      </if>
+      <if test="eslModel != null">
+        ESL_MODEL = #{eslModel,jdbcType=VARCHAR},
+      </if>
+      <if test="boundProduct != null">
+        BOUND_PRODUCT = #{boundProduct,jdbcType=VARCHAR},
+      </if>
+      <if test="batteryLevel != null">
+        BATTERY_LEVEL = #{batteryLevel,jdbcType=REAL},
+      </if>
+      <if test="temperature != null">
+        TEMPERATURE = #{temperature,jdbcType=REAL},
+      </if>
+      <if test="signalStrength != null">
+        SIGNAL_STRENGTH = #{signalStrength,jdbcType=INTEGER},
+      </if>
+      <if test="communicationCount != null">
+        COMMUNICATION_COUNT = #{communicationCount,jdbcType=INTEGER},
+      </if>
+      <if test="failureCount != null">
+        FAILURE_COUNT = #{failureCount,jdbcType=INTEGER},
+      </if>
+      <if test="eslCategory != null">
+        ESL_CATEGORY = #{eslCategory,jdbcType=VARCHAR},
+      </if>
+      <if test="eslStatus != null">
+        ESL_STATUS = #{eslStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="screenColor != null">
+        SCREEN_COLOR = #{screenColor,jdbcType=VARCHAR},
+      </if>
+      <if test="communicationMethod != null">
+        COMMUNICATION_METHOD = #{communicationMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="version != null">
+        VERSION = #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="hardware != null">
+        HARDWARE = #{hardware,jdbcType=VARCHAR},
+      </if>
+      <if test="extJson != null">
+        EXT_JSON = #{extJson,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.pandatech.downloadcf.entity.PandaEsl">
+    update panda_esl
+    set TENANT_ID = #{tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{storeCode,jdbcType=VARCHAR},
+      AP_SN = #{apSn,jdbcType=VARCHAR},
+      ESL_MODEL = #{eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{communicationMethod,jdbcType=VARCHAR},
+      VERSION = #{version,jdbcType=VARCHAR},
+      HARDWARE = #{hardware,jdbcType=VARCHAR},
+      EXT_JSON = #{extJson,jdbcType=LONGVARCHAR}
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.pandatech.downloadcf.entity.PandaEsl">
+    update panda_esl
+    set TENANT_ID = #{tenantId,jdbcType=VARCHAR},
+      SORT_CODE = #{sortCode,jdbcType=INTEGER},
+      DELETE_FLAG = #{deleteFlag,jdbcType=VARCHAR},
+      CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      CREATE_USER = #{createUser,jdbcType=VARCHAR},
+      UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      ESL_ID = #{eslId,jdbcType=VARCHAR},
+      STORE_CODE = #{storeCode,jdbcType=VARCHAR},
+      AP_SN = #{apSn,jdbcType=VARCHAR},
+      ESL_MODEL = #{eslModel,jdbcType=VARCHAR},
+      BOUND_PRODUCT = #{boundProduct,jdbcType=VARCHAR},
+      BATTERY_LEVEL = #{batteryLevel,jdbcType=REAL},
+      TEMPERATURE = #{temperature,jdbcType=REAL},
+      SIGNAL_STRENGTH = #{signalStrength,jdbcType=INTEGER},
+      COMMUNICATION_COUNT = #{communicationCount,jdbcType=INTEGER},
+      FAILURE_COUNT = #{failureCount,jdbcType=INTEGER},
+      ESL_CATEGORY = #{eslCategory,jdbcType=VARCHAR},
+      ESL_STATUS = #{eslStatus,jdbcType=VARCHAR},
+      SCREEN_COLOR = #{screenColor,jdbcType=VARCHAR},
+      COMMUNICATION_METHOD = #{communicationMethod,jdbcType=VARCHAR},
+      VERSION = #{version,jdbcType=VARCHAR},
+      HARDWARE = #{hardware,jdbcType=VARCHAR}
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <select id="selectByExampleWithBLOBsWithRowbounds" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExampleWithRowbounds" parameterType="com.pandatech.downloadcf.entity.PandaEslExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    'false' as QUERYID,
+    <include refid="Base_Column_List" />
+    from panda_esl
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+</mapper>

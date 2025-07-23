@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<generatorConfiguration>
+
+    <context id="MySQL" targetRuntime="MyBatis3">
+
+        <property name="javaFileEncoding" value="utf-8"/>
+        <property name="javaFormatter" value="org.mybatis.generator.api.dom.DefaultJavaFormatter"/>
+        <property name="xmlFormatter" value="org.mybatis.generator.api.dom.DefaultXmlFormatter"/>
+        <plugin type="org.mybatis.generator.plugins.ToStringPlugin"/>
+        <plugin type="org.mybatis.generator.plugins.RowBoundsPlugin"/>
+        <plugin type="org.mybatis.generator.plugins.SerializablePlugin"/>
+
+        <commentGenerator>
+            <property name="suppressDate" value="true"/>
+            <property name="suppressAllComments" value="true"/>
+        </commentGenerator>
+
+        <jdbcConnection
+                driverClass="com.mysql.cj.jdbc.Driver"
+                connectionURL="jdbc:mysql://10.3.36.25:3306/eslplatform?useUnicode=true&amp;characterEncoding=utf-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;nullCatalogMeansCurrent=true&amp;useInformationSchema=true&amp;rewriteBatchedStatements=true"
+                userId="panda"
+                password="panda@123">
+        </jdbcConnection>
+
+        <javaTypeResolver>
+            <property name="forceBigDecimals" value="false"/>
+        </javaTypeResolver>
+
+        <javaModelGenerator targetPackage="com.pandatech.downloadcf.entity" targetProject="src/main/java">
+            <property name="enableSubPackages" value="true"/>
+            <property name="trimStrings" value="true"/>
+        </javaModelGenerator>
+
+        <sqlMapGenerator targetPackage="mapper" targetProject="src/main/resources">
+            <property name="enableSubPackages" value="true"/>
+        </sqlMapGenerator>
+
+        <javaClientGenerator type="XMLMAPPER" targetPackage="com.pandatech.downloadcf.mapper"
+                             targetProject="src/main/java">
+            <property name="enableSubPackages" value="true"/>
+        </javaClientGenerator>
+
+        <!-- ESL电子价签表 -->
+        <table tableName="panda_esl" domainObjectName="PandaEsl"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+
+        <!-- 商品表 -->
+        <table tableName="panda_product" domainObjectName="PandaProduct"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+
+        <!-- 品牌字段映射表 -->
+        <table tableName="esl_brand_field_mapping" domainObjectName="EslBrandFieldMapping"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+
+        <!-- 商品-ESL绑定关系表 -->
+        <table tableName="product_esl_binding" domainObjectName="ProductEslBinding"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+
+        <!-- 打印模板设计表 -->
+        <table tableName="print_template_design" domainObjectName="PrintTemplateDesign"
+               enableCountByExample="true"
+               enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true" selectByExampleQueryId="false">
+        </table>
+
+    </context>
+
+</generatorConfiguration>
