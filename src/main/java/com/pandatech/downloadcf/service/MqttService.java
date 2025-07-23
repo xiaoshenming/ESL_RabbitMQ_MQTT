@@ -345,19 +345,59 @@ public class MqttService {
      * 从模板中提取屏幕类型
      */
     private String extractScreenTypeFromTemplate(PrintTemplateDesignWithBLOBs template) {
+        log.debug("开始提取屏幕类型 - 模板ID: {}, 模板名称: {}", template.getId(), template.getName());
+        
         // 首先尝试从EXT_JSON中提取
         String screenType = extractScreenTypeFromExtJson(template.getExtJson());
         if (screenType != null) {
+            log.info("从EXT_JSON中提取到屏幕类型: {} (模板ID: {})", screenType, template.getId());
             return screenType;
         }
         
         // 如果EXT_JSON中没有，尝试从CATEGORY字段获取
         if (template.getCategory() != null && !template.getCategory().trim().isEmpty()) {
-            return template.getCategory();
+            String categoryValue = template.getCategory().trim();
+            // 尝试将category映射为屏幕类型
+            String mappedScreenType = mapCategoryToScreenType(categoryValue);
+            log.info("从CATEGORY字段提取到值: {}, 映射为屏幕类型: {} (模板ID: {})", 
+                    categoryValue, mappedScreenType, template.getId());
+            return mappedScreenType;
         }
         
         // 默认返回2.13T
+        log.warn("无法从模板中提取屏幕类型，使用默认值2.13T (模板ID: {})", template.getId());
         return "2.13T";
+    }
+
+    /**
+     * 将category数字映射为屏幕类型
+     */
+    private String mapCategoryToScreenType(String category) {
+        // 如果category已经是屏幕类型格式，直接返回
+        if (category.contains(".") && (category.toLowerCase().endsWith("t") || category.toLowerCase().endsWith("f"))) {
+            return category;
+        }
+        
+        // 数字到屏幕类型的映射
+        switch (category) {
+            case "1":
+                return "2.13T";
+            case "2":
+                return "1.54T";
+            case "3":
+                return "2.9T";
+            case "4":
+                return "4.2T";
+            case "5":
+                return "7.5T";
+            case "6":
+                return "4.20T";  // 根据错误日志，6应该映射为4.20T
+            case "7":
+                return "4.20F";
+            default:
+                log.warn("未知的category值: {}, 使用默认屏幕类型2.13T", category);
+                return "2.13T";
+        }
     }
     
     /**
