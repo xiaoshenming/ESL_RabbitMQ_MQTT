@@ -473,23 +473,23 @@ public class EslBrandFieldMapping implements Serializable {
     }
 
     /**
-     * 获取源字段名称
-     * 这里使用 templateField 作为源字段
+     * 获取源字段名称（系统字段编码）
+     * fieldCode 是系统字段编码，作为数据来源
      *
      * @return 源字段名称
      */
     public String getSourceField() {
-        return this.templateField;
+        return this.fieldCode;
     }
 
     /**
-     * 获取目标字段名称
-     * 这里使用 fieldCode 作为目标字段
+     * 获取目标字段名称（模板字段名）
+     * templateField 是模板字段名，作为映射目标
      *
      * @return 目标字段名称
      */
     public String getTargetField() {
-        return this.fieldCode;
+        return this.templateField;
     }
 
     /**

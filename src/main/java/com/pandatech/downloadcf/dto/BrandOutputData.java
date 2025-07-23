@@ -30,9 +30,14 @@ public class BrandOutputData {
     private String checksum;
     
     /**
-     * 价签ID
+     * 价签ID（数据库主键）
      */
     private String eslId;
+    
+    /**
+     * 真正的ESL设备ID（十六进制，如06000000195A）
+     */
+    private String actualEslId;
     
     /**
      * 模板ID

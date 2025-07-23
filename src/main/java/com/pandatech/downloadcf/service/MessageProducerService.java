@@ -2,6 +2,7 @@ package com.pandatech.downloadcf.service;
 
 import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.MessageExecutionData;
+import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import com.pandatech.downloadcf.executor.MessageExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class MessageProducerService {
     
     private final List<MessageExecutor> messageExecutors;
+    private final DataService dataService;
     
     /**
      * 发送品牌输出数据到对应的执行器
@@ -136,8 +138,8 @@ public class MessageProducerService {
         Map<String, Object> dataItem = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         
         // 严格按照标准格式的字段顺序：tag, tmpl, model, checksum, forcefrash, value, taskid, token
-        dataItem.put("tag", Long.parseLong(outputData.getEslId())); // 转换为数字格式
-        dataItem.put("tmpl", getTemplateNumber(outputData.getTemplateId())); // 模板编号（字符串格式，如"2"）
+        dataItem.put("tag", convertEslIdToDecimal(outputData.getActualEslId())); // 使用真正的ESL设备ID进行转换
+        dataItem.put("tmpl", getTemplateName(outputData.getTemplateId())); // 模板名称（从数据库获取）
         dataItem.put("model", "6"); // 按照标准格式，固定为"6"
         dataItem.put("checksum", outputData.getChecksum() != null ? outputData.getChecksum() : "");
         dataItem.put("forcefrash", 1); // 保持原有拼写（按照标准格式）
@@ -149,24 +151,73 @@ public class MessageProducerService {
     }
     
     /**
-     * 获取模板编号 - 将模板ID转换为简单的编号格式
+     * 将十六进制ESL ID转换为十进制 - 按照标准格式要求
+     * 例如：06000000195A → 6597069773146
      */
-    private String getTemplateNumber(String templateId) {
-        if (templateId == null || templateId.isEmpty()) {
-            return "1"; // 默认模板编号
+    private long convertEslIdToDecimal(String eslId) {
+        if (eslId == null || eslId.isEmpty()) {
+            log.warn("ESL ID为空，使用默认值");
+            return 0L;
         }
         
-        // 简化模板ID为编号（实际项目中可能需要查询数据库获取对应的编号）
         try {
-            // 如果是长ID，取后几位作为编号
-            if (templateId.length() > 10) {
-                return String.valueOf(Math.abs(templateId.hashCode()) % 100 + 1);
-            } else {
-                return templateId;
+            // 清理ESL ID，移除所有非十六进制字符
+            String cleanEslId = eslId.trim().toUpperCase();
+            
+            // 移除0x前缀（如果存在）
+            if (cleanEslId.startsWith("0X")) {
+                cleanEslId = cleanEslId.substring(2);
             }
+            
+            // 移除所有非十六进制字符（保留0-9, A-F）
+            cleanEslId = cleanEslId.replaceAll("[^0-9A-F]", "");
+            
+            if (cleanEslId.isEmpty()) {
+                log.warn("ESL ID格式错误，清理后为空: {}", eslId);
+                return 0L;
+            }
+            
+            // 如果是纯数字且长度较短，可能已经是十进制
+            if (cleanEslId.matches("\\d+") && cleanEslId.length() <= 10) {
+                long decimalValue = Long.parseLong(cleanEslId);
+                log.debug("ESL ID已是十进制格式: {} → {}", eslId, decimalValue);
+                return decimalValue;
+            }
+            
+            // 转换十六进制为十进制
+            long decimalValue = Long.parseUnsignedLong(cleanEslId, 16);
+            log.debug("ESL ID十六进制转十进制: {} → {} → {}", eslId, cleanEslId, decimalValue);
+            return decimalValue;
+            
+        } catch (NumberFormatException e) {
+            log.error("ESL ID转换失败: {}", eslId, e);
+            return 0L;
+        }
+    }
+    
+    /**
+     * 获取模板名称 - 从数据库获取模板的name字段
+     * 根据err.md的要求，tmpl字段应该是模板的name（如"2"），而不是"panda"
+     */
+    private String getTemplateName(String templateId) {
+        if (templateId == null || templateId.isEmpty()) {
+            return "2"; // 默认模板名称，按照标准格式示例
+        }
+        
+        try {
+            // 通过DataService获取模板信息
+            PrintTemplateDesignWithBLOBs template = dataService.getTemplateById(templateId);
+            if (template != null && template.getName() != null) {
+                return template.getName(); // 返回模板的name字段
+            }
+            
+            // 如果没有找到模板，返回默认值
+            log.warn("未找到模板信息: {}", templateId);
+            return "2"; // 默认模板名称
+            
         } catch (Exception e) {
-            log.warn("模板ID格式错误: {}", templateId);
-            return "1";
+            log.error("获取模板名称失败: {}", templateId, e);
+            return "2"; // 默认模板名称
         }
     }
     
