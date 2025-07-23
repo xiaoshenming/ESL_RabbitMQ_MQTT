@@ -57,7 +57,7 @@ esl/server/data/0002
 
 这是你合成的消息
 Topic: esl/server/data/0002 QoS: 0
-{"shop":"0002","data":[{"tmpl":"31","forcefrash":1,"checksum":"12780dc2f9234a1406c5853435f7296a","model":"6","tag":1947223724923940865,"value":{"F_9":"测试材质","F_29":null,"GOODS_CODE":"001","QRCODE":"www.baidu.com","GOODS_NAME":"测试商品","F_31":null,"F_30":null,"F_11":"测试产地","F_10":"http://localhost:82/dev/file/download?id=1947222476036370434&Domain=http://localhost:81","F_32":"99","F_13":"9.0","F_12":"ge","F_15":null,"F_14":"测试状态","F_17":null,"F_16":null,"F_19":null,"F_18":null,"F_20":"<p>测试描述</p>","F_2":"测试分类","F_22":null,"F_1":"99.99","F_21":null,"F_4":"PRODUCT_FRUIT","F_24":null,"F_3":"9.99","F_23":null,"F_6":"攀攀","F_26":null,"F_5":"99.90","F_25":null,"F_8":"99.00","F_28":null,"F_7":"0.09","F_27":null},"taskid":20675,"token":963777}],"id":"1947223724923940865","command":"wtag","timestamp":1.753278620675E9}
+{"command":"wtag","data":[{"tag":1947223724923940865,"tmpl":"31","model":"6","checksum":"12780dc2f9234a1406c5853435f7296a","forcefrash":1,"value":{"F_1":"测试商品","F_2":"001","F_3":99.99,"F_4":99.9,"F_5":99.0,"F_6":9.99,"F_7":99.0,"F_8":"测试分类","F_9":"攀攀","F_10":"PRODUCT_FRUIT","F_11":"ge","F_12":9.0,"F_13":99,"F_14":"测试状态","F_15":"测试材质","F_16":"测试产地","F_17":"www.baidu.com","F_18":"www.baidu.com","F_19":"http://localhost:82/dev/file/download?id=1947222476036370434&Domain=http://localhost:81","F_20":"<p>测试描述</p>","F_21":null,"F_22":null,"F_23":null,"F_24":null,"F_25":null,"F_26":null,"F_27":null,"F_28":null,"F_29":null,"F_30":null,"F_31":null,"F_32":null},"taskid":28963,"token":406980}],"id":"1947223724923940865","timestamp":1.753279228963E9,"shop":"0002"}
 但是这是你合成的消息，有问题，请修复。内容都错了。
 curl 'http://localhost:8999/api/res/templ/refresh' \
   -H 'Accept-Language: zh-CN,zh;q=0.9' \

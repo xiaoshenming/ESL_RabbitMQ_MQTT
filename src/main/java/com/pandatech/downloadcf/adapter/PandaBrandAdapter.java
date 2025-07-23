@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -101,10 +102,10 @@ public class PandaBrandAdapter implements BrandAdapter {
     }
     
     /**
-     * 构建数据映射 - 按照PANDA标准格式
+     * 构建数据映射 - 严格按照PANDA标准MQTT格式
      */
     private Map<String, Object> buildDataMap(EslCompleteData completeData) {
-        Map<String, Object> dataMap = new HashMap<>();
+        Map<String, Object> dataMap = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         PandaProductWithBLOBs product = completeData.getProduct();
         
         if (product == null) {
@@ -112,29 +113,73 @@ public class PandaBrandAdapter implements BrandAdapter {
             return dataMap;
         }
         
-        // 按照PANDA标准字段映射格式构建数据
-        // 基础商品信息 - 使用标准字段编码
-        putIfNotNull(dataMap, "GOODS_CODE", product.getProductId());
-        putIfNotNull(dataMap, "GOODS_NAME", product.getProductName());
-        putIfNotNull(dataMap, "QRCODE", product.getProductBarcode() != null ? product.getProductBarcode() : "www.baidu.com");
+        // 严格按照PANDA标准格式构建value字段内容
+        // 按照err.md中定义的标准字段顺序和格式
         
-        // 按照字段映射表进行标准化映射
-        putIfNotNull(dataMap, "F_1", formatPrice(product.getProductRetailPrice())); // 零售价
-        putIfNotNull(dataMap, "F_2", product.getProductCategory()); // 分类
-        putIfNotNull(dataMap, "F_3", formatPrice(product.getProductCostPrice())); // 成本价
-        putIfNotNull(dataMap, "F_4", product.getProductSpecification()); // 规格
-        putIfNotNull(dataMap, "F_5", formatPrice(product.getProductMembershipPrice())); // 会员价
-        putIfNotNull(dataMap, "F_6", product.getProductBrand()); // 品牌
-        putIfNotNull(dataMap, "F_7", formatDiscount(product.getProductDiscount())); // 折扣
-        putIfNotNull(dataMap, "F_8", formatPrice(product.getProductWholesalePrice())); // 批发价
-        putIfNotNull(dataMap, "F_9", product.getProductMaterial()); // 材质
-        putIfNotNull(dataMap, "F_10", product.getProductImage()); // 图片
-        putIfNotNull(dataMap, "F_11", product.getProductOrigin()); // 产地
-        putIfNotNull(dataMap, "F_12", product.getProductUnit()); // 单位
-        putIfNotNull(dataMap, "F_13", formatWeight(product.getProductWeight())); // 重量
-        putIfNotNull(dataMap, "F_14", product.getProductStatus()); // 状态
-        putIfNotNull(dataMap, "F_20", product.getProductDescription()); // 描述
-        putIfNotNull(dataMap, "F_32", formatStock(product.getProductStock())); // 库存
+        // F_1: 商品名称 (字符串)
+        dataMap.put("F_1", formatStringField(product.getProductName()));
+        
+        // F_2: 商品编码 (字符串)
+        dataMap.put("F_2", formatStringField(product.getProductId()));
+        
+        // F_3: 零售价 (数字)
+        dataMap.put("F_3", formatPriceAsNumber(product.getProductRetailPrice()));
+        
+        // F_4: 会员价 (数字)
+        dataMap.put("F_4", formatPriceAsNumber(product.getProductMembershipPrice()));
+        
+        // F_5: 折扣价 (数字)
+        dataMap.put("F_5", formatPriceAsNumber(product.getProductDiscountPrice()));
+        
+        // F_6: 成本价 (数字)
+        dataMap.put("F_6", formatPriceAsNumber(product.getProductCostPrice()));
+        
+        // F_7: 批发价 (数字)
+        dataMap.put("F_7", formatPriceAsNumber(product.getProductWholesalePrice()));
+        
+        // F_8: 商品分类 (字符串)
+        dataMap.put("F_8", formatStringField(product.getProductCategory()));
+        
+        // F_9: 商品品牌 (字符串)
+        dataMap.put("F_9", formatStringField(product.getProductBrand()));
+        
+        // F_10: 商品规格 (字符串)
+        dataMap.put("F_10", formatStringField(product.getProductSpecification()));
+        
+        // F_11: 商品单位 (字符串)
+        dataMap.put("F_11", formatStringField(product.getProductUnit()));
+        
+        // F_12: 商品重量 (数字)
+        dataMap.put("F_12", formatNumberField(product.getProductWeight()));
+        
+        // F_13: 商品库存 (数字)
+        dataMap.put("F_13", formatIntegerField(product.getProductStock()));
+        
+        // F_14: 商品状态 (字符串)
+        dataMap.put("F_14", formatStringField(product.getProductStatus()));
+        
+        // F_15: 商品材质 (字符串)
+        dataMap.put("F_15", formatStringField(product.getProductMaterial()));
+        
+        // F_16: 商品产地 (字符串)
+        dataMap.put("F_16", formatStringField(product.getProductOrigin()));
+        
+        // F_17: 商品条形码 (字符串)
+        dataMap.put("F_17", formatStringField(product.getProductBarcode()));
+        
+        // F_18: 商品二维码 (字符串)
+        dataMap.put("F_18", formatStringField(product.getProductQrcode()));
+        
+        // F_19: 商品图片 (字符串)
+        dataMap.put("F_19", formatStringField(product.getProductImage()));
+        
+        // F_20: 商品描述 (字符串)
+        dataMap.put("F_20", formatStringField(product.getProductDescription()));
+        
+        // F_21到F_32: 预留字段，根据字段映射配置填充
+        for (int i = 21; i <= 32; i++) {
+            dataMap.put("F_" + i, null);
+        }
         
         // 根据字段映射配置进行额外转换
         if (completeData.getFieldMappings() != null) {
@@ -142,20 +187,14 @@ public class PandaBrandAdapter implements BrandAdapter {
                 String sourceField = mapping.getSourceField();
                 String targetField = mapping.getTargetField();
                 
-                if (sourceField != null && targetField != null) {
+                if (sourceField != null && targetField != null && targetField.startsWith("F_")) {
                     Object value = getProductFieldValue(product, sourceField);
                     if (value != null) {
-                        dataMap.put(targetField, formatFieldValue(value));
+                        // 根据目标字段类型进行格式化
+                        Object formattedValue = formatValueByFieldType(targetField, value);
+                        dataMap.put(targetField, formattedValue);
                     }
                 }
-            }
-        }
-        
-        // 确保所有F_字段都有值，空值设为null（按照标准格式）
-        for (int i = 15; i <= 31; i++) {
-            String fieldKey = "F_" + i;
-            if (!dataMap.containsKey(fieldKey)) {
-                dataMap.put(fieldKey, null);
             }
         }
         
@@ -247,6 +286,91 @@ public class PandaBrandAdapter implements BrandAdapter {
         } catch (NumberFormatException e) {
             log.warn("库存格式错误: {}", stock);
             return null;
+        }
+    }
+    
+    /**
+     * 格式化字符串字段 - 按照PANDA标准格式
+     */
+    private String formatStringField(Object value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toString().trim();
+    }
+    
+    /**
+     * 格式化价格为数字类型 - 按照PANDA标准格式
+     */
+    private Double formatPriceAsNumber(Object price) {
+        if (price == null) {
+            return 0.0;
+        }
+        
+        try {
+            return Double.parseDouble(price.toString());
+        } catch (NumberFormatException e) {
+            log.warn("价格格式错误: {}", price);
+            return 0.0;
+        }
+    }
+    
+    /**
+     * 格式化数字字段 - 按照PANDA标准格式
+     */
+    private Double formatNumberField(Object value) {
+        if (value == null) {
+            return null;
+        }
+        
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("数字格式错误: {}", value);
+            return null;
+        }
+    }
+    
+    /**
+     * 格式化整数字段 - 按照PANDA标准格式
+     */
+    private Integer formatIntegerField(Object value) {
+        if (value == null) {
+            return null;
+        }
+        
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            log.warn("整数格式错误: {}", value);
+            return null;
+        }
+    }
+    
+    /**
+     * 根据字段类型格式化值 - 按照PANDA标准格式
+     */
+    private Object formatValueByFieldType(String fieldName, Object value) {
+        if (value == null) {
+            return null;
+        }
+        
+        // 根据字段名判断数据类型
+        // F_3到F_7: 价格字段，应为数字类型
+        if (fieldName.matches("F_[3-7]")) {
+            return formatPriceAsNumber(value);
+        }
+        // F_12: 重量字段，应为数字类型
+        else if ("F_12".equals(fieldName)) {
+            return formatNumberField(value);
+        }
+        // F_13: 库存字段，应为整数类型
+        else if ("F_13".equals(fieldName)) {
+            return formatIntegerField(value);
+        }
+        // 其他字段默认为字符串类型
+        else {
+            return formatStringField(value);
         }
     }
     

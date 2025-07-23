@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -116,13 +117,13 @@ public class MessageProducerService {
      * 构建MQTT载荷 - 严格按照PANDA标准格式
      */
     private Object buildMqttPayload(BrandOutputData outputData) {
-        Map<String, Object> payload = new HashMap<>();
+        Map<String, Object> payload = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         
-        // 按照标准格式的字段顺序
+        // 严格按照标准格式的字段顺序：command, data, id, timestamp, shop
         payload.put("command", "wtag");
         payload.put("data", buildDataArray(outputData));
         payload.put("id", outputData.getEslId());
-        payload.put("timestamp", (double) (System.currentTimeMillis() / 1000.0)); // 科学计数法格式
+        payload.put("timestamp", System.currentTimeMillis() / 1000.0); // 秒级时间戳，保持小数格式
         payload.put("shop", outputData.getStoreCode());
         
         return payload;
@@ -132,12 +133,12 @@ public class MessageProducerService {
      * 构建data数组 - 严格按照PANDA标准格式
      */
     private List<Map<String, Object>> buildDataArray(BrandOutputData outputData) {
-        Map<String, Object> dataItem = new HashMap<>();
+        Map<String, Object> dataItem = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         
         // 严格按照标准格式的字段顺序：tag, tmpl, model, checksum, forcefrash, value, taskid, token
         dataItem.put("tag", Long.parseLong(outputData.getEslId())); // 转换为数字格式
         dataItem.put("tmpl", getTemplateNumber(outputData.getTemplateId())); // 模板编号（字符串格式，如"2"）
-        dataItem.put("model", "6"); // 按照标准格式，应该是"6"而不是"213"
+        dataItem.put("model", "6"); // 按照标准格式，固定为"6"
         dataItem.put("checksum", outputData.getChecksum() != null ? outputData.getChecksum() : "");
         dataItem.put("forcefrash", 1); // 保持原有拼写（按照标准格式）
         dataItem.put("value", outputData.getDataMap()); // 直接使用已经格式化的数据映射
@@ -181,27 +182,6 @@ public class MessageProducerService {
      */
     private int generateToken() {
         return (int) (Math.random() * 1000000);
-    }
-    
-    /**
-     * 构建标准的value映射格式
-     */
-    private Map<String, Object> buildStandardValueMapping(Map<String, Object> dataMap) {
-        Map<String, Object> standardValue = new HashMap<>();
-        
-        if (dataMap != null) {
-            // 确保所有值都是字符串格式
-            for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
-                Object value = entry.getValue();
-                if (value != null) {
-                    standardValue.put(entry.getKey(), value.toString());
-                } else {
-                    standardValue.put(entry.getKey(), "");
-                }
-            }
-        }
-        
-        return standardValue;
     }
     
     /**
