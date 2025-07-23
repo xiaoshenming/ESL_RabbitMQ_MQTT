@@ -1,5 +1,6 @@
 package com.pandatech.downloadcf.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
 import com.pandatech.downloadcf.dto.LoadTemplateRequest;
@@ -8,7 +9,6 @@ import com.pandatech.downloadcf.dto.TemplateDto;
 import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import com.pandatech.downloadcf.exception.BusinessException;
 import com.pandatech.downloadcf.util.JsonUtil;
-import com.pandatech.downloadcf.util.TemplateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -31,6 +31,7 @@ public class TemplateServiceImpl implements TemplateService {
     private final MessageProducerService messageProducerService;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+    private final MqttService mqttService;
 
     @Value("${app.template.base-url:http://localhost:8999/api/res/templ/loadtemple}")
     private String baseUrl;
@@ -90,27 +91,19 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public byte[] loadTemple(LoadTemplateRequest request) {
-        try {
-            log.info("开始加载模板，ID: {}, 名称: {}", request.getId(), request.getName());
-            
-            PrintTemplateDesignWithBLOBs template = findTemplate(request);
-            if (template == null || template.getContent() == null) {
-                log.warn("未找到模板或模板内容为空，ID: {}, 名称: {}", request.getId(), request.getName());
-                return null;
-            }
+        PrintTemplateDesignWithBLOBs template = findTemplate(request);
 
-            // 将数据库中的模板内容转换为官方格式
-            String officialTemplateJson = convertToOfficialTemplate(template);
-            
-            log.info("模板加载成功，ID: {}, 名称: {}, 内容长度: {}", 
-                    request.getId(), request.getName(), officialTemplateJson.length());
-            
-            return officialTemplateJson.getBytes("UTF-8");
-            
-        } catch (Exception e) {
-            log.error("模板加载失败，ID: {}, 名称: {}, 错误: {}", 
-                    request.getId(), request.getName(), e.getMessage(), e);
-            throw new BusinessException("TEMPLATE_LOAD_ERROR", "模板加载失败: " + e.getMessage(), e);
+        if (template == null || template.getContent() == null) {
+            return null;
+        }
+
+        try {
+            // 将数据库中的模板内容（JSON字符串）转换为官方模板格式
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            return officialTemplateJson.getBytes();
+        } catch (JsonProcessingException e) {
+            log.error("Error converting template to official format for ID: {} or Name: {}", request.getId(), request.getName(), e);
+            return null;
         }
     }
 
@@ -125,7 +118,7 @@ public class TemplateServiceImpl implements TemplateService {
             }
             
             // 从模板内容中提取屏幕类型
-            String officialTemplateJson = convertToOfficialTemplate(template);
+            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
             String tagType = extractTagTypeFromTemplate(officialTemplateJson);
             
             // 构建文件名：{模板名称}_{屏幕类型}
@@ -136,7 +129,7 @@ public class TemplateServiceImpl implements TemplateService {
                 return baseName;
             }
             
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.warn("获取模板文件名失败，使用默认名称，错误: {}", e.getMessage());
             return request.getName() != null ? request.getName() : request.getId();
         }
@@ -178,29 +171,7 @@ public class TemplateServiceImpl implements TemplateService {
         return template;
     }
 
-    /**
-     * 将数据库模板转换为官方格式
-     */
-    private String convertToOfficialTemplate(PrintTemplateDesignWithBLOBs template) {
-        try {
-            String content = template.getContent();
-            if (content == null || content.trim().isEmpty()) {
-                throw new BusinessException("TEMPLATE_CONTENT_EMPTY", "模板内容为空");
-            }
-            
-            // 如果内容已经是官方格式，直接返回
-            if (isOfficialFormat(content)) {
-                return content;
-            }
-            
-            // 转换自定义格式到官方格式
-            return TemplateUtil.convertCustomToOfficial(content);
-            
-        } catch (Exception e) {
-            log.error("模板格式转换失败，模板ID: {}, 错误: {}", template.getId(), e.getMessage(), e);
-            throw new BusinessException("TEMPLATE_CONVERSION_ERROR", "模板格式转换失败: " + e.getMessage(), e);
-        }
-    }
+
 
     /**
      * 判断是否为官方格式
@@ -252,10 +223,10 @@ public class TemplateServiceImpl implements TemplateService {
     private Map<String, Object> buildTemplateMessage(PrintTemplateDesignWithBLOBs template, String storeCode) {
         try {
             // 转换为官方格式
-            String officialTemplate = convertToOfficialTemplate(template);
+            String officialTemplate = mqttService.convertToOfficialTemplate(template);
             
             // 构建MQTT消息格式
-            Map<String, Object> message = JsonUtil.parseObject(officialTemplate, Map.class);
+            Map<String, Object> message = objectMapper.readValue(officialTemplate, Map.class);
             message.put("shop", storeCode);  // 使用"shop"字段以匹配RabbitMQListener
             message.put("templateId", template.getId());
             message.put("templateName", template.getName());
