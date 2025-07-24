@@ -46,6 +46,182 @@ public class MqttService {
     }
 
     /**
+     * 优化和去重Items，解决重复元素和位置冲突问题
+     */
+    private List<Map<String, Object>> optimizeAndDeduplicateItems(List<Map<String, Object>> items) {
+        if (items == null || items.isEmpty()) {
+            return items;
+        }
+        
+        List<Map<String, Object>> optimizedItems = new ArrayList<>();
+        Set<String> processedKeys = new HashSet<>();
+        
+        log.debug("开始优化Items，原始数量: {}", items.size());
+        
+        for (int i = 0; i < items.size(); i++) {
+            Map<String, Object> item = items.get(i);
+            
+            // 生成唯一标识符，用于去重
+            String uniqueKey = generateItemUniqueKey(item);
+            
+            // 检查是否已经处理过相同的元素
+            if (processedKeys.contains(uniqueKey)) {
+                log.debug("发现重复元素，跳过: DataKey={}, Location={}", 
+                         item.get("DataKey"), item.get("Location"));
+                continue;
+            }
+            
+            // 检查位置是否合理
+            if (!isValidItemPosition(item)) {
+                log.warn("发现位置异常的元素，尝试修复: DataKey={}, Location={}, Size={}", 
+                        item.get("DataKey"), item.get("Location"), item.get("Size"));
+                
+                // 尝试修复位置
+                item = fixItemPosition(item, i);
+                if (item == null) {
+                    log.warn("无法修复位置异常的元素，跳过");
+                    continue;
+                }
+            }
+            
+            // 检查尺寸是否合理
+            if (!isValidItemSize(item)) {
+                log.warn("发现尺寸异常的元素，尝试修复: DataKey={}, Size={}", 
+                        item.get("DataKey"), item.get("Size"));
+                
+                item = fixItemSize(item);
+                if (item == null) {
+                    log.warn("无法修复尺寸异常的元素，跳过");
+                    continue;
+                }
+            }
+            
+            processedKeys.add(uniqueKey);
+            optimizedItems.add(item);
+            
+            log.debug("保留元素: DataKey={}, Type={}, Location={}, Size={}", 
+                     item.get("DataKey"), item.get("Type"), item.get("Location"), item.get("Size"));
+        }
+        
+        log.info("Items优化完成，原始数量: {}, 优化后数量: {}", items.size(), optimizedItems.size());
+        return optimizedItems;
+    }
+    
+    /**
+     * 生成元素的唯一标识符
+     */
+    private String generateItemUniqueKey(Map<String, Object> item) {
+        String dataKey = String.valueOf(item.get("DataKey"));
+        String type = String.valueOf(item.get("Type"));
+        String location = String.valueOf(item.get("Location"));
+        
+        // 对于相同DataKey的元素，如果位置完全相同，认为是重复的
+        return dataKey + "|" + type + "|" + location;
+    }
+    
+    /**
+     * 检查元素位置是否合理
+     */
+    private boolean isValidItemPosition(Map<String, Object> item) {
+        try {
+            int x = (Integer) item.get("x");
+            int y = (Integer) item.get("y");
+            
+            // 位置不能为负数，且不能超出合理范围
+            return x >= 0 && y >= 0 && x < 10000 && y < 10000;
+        } catch (Exception e) {
+            log.warn("检查元素位置时出错: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 检查元素尺寸是否合理
+     */
+    private boolean isValidItemSize(Map<String, Object> item) {
+        try {
+            int width = (Integer) item.get("width");
+            int height = (Integer) item.get("height");
+            
+            // 尺寸必须大于0，且不能过大
+            return width > 0 && height > 0 && width <= 1000 && height <= 1000;
+        } catch (Exception e) {
+            log.warn("检查元素尺寸时出错: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 修复元素位置
+     */
+    private Map<String, Object> fixItemPosition(Map<String, Object> item, int index) {
+        try {
+            int x = (Integer) item.get("x");
+            int y = (Integer) item.get("y");
+            
+            // 如果位置异常，根据索引重新分配位置
+            if (x < 0 || y < 0 || x >= 10000 || y >= 10000) {
+                // 简单的网格布局：每行放4个元素
+                int newX = (index % 4) * 100;
+                int newY = (index / 4) * 30;
+                
+                item.put("x", newX);
+                item.put("y", newY);
+                item.put("Location", newX + ", " + newY);
+                
+                log.debug("修复元素位置: 原位置({}, {}), 新位置({}, {})", x, y, newX, newY);
+            }
+            
+            return item;
+        } catch (Exception e) {
+            log.error("修复元素位置时出错: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 修复元素尺寸
+     */
+    private Map<String, Object> fixItemSize(Map<String, Object> item) {
+        try {
+            int width = (Integer) item.get("width");
+            int height = (Integer) item.get("height");
+            
+            // 如果尺寸异常，设置合理的默认值
+            if (width <= 0 || width > 1000) {
+                width = 80; // 默认宽度
+            }
+            if (height <= 0 || height > 1000) {
+                height = 20; // 默认高度
+            }
+            
+            // 特殊处理不同类型的元素
+            String type = String.valueOf(item.get("Type"));
+            if ("qrcode".equals(type)) {
+                // 二维码应该是正方形，且有最小尺寸要求
+                int size = Math.max(width, height);
+                size = Math.max(size, 30); // 最小30像素
+                width = height = size;
+            } else if ("barcode".equals(type)) {
+                // 条形码宽度应该大于高度
+                width = Math.max(width, 60); // 最小宽度60像素
+                height = Math.max(height, 15); // 最小高度15像素
+            }
+            
+            item.put("width", width);
+            item.put("height", height);
+            item.put("Size", width + ", " + height);
+            
+            log.debug("修复元素尺寸: Type={}, 新尺寸={}x{}", type, width, height);
+            
+            return item;
+        } catch (Exception e) {
+            log.error("修复元素尺寸时出错: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * 发送模板到MQTT - 优化版
      * 构建tmpllist格式的MQTT消息并发送
      */
@@ -387,6 +563,11 @@ public class MqttService {
         }
         
         log.info("模板转换完成，共生成{}个Items，最终TagType: {}", items.size(), tagType);
+        
+        // 优化和去重Items
+        items = optimizeAndDeduplicateItems(items);
+        log.info("优化后Items数量: {}", items.size());
+        
         official.put("Items", items);
         return objectMapper.writeValueAsString(official);
     }
@@ -616,23 +797,52 @@ public class MqttService {
         item.put("TextAlign", 0);
         item.put("DataKeyStyle", 0);
         
-        // 获取画布尺寸
-        int canvasWidth = 250;  // 250px
-        int canvasHeight = 122; // 122px
+        // 从模板获取目标画布尺寸
+        int canvasWidth = 400;  // 默认宽度
+        int canvasHeight = 300; // 默认高度
         
-        // 从原始数据分析，设计画布似乎是更大的尺寸（约720x360pt）
-        // 需要按比例缩放到目标画布（250x122px）
-        double originalCanvasWidth = 720.0;  // 推测的原始设计画布宽度
-        double originalCanvasHeight = 360.0; // 推测的原始设计画布高度
+        // 尝试从模板中获取实际画布尺寸
+        if (template != null && template.getContent() != null) {
+            try {
+                JsonNode designConfig = objectMapper.readTree(template.getContent());
+                if (designConfig.has("panels") && designConfig.get("panels").isArray() && 
+                    designConfig.get("panels").size() > 0) {
+                    JsonNode panel = designConfig.get("panels").get(0);
+                    if (panel.has("width")) {
+                        canvasWidth = panel.get("width").asInt(400);
+                    }
+                    if (panel.has("height")) {
+                        canvasHeight = panel.get("height").asInt(300);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("无法解析模板设计配置，使用默认画布尺寸: {}x{}", canvasWidth, canvasHeight);
+            }
+        }
         
-        // 计算缩放比例
-        double scaleX = (double) canvasWidth / originalCanvasWidth;   // 250/720 ≈ 0.347
-        double scaleY = (double) canvasHeight / originalCanvasHeight; // 122/360 ≈ 0.339
+        log.debug("目标画布尺寸: {}x{}", canvasWidth, canvasHeight);
         
-        // 使用较小的缩放比例以确保内容不会超出边界
+        // 分析原始设计画布尺寸
+        // 从数据库数据可以看出，原始设计使用的是更大的坐标系统
+        // 最大坐标约为: left=912, top=787.5, 加上元素尺寸后约为1032x813
+        // 但实际设计画布应该是基于某个标准尺寸的坐标系统
+        
+        // 根据数据库中的实际坐标范围，推算原始设计画布尺寸
+        // 观察到的坐标范围: left: 114-912, top: 265.5-787.5
+        // 加上元素尺寸后的边界: right: 1032, bottom: 813
+        // 考虑到设计时的边距，原始画布可能是 1200x900 或类似比例
+        double originalCanvasWidth = 1200.0;   // 原始设计画布宽度
+        double originalCanvasHeight = 900.0;   // 原始设计画布高度
+        
+        // 计算缩放比例 - 保持宽高比
+        double scaleX = (double) canvasWidth / originalCanvasWidth;
+        double scaleY = (double) canvasHeight / originalCanvasHeight;
+        
+        // 使用统一的缩放比例以保持元素比例
         double scale = Math.min(scaleX, scaleY);
         
-        log.debug("缩放比例计算 - scaleX: {}, scaleY: {}, 使用scale: {}", scaleX, scaleY, scale);
+        log.debug("坐标转换参数 - 原始画布: {}x{}, 目标画布: {}x{}, 缩放比例: {}", 
+                 originalCanvasWidth, originalCanvasHeight, canvasWidth, canvasHeight, scale);
         
         // 获取原始坐标和尺寸
         double leftPt = options.has("left") ? options.get("left").asDouble() : 0;
@@ -640,30 +850,69 @@ public class MqttService {
         double widthPt = options.has("width") ? options.get("width").asDouble() : 50;
         double heightPt = options.has("height") ? options.get("height").asDouble() : 20;
         
+        log.debug("原始坐标和尺寸 - left: {}, top: {}, width: {}, height: {}", 
+                 leftPt, topPt, widthPt, heightPt);
+        
         // 应用缩放转换
         int x = (int) Math.round(leftPt * scale);
         int y = (int) Math.round(topPt * scale);
         int width = (int) Math.round(widthPt * scale);
         int height = (int) Math.round(heightPt * scale);
         
-        // 边界检查和调整
-        if (x < 0) x = 0;
-        if (y < 0) y = 0;
+        // 智能边界处理 - 避免过度压缩
+        if (x < 0) {
+            log.warn("元素X坐标小于0，调整为0。原始值: {}", x);
+            x = 0;
+        }
+        if (y < 0) {
+            log.warn("元素Y坐标小于0，调整为0。原始值: {}", y);
+            y = 0;
+        }
         
-        // 确保元素不超出画布边界
-        if (x >= canvasWidth) x = canvasWidth - 1;
-        if (y >= canvasHeight) y = canvasHeight - 1;
+        // 如果元素完全超出画布，进行适当调整而不是强制压缩
+        if (x >= canvasWidth) {
+            log.warn("元素X坐标超出画布宽度，调整到边界内。原始值: {}, 画布宽度: {}", x, canvasWidth);
+            x = Math.max(0, canvasWidth - width);
+        }
+        if (y >= canvasHeight) {
+            log.warn("元素Y坐标超出画布高度，调整到边界内。原始值: {}, 画布高度: {}", y, canvasHeight);
+            y = Math.max(0, canvasHeight - height);
+        }
         
+        // 如果元素尺寸超出画布，按比例缩小而不是截断
         if (x + width > canvasWidth) {
-            width = canvasWidth - x;
-        }
-        if (y + height > canvasHeight) {
-            height = canvasHeight - y;
+            int availableWidth = canvasWidth - x;
+            if (availableWidth > 0) {
+                width = availableWidth;
+            } else {
+                // 如果没有可用空间，重新计算位置和尺寸
+                width = Math.min(width, canvasWidth);
+                x = Math.max(0, canvasWidth - width);
+            }
+            log.debug("调整元素宽度以适应画布。新宽度: {}, X坐标: {}", width, x);
         }
         
-        // 确保最小尺寸
-        if (width < 1) width = 1;
-        if (height < 1) height = 1;
+        if (y + height > canvasHeight) {
+            int availableHeight = canvasHeight - y;
+            if (availableHeight > 0) {
+                height = availableHeight;
+            } else {
+                // 如果没有可用空间，重新计算位置和尺寸
+                height = Math.min(height, canvasHeight);
+                y = Math.max(0, canvasHeight - height);
+            }
+            log.debug("调整元素高度以适应画布。新高度: {}, Y坐标: {}", height, y);
+        }
+        
+        // 确保最小可见尺寸
+        if (width < 1) {
+            width = 1;
+            log.debug("元素宽度过小，设置为最小值1");
+        }
+        if (height < 1) {
+            height = 1;
+            log.debug("元素高度过小，设置为最小值1");
+        }
         
         // 检查是否为二维码或条形码（通过textType字段判断）
         String textType = null;
@@ -695,11 +944,16 @@ public class MqttService {
             }
             item.put("Bartype", barcodeType);
             item.put("Barformat", 0);
-            item.put("Barheight", 20);
+            
+            // 根据缩放后的高度动态设置条形码高度
+            // 条形码高度应该是元素高度的一部分，留出空间给文字
+            int barcodeHeight = Math.max(8, (int)(height * 0.7)); // 至少8像素，最多占元素高度的70%
+            item.put("Barheight", barcodeHeight);
+            
             item.put("Barwidth", 1);
             item.put("Showtext", 1);
             item.put("Fontinval", 1);
-            log.debug("识别为条形码元素，类型: {}", barcodeType);
+            log.debug("识别为条形码元素，类型: {}, 高度: {}", barcodeType, barcodeHeight);
         } else if ("rect".equals(elementType) || "oval".equals(elementType)) {
             // 图形元素设置边框样式
             item.put("BorderStyle", 1); // 显示边框
@@ -736,12 +990,21 @@ public class MqttService {
         item.put("Location", x + ", " + y);
         item.put("Size", width + ", " + height);
         
-        // 字体属性
+        // 字体属性 - 根据缩放比例调整字体大小
+        int fontSize = 12; // 默认字体大小
         if (options.has("fontSize")) {
-            item.put("FontSize", (int) options.get("fontSize").asDouble());
+            double originalFontSize = options.get("fontSize").asDouble();
+            // 字体大小也需要根据缩放比例调整，但不要过小
+            fontSize = Math.max(8, (int) Math.round(originalFontSize * scale));
         } else {
-            item.put("FontSize", 12);
+            // 如果没有指定字体大小，根据元素高度估算合适的字体大小
+            fontSize = Math.max(8, Math.min(height - 4, 16)); // 字体大小不超过元素高度-4，最大16
         }
+        item.put("FontSize", fontSize);
+        
+        log.debug("字体大小设置 - 原始: {}, 缩放后: {}, 元素高度: {}", 
+                 options.has("fontSize") ? options.get("fontSize").asDouble() : "未指定", 
+                 fontSize, height);
         
         if (options.has("fontWeight")) {
             String fontWeight = options.get("fontWeight").asText();
