@@ -27,7 +27,7 @@ public class PandaBrandAdapter implements BrandAdapter {
     private final ObjectMapper objectMapper;
     
     @Override
-    public String getBrandCode() {
+    public String getSupportedBrandCode() {
         return "攀攀";
     }
     

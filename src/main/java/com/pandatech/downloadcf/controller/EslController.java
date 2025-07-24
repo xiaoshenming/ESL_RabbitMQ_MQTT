@@ -92,7 +92,7 @@ public class EslController {
     @Operation(summary = "按门店刷新价签", description = "刷新指定门店的所有价签")
     public ResponseEntity<Map<String, Object>> refreshEslByStore(
             @Parameter(description = "门店编码") @PathVariable String storeCode,
-            @Parameter(description = "品牌编码") @RequestParam(defaultValue = "PANDA") String brandCode) {
+            @Parameter(description = "品牌编码") @RequestParam(defaultValue = "攀攀") String brandCode) {
         
         log.info("接收到门店价签刷新请求: storeCode={}, brandCode={}", storeCode, brandCode);
         
@@ -122,7 +122,7 @@ public class EslController {
     @Operation(summary = "按商品刷新价签", description = "刷新指定商品绑定的所有价签")
     public ResponseEntity<Map<String, Object>> refreshEslByProduct(
             @Parameter(description = "商品ID") @PathVariable String productId,
-            @Parameter(description = "品牌编码") @RequestParam(defaultValue = "PANDA") String brandCode) {
+            @Parameter(description = "品牌编码") @RequestParam(defaultValue = "攀攀") String brandCode) {
         
         log.info("接收到商品价签刷新请求: productId={}, brandCode={}", productId, brandCode);
         

@@ -7,6 +7,7 @@ import com.pandatech.downloadcf.dto.EslRefreshRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class EslRefreshService {
      */
     public boolean refreshEsl(EslRefreshRequest request) {
         log.info("开始刷新价签: {}", request);
+        log.info("请求中的品牌编码: {}", request.getBrandCode());
         
         try {
             // 1. 获取完整的价签数据
@@ -35,11 +37,20 @@ public class EslRefreshService {
                 log.error("获取价签数据失败: eslId={}", request.getEslId());
                 return false;
             }
+            log.info("获取到价签数据，商品品牌: {}", completeData.getProduct() != null ? completeData.getProduct().getProductBrand() : "null");
             
             // 2. 设置请求参数
-            if (request.getBrandCode() != null) {
-                completeData.setBrandCode(request.getBrandCode());
-            }
+            String actualBrandCode = null;
+            // 获取实际的品牌编码（应该使用商品数据中的品牌字段）
+            String productBrand = completeData.getProduct().getProductBrand();
+            actualBrandCode = StringUtils.hasText(productBrand) ? productBrand : "攀攀";
+            
+            log.info("请求参数中的品牌编码: {} (用于选择解析器)", request.getBrandCode());
+            log.info("商品数据中的品牌字段: {}", productBrand);
+            log.info("实际使用的品牌编码: {} (用于查找品牌适配器)", actualBrandCode);
+            
+            completeData.setBrandCode(actualBrandCode);
+            
             if (request.getForceRefresh() != null) {
                 completeData.setForceRefresh(request.getForceRefresh());
             }
@@ -47,12 +58,14 @@ public class EslRefreshService {
                 completeData.setStoreCode(request.getStoreCode());
             }
             
-            // 3. 查找对应的品牌适配器
-            BrandAdapter adapter = findBrandAdapter(completeData.getBrandCode());
+            // 3. 查找对应的品牌适配器（使用商品数据中的品牌字段）
+            BrandAdapter adapter = findBrandAdapter(actualBrandCode);
             if (adapter == null) {
                 log.error("未找到品牌适配器: brandCode={}", completeData.getBrandCode());
                 return false;
             }
+            log.info("获取到品牌适配器: {}", adapter.getClass().getSimpleName());
+            log.info("品牌适配器支持的品牌编码: {}", adapter.getSupportedBrandCode());
             
             // 4. 验证数据
             if (!adapter.validate(completeData)) {
@@ -60,6 +73,7 @@ public class EslRefreshService {
                         request.getEslId(), completeData.getBrandCode());
                 return false;
             }
+            log.info("数据验证通过");
             
             // 5. 转换数据
             BrandOutputData outputData = adapter.transform(completeData);
@@ -68,8 +82,10 @@ public class EslRefreshService {
                         request.getEslId(), completeData.getBrandCode());
                 return false;
             }
+            log.info("数据转换完成，输出数据类型: {}", outputData.getClass().getSimpleName());
             
             // 6. 发送消息
+            log.info("准备发送消息，使用品牌编码: {}", actualBrandCode);
             boolean success = messageProducerService.sendMessage(outputData);
             
             if (success) {
@@ -172,7 +188,7 @@ public class EslRefreshService {
      */
     private BrandAdapter findBrandAdapter(String brandCode) {
         if (brandCode == null) {
-            brandCode = "PANDA"; // 默认品牌
+            brandCode = "攀攀"; // 默认品牌
         }
         
         final String finalBrandCode = brandCode;

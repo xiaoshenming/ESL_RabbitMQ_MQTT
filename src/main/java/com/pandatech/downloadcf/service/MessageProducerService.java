@@ -71,12 +71,13 @@ public class MessageProducerService {
      */
     private String getExecutorTypeByBrand(String brandCode) {
         // 根据品牌配置确定执行器类型
-        switch (brandCode.toUpperCase()) {
-            case "PANDA":
+        switch (brandCode) {
+            case "攀攀":
                 return "mqtt";
             case "YALIANG":
                 return "http"; // 预留给雅量品牌
             default:
+                log.warn("未知品牌编码: {}, 使用默认执行器类型: mqtt", brandCode);
                 return "mqtt"; // 默认使用MQTT
         }
     }
@@ -121,6 +122,9 @@ public class MessageProducerService {
      * 构建MQTT载荷 - 严格按照PANDA标准格式
      */
     private Object buildMqttPayload(BrandOutputData outputData) {
+        log.info("开始构建MQTT载荷，ESL ID: {}, 门店代码: {}", 
+                outputData.getEslId(), outputData.getStoreCode());
+        
         Map<String, Object> payload = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         
         // 严格按照标准格式的字段顺序：command, data, id, timestamp, shop
@@ -130,6 +134,7 @@ public class MessageProducerService {
         payload.put("timestamp", System.currentTimeMillis() / 1000.0); // 秒级时间戳，保持小数格式
         payload.put("shop", outputData.getStoreCode());
         
+        log.info("MQTT载荷构建完成，载荷大小: {} 字段", payload.size());
         return payload;
     }
     
@@ -137,17 +142,28 @@ public class MessageProducerService {
      * 构建data数组 - 严格按照PANDA标准格式
      */
     private List<Map<String, Object>> buildDataArray(BrandOutputData outputData) {
+        log.info("开始构建data数组，ESL ID: {}", outputData.getEslId());
+        
         Map<String, Object> dataItem = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         
         // 严格按照标准格式的字段顺序：tag, tmpl, model, checksum, forcefrash, value, taskid, token
-        dataItem.put("tag", convertEslIdToDecimal(outputData.getActualEslId())); // 使用真正的ESL设备ID进行转换
-        dataItem.put("tmpl", getTemplateName(outputData.getEslId())); // 根据ESL ID获取模板名称
-        dataItem.put("model", getModelByEslId(outputData.getEslId())); // 根据ESL ID获取屏幕类型对应的model
+        long tagValue = convertEslIdToDecimal(outputData.getActualEslId());
+        String templateName = getTemplateName(outputData.getEslId());
+        String modelValue = getModelByEslId(outputData.getEslId());
+        int taskId = generateTaskId();
+        int token = generateToken();
+        
+        dataItem.put("tag", tagValue); // 使用真正的ESL设备ID进行转换
+        dataItem.put("tmpl", templateName); // 根据ESL ID获取模板名称
+        dataItem.put("model", modelValue); // 根据ESL ID获取屏幕类型对应的model
         dataItem.put("checksum", outputData.getChecksum() != null ? outputData.getChecksum() : "");
         dataItem.put("forcefrash", 1); // 保持原有拼写（按照标准格式）
         dataItem.put("value", outputData.getDataMap()); // 直接使用已经格式化的数据映射
-        dataItem.put("taskid", generateTaskId()); // 生成任务ID
-        dataItem.put("token", generateToken()); // 生成令牌
+        dataItem.put("taskid", taskId); // 生成任务ID
+        dataItem.put("token", token); // 生成令牌
+        
+        log.info("data数组构建完成，tag: {}, tmpl: {}, model: {}, taskid: {}, token: {}", 
+                tagValue, templateName, modelValue, taskId, token);
         
         return List.of(dataItem);
     }
@@ -203,14 +219,19 @@ public class MessageProducerService {
      * 根据ESL ID获取对应的模板名称，参考原始代码实现
      */
     private String getTemplateName(String eslId) {
+        log.info("开始获取模板名称，ESL ID: {}", eslId);
+        
         try {
             // 通过ESL ID获取模板信息
             PrintTemplateDesignWithBLOBs template = dataService.getTemplateByEslId(eslId);
             if (template != null && template.getContent() != null && !template.getContent().trim().isEmpty()) {
+                log.info("找到模板数据，模板ID: {}, 模板名称: {}", 
+                        template.getId(), template.getName());
+                
                 // 从CONTENT字段解析模板名称
                 String templateName = extractTemplateNameFromContent(template.getContent());
                 if (templateName != null && !templateName.trim().isEmpty()) {
-                    log.debug("从CONTENT字段获取到模板名称: ESL ID={}, 模板名称={}", eslId, templateName);
+                    log.info("从CONTENT字段解析到模板名称: {}", templateName);
                     return templateName;
                 }
             }
@@ -218,7 +239,7 @@ public class MessageProducerService {
             // 如果CONTENT解析失败，尝试使用NAME字段
             if (template != null && template.getName() != null && !template.getName().trim().isEmpty()) {
                 String templateName = template.getName().trim();
-                log.debug("从NAME字段获取到模板名称: ESL ID={}, 模板名称={}", eslId, templateName);
+                log.info("使用模板NAME字段作为模板名称: {}", templateName);
                 return templateName;
             }
             
@@ -235,18 +256,26 @@ public class MessageProducerService {
      * 根据ESL ID获取model值（屏幕类型对应的标识）
      */
     private String getModelByEslId(String eslId) {
+        log.info("开始获取model值，ESL ID: {}", eslId);
+        
         try {
             // 通过ESL ID获取模板信息
             PrintTemplateDesignWithBLOBs template = dataService.getTemplateByEslId(eslId);
             if (template != null) {
+                log.info("找到模板数据，模板ID: {}, CATEGORY: {}", 
+                        template.getId(), template.getCategory());
+                
                 // 从模板中提取屏幕类型
                 String screenType = extractScreenTypeFromTemplate(template);
                 if (screenType != null && !screenType.trim().isEmpty()) {
+                    log.info("从模板中解析到屏幕类型: {}", screenType);
                     // 根据屏幕类型获取对应的TagType
                     String tagType = getTagType(screenType.trim().toLowerCase());
-                    log.debug("获取到model值: ESL ID={}, 屏幕类型={}, model={}", eslId, screenType, tagType);
+                    log.info("屏幕类型 {} 转换为model: {}", screenType, tagType);
                     return tagType;
                 }
+            } else {
+                log.warn("未找到模板数据，ESL ID: {}", eslId);
             }
             
             log.warn("未找到ESL ID对应的屏幕类型: {}, 使用默认model值: 06", eslId);
@@ -262,11 +291,17 @@ public class MessageProducerService {
      * 从CONTENT字段提取模板名称
      */
     private String extractTemplateNameFromContent(String content) {
+        log.info("开始从CONTENT字段解析模板名称");
+        
         if (content == null || content.trim().isEmpty()) {
+            log.warn("CONTENT字段为空");
             return null;
         }
         
         try {
+            log.info("CONTENT字段内容长度: {} 字符", content.length());
+            log.debug("CONTENT字段内容: {}", content.substring(0, Math.min(content.length(), 500)) + "...");
+            
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode contentData = objectMapper.readTree(content);
             
@@ -277,17 +312,22 @@ public class MessageProducerService {
                 JsonNode nameNode = firstPanel.get("name");
                 if (nameNode != null && !nameNode.asText().trim().isEmpty()) {
                     String name = nameNode.asText().trim();
-                    log.debug("从panels[0].name提取到模板名称: {}", name);
+                    log.info("从panels[0].name提取到模板名称: {}", name);
                     return name;
                 }
+                log.info("panels[0].name字段为空或不存在");
+            } else {
+                log.info("panels数组为空或不存在");
             }
             
             // 其次检查根级别的name字段
             JsonNode nameNode = contentData.get("name");
             if (nameNode != null && !nameNode.asText().trim().isEmpty()) {
                 String name = nameNode.asText().trim();
-                log.debug("从根级别name提取到模板名称: {}", name);
+                log.info("从根级别name字段提取到模板名称: {}", name);
                 return name;
+            } else {
+                log.info("根级别name字段为空或不存在");
             }
             
             // 最后检查designConfig.name
@@ -296,16 +336,18 @@ public class MessageProducerService {
                 JsonNode designNameNode = designConfig.get("name");
                 if (designNameNode != null && !designNameNode.asText().trim().isEmpty()) {
                     String name = designNameNode.asText().trim();
-                    log.debug("从designConfig.name提取到模板名称: {}", name);
+                    log.info("从designConfig.name提取到模板名称: {}", name);
                     return name;
                 }
+            } else {
+                log.info("designConfig字段为空或不存在");
             }
             
             log.warn("CONTENT字段中未找到有效的模板名称");
             return null;
             
         } catch (Exception e) {
-            log.error("解析CONTENT字段时发生异常", e);
+            log.error("解析CONTENT字段时发生异常，内容: {}", content, e);
             return null;
         }
     }
@@ -395,32 +437,46 @@ public class MessageProducerService {
      * 根据屏幕类型获取对应的TagType
      */
     private String getTagType(String screenType) {
+        log.info("开始转换屏幕类型到model，输入屏幕类型: {}", screenType);
+        
         if (screenType == null || screenType.trim().isEmpty()) {
+            log.warn("屏幕类型为空，使用默认model: 06");
             return "06"; // 默认返回2.13T对应的TagType
         }
         
         String normalizedType = screenType.toLowerCase().trim();
+        log.info("标准化后的屏幕类型: {}", normalizedType);
         
+        String result;
         switch (normalizedType) {
             case "2.13t":
             case "2.13":
-                return "06";
+                result = "06";
+                break;
             case "4.20t":
             case "4.20":
-                return "1C";
+                result = "1C";
+                break;
             case "2.90t":
             case "2.90":
-                return "0A";
+                result = "0A";
+                break;
             case "1.54t":
             case "1.54":
-                return "02";
+                result = "02";
+                break;
             case "7.50t":
             case "7.50":
-                return "1E";
+                result = "1E";
+                break;
             default:
                 log.warn("未知的屏幕类型: {}, 使用默认TagType: 06", screenType);
-                return "06";
+                result = "06";
+                break;
         }
+        
+        log.info("屏幕类型转换完成: {} -> {}", screenType, result);
+        return result;
     }
     
     /**

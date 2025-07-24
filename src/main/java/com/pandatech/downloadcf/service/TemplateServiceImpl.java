@@ -78,7 +78,7 @@ public class TemplateServiceImpl implements TemplateService {
             EslRefreshRequest request = new EslRefreshRequest();
             request.setEslId(refreshDto.getEslId());
             request.setStoreCode(refreshDto.getStoreCode());
-            request.setBrandCode(refreshDto.getBrandCode() != null ? refreshDto.getBrandCode() : "PANDA");
+            request.setBrandCode(refreshDto.getBrandCode() != null ? refreshDto.getBrandCode() : "攀攀");
             request.setForceRefresh(refreshDto.getForceRefresh() != null ? refreshDto.getForceRefresh() : false);
             
             // 使用新架构的价签刷新服务
