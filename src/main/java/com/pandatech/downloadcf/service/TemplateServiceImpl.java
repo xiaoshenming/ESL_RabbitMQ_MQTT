@@ -239,10 +239,16 @@ public class TemplateServiceImpl implements TemplateService {
             // 构建标准的模板下发MQTT消息格式
             Map<String, Object> message = new HashMap<>();
             
+            // 生成随机UUID作为消息ID（必须每次都不同）
+            String messageId = java.util.UUID.randomUUID().toString();
+            // 生成完整的时间戳（避免科学计数法省略值）
+            long currentTimeMillis = System.currentTimeMillis();
+            double timestamp = currentTimeMillis / 1000.0;
+            
             // 按照标准格式的字段顺序
             message.put("command", "tmpllist");
-            message.put("id", template.getId());
-            message.put("timestamp", System.currentTimeMillis() / 1000);
+            message.put("id", messageId); // 使用随机UUID，确保每次都不同
+            message.put("timestamp", timestamp); // 使用完整时间戳
             message.put("shop", storeCode);
             
             // 构建data字段
@@ -274,8 +280,8 @@ public class TemplateServiceImpl implements TemplateService {
             data.put("tmpls", List.of(tmplItem));
             message.put("data", data);
             
-            log.debug("构建模板下发消息完成: templateId={}, fileName={}, storeCode={}, brandCode={}", 
-                    template.getId(), fileName, storeCode, brandCode);
+            log.debug("构建模板下发消息完成: templateId={}, fileName={}, storeCode={}, brandCode={}, 消息ID={}, 时间戳={}", 
+                    template.getId(), fileName, storeCode, brandCode, messageId, timestamp);
             
             return message;
             

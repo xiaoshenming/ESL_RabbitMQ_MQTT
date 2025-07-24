@@ -128,14 +128,21 @@ public class MessageProducerService {
         
         Map<String, Object> payload = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         
+        // 生成随机UUID作为消息ID（必须每次都不同）
+        String messageId = java.util.UUID.randomUUID().toString();
+        // 生成完整的时间戳（避免科学计数法省略值）
+        long currentTimeMillis = System.currentTimeMillis();
+        double timestamp = currentTimeMillis / 1000.0;
+        
         // 严格按照标准格式的字段顺序：command, data, id, timestamp, shop
         payload.put("command", "wtag");
         payload.put("data", buildDataArray(outputData));
-        payload.put("id", outputData.getEslId());
-        payload.put("timestamp", System.currentTimeMillis() / 1000.0); // 秒级时间戳，保持小数格式
+        payload.put("id", messageId); // 使用随机UUID，确保每次都不同
+        payload.put("timestamp", timestamp); // 使用完整时间戳
         payload.put("shop", outputData.getStoreCode());
         
-        log.info("MQTT载荷构建完成，载荷大小: {} 字段", payload.size());
+        log.info("MQTT载荷构建完成，载荷大小: {} 字段，消息ID: {}, 时间戳: {}", 
+                payload.size(), messageId, timestamp);
         return payload;
     }
     

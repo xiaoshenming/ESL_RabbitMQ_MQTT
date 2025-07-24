@@ -98,10 +98,17 @@ public class MqttService {
      */
     private String buildTmplListMessage(String shop, String templateId, String templateName, String md5, String tagType) throws JsonProcessingException {
         Map<String, Object> message = new HashMap<>();
+        
+        // 生成随机UUID作为消息ID（已经正确）
+        String messageId = UUID.randomUUID().toString();
+        // 生成完整的时间戳（避免科学计数法省略值）
+        long currentTimeMillis = System.currentTimeMillis();
+        double timestamp = currentTimeMillis / 1000.0;
+        
         message.put("shop", shop);
-        message.put("id", UUID.randomUUID().toString());
+        message.put("id", messageId);
         message.put("command", "tmpllist");
-        message.put("timestamp", System.currentTimeMillis() / 1000);
+        message.put("timestamp", timestamp); // 使用完整时间戳
 
         Map<String, Object> data = new HashMap<>();
         data.put("url", templateBaseUrl);
@@ -128,7 +135,8 @@ public class MqttService {
 
         message.put("data", data);
         
-        log.debug("构建tmpllist消息: templateId={}, fileName={}, md5={}", templateId, fileName, md5);
+        log.debug("构建tmpllist消息: templateId={}, fileName={}, md5={}, 消息ID={}, 时间戳={}", 
+                templateId, fileName, md5, messageId, timestamp);
         return objectMapper.writeValueAsString(message);
     }
 
