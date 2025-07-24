@@ -495,7 +495,7 @@ public class MqttService {
         
         official.put("Name", templateName); // 使用从CONTENT中解析的模板名称
         official.put("Version", 10);
-        official.put("hext", "6");
+        official.put("hext", "0");
         official.put("rgb", "3");
         official.put("wext", "0");
         
@@ -947,7 +947,7 @@ public class MqttService {
             
             // 根据缩放后的高度动态设置条形码高度
             // 条形码高度应该是元素高度的一部分，留出空间给文字
-            int barcodeHeight = Math.max(8, (int)(height * 0.7)); // 至少8像素，最多占元素高度的70%
+            double barcodeHeight = Math.max(8.0, height * 0.7); // 至少8像素，最多占元素高度的70%
             item.put("Barheight", barcodeHeight);
             
             item.put("Barwidth", 1);
@@ -1056,7 +1056,7 @@ public class MqttService {
         Map<String, Object> template = new HashMap<>();
         template.put("Name", "template");
         template.put("Version", 10);
-        template.put("hext", "6");
+        template.put("hext", "0");
         template.put("rgb", "3");
         template.put("wext", "0");
         template.put("TagType", "06");
