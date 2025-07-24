@@ -275,11 +275,14 @@ public class MqttService {
         Map<String, Object> official = new HashMap<>();
         List<Map<String, Object>> items = new ArrayList<>();
         
-        // 从模板对象中获取基本信息，如果为空则使用默认值
-        String templateName = template.getName() != null ? template.getName() : "template";
+        // 从CONTENT字段的JSON中提取模板名称，而不是直接使用NAME字段
+        String templateName = extractTemplateNameFromContent(template);
         String screenType = extractScreenTypeFromTemplate(template);
         String tagType = getTagType(screenType);
-        official.put("Name", templateName); // 只使用基础模板名称，不包含后缀
+        
+        log.info("模板转换开始 - 模板名称: {}, 屏幕类型: {}, TagType: {}", templateName, screenType, tagType);
+        
+        official.put("Name", templateName); // 使用从CONTENT中解析的模板名称
         official.put("Version", 10);
         official.put("hext", "6");
         official.put("rgb", "3");
@@ -294,14 +297,25 @@ public class MqttService {
         
         log.info("模板转换 - 屏幕类型: {}, TagType: {}", screenType, tagType);
         
-        JsonNode designConfig = rootNode.get("designConfig");
-        if (designConfig == null) {
-            log.warn("模板JSON中缺少 'designConfig' 字段");
+        // 检查是否是直接的panels格式
+        JsonNode panels = null;
+        if (rootNode.has("panels")) {
+            panels = rootNode.get("panels");
+            log.info("找到根级panels字段");
+        } else if (rootNode.has("designConfig")) {
+            JsonNode designConfig = rootNode.get("designConfig");
+            if (designConfig.has("panels")) {
+                panels = designConfig.get("panels");
+                log.info("找到designConfig.panels字段");
+            }
+        }
+        
+        if (panels == null) {
+            log.warn("模板JSON中缺少 'panels' 字段");
             official.put("Items", items);
             return objectMapper.writeValueAsString(official);
         }
 
-        JsonNode panels = designConfig.get("panels");
         if (panels.isArray()) {
             for (JsonNode panel : panels) {
                 // 提取面板的基本信息
@@ -311,6 +325,7 @@ public class MqttService {
                     official.put("Size", width + ", " + height);
                     official.put("width", String.valueOf(width));
                     official.put("height", String.valueOf(height));
+                    log.info("设置画布尺寸: {}x{}", width, height);
                 }
                 
                 // 转换printElements
@@ -336,68 +351,147 @@ public class MqttService {
             }
         }
         
-        log.info("模板转换完成，共生成{}个Items", items.size());
+        log.info("模板转换完成，共生成{}个Items，最终TagType: {}", items.size(), tagType);
         official.put("Items", items);
         return objectMapper.writeValueAsString(official);
     }
     
     /**
+     * 从模板CONTENT字段的JSON中提取模板名称
+     */
+    @SuppressWarnings("unchecked")
+    private String extractTemplateNameFromContent(PrintTemplateDesignWithBLOBs template) {
+        if (template.getContent() == null || template.getContent().trim().isEmpty()) {
+            log.warn("模板CONTENT字段为空，使用NAME字段作为模板名称: {}", template.getName());
+            return template.getName() != null ? template.getName() : "template";
+        }
+        
+        try {
+            Map<String, Object> contentData = objectMapper.readValue(template.getContent(), Map.class);
+            log.info("解析CONTENT字段成功，根级字段: {}", contentData.keySet());
+            
+            // 优先检查panels[0].name字段（这是实际的模板名称位置）
+            if (contentData.containsKey("panels")) {
+                Object panelsObj = contentData.get("panels");
+                log.info("找到panels字段，类型: {}", panelsObj != null ? panelsObj.getClass().getSimpleName() : "null");
+                if (panelsObj instanceof List) {
+                    List<Map<String, Object>> panels = (List<Map<String, Object>>) panelsObj;
+                    log.info("panels数组长度: {}", panels.size());
+                    if (!panels.isEmpty()) {
+                        Map<String, Object> firstPanel = panels.get(0);
+                        log.info("第一个panel的字段: {}", firstPanel.keySet());
+                        if (firstPanel.containsKey("name")) {
+                            Object nameObj = firstPanel.get("name");
+                            log.info("找到panels[0].name字段，值: {}, 类型: {}", nameObj, nameObj != null ? nameObj.getClass().getSimpleName() : "null");
+                            if (nameObj instanceof String) {
+                                String extractedName = (String) nameObj;
+                                log.info("从CONTENT.panels[0].name字段提取模板名称: {}", extractedName);
+                                return extractedName;
+                            } else if (nameObj instanceof Number) {
+                                String extractedName = nameObj.toString();
+                                log.info("从CONTENT.panels[0].name字段提取模板名称（数字转字符串）: {}", extractedName);
+                                return extractedName;
+                            }
+                        } else {
+                            log.warn("panels[0]中没有name字段");
+                        }
+                    } else {
+                        log.warn("panels数组为空");
+                    }
+                } else {
+                    log.warn("panels字段不是数组类型");
+                }
+            } else {
+                log.warn("CONTENT中没有panels字段");
+            }
+            
+            // 检查根级别的name字段
+            if (contentData.containsKey("name")) {
+                Object nameObj = contentData.get("name");
+                if (nameObj instanceof String) {
+                    String extractedName = (String) nameObj;
+                    log.info("从CONTENT根级name字段提取模板名称: {}", extractedName);
+                    return extractedName;
+                }
+            }
+            
+            // 检查designConfig.name字段
+            if (contentData.containsKey("designConfig")) {
+                Object designConfigObj = contentData.get("designConfig");
+                if (designConfigObj instanceof Map) {
+                    Map<String, Object> designConfig = (Map<String, Object>) designConfigObj;
+                    if (designConfig.containsKey("name")) {
+                        Object nameObj = designConfig.get("name");
+                        if (nameObj instanceof String) {
+                            String extractedName = (String) nameObj;
+                            log.info("从CONTENT.designConfig字段提取模板名称: {}", extractedName);
+                            return extractedName;
+                        }
+                    }
+                }
+            }
+            
+            log.warn("CONTENT字段中未找到name字段，使用NAME字段作为模板名称: {}", template.getName());
+            return template.getName() != null ? template.getName() : "template";
+            
+        } catch (Exception e) {
+            log.warn("解析CONTENT字段失败: {}, 使用NAME字段作为模板名称: {}", e.getMessage(), template.getName());
+            return template.getName() != null ? template.getName() : "template";
+        }
+    }
+    
+    /**
      * 从模板中提取屏幕类型
      */
+    @SuppressWarnings("unchecked")
     private String extractScreenTypeFromTemplate(PrintTemplateDesignWithBLOBs template) {
-        log.debug("开始提取屏幕类型 - 模板ID: {}, 模板名称: {}", template.getId(), template.getName());
+        // 首先尝试从CONTENT字段的panels[0].eslConfig.screenType中提取
+        if (template.getContent() != null && !template.getContent().trim().isEmpty()) {
+            try {
+                Map<String, Object> contentData = objectMapper.readValue(template.getContent(), Map.class);
+                
+                // 检查panels[0].eslConfig.screenType字段
+                if (contentData.containsKey("panels")) {
+                    Object panelsObj = contentData.get("panels");
+                    if (panelsObj instanceof List) {
+                        List<Map<String, Object>> panels = (List<Map<String, Object>>) panelsObj;
+                        if (!panels.isEmpty()) {
+                            Map<String, Object> firstPanel = panels.get(0);
+                            if (firstPanel.containsKey("eslConfig")) {
+                                Object eslConfigObj = firstPanel.get("eslConfig");
+                                if (eslConfigObj instanceof Map) {
+                                    Map<String, Object> eslConfig = (Map<String, Object>) eslConfigObj;
+                                    if (eslConfig.containsKey("screenType")) {
+                                        Object screenTypeObj = eslConfig.get("screenType");
+                                        if (screenTypeObj instanceof String) {
+                                            String screenType = (String) screenTypeObj;
+                                            log.info("从CONTENT.panels[0].eslConfig.screenType字段提取屏幕类型: {}", screenType);
+                                            return screenType;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析CONTENT字段中的屏幕类型失败: {}", e.getMessage());
+            }
+        }
         
-        // 首先尝试从EXT_JSON中提取
+        // 其次尝试从EXT_JSON中提取
         String screenType = extractScreenTypeFromExtJson(template.getExtJson());
         if (screenType != null) {
-            log.info("从EXT_JSON中提取到屏幕类型: {} (模板ID: {})", screenType, template.getId());
             return screenType;
         }
         
         // 如果EXT_JSON中没有，尝试从CATEGORY字段获取
         if (template.getCategory() != null && !template.getCategory().trim().isEmpty()) {
-            String categoryValue = template.getCategory().trim();
-            // 尝试将category映射为屏幕类型
-            String mappedScreenType = mapCategoryToScreenType(categoryValue);
-            log.info("从CATEGORY字段提取到值: {}, 映射为屏幕类型: {} (模板ID: {})", 
-                    categoryValue, mappedScreenType, template.getId());
-            return mappedScreenType;
+            return template.getCategory();
         }
         
         // 默认返回2.13T
-        log.warn("无法从模板中提取屏幕类型，使用默认值2.13T (模板ID: {})", template.getId());
         return "2.13T";
-    }
-
-    /**
-     * 将category数字映射为屏幕类型
-     */
-    private String mapCategoryToScreenType(String category) {
-        // 如果category已经是屏幕类型格式，直接返回
-        if (category.contains(".") && (category.toLowerCase().endsWith("t") || category.toLowerCase().endsWith("f"))) {
-            return category;
-        }
-        
-        // 数字到屏幕类型的映射
-        switch (category) {
-            case "1":
-                return "2.13T";
-            case "2":
-                return "1.54T";
-            case "3":
-                return "2.9T";
-            case "4":
-                return "4.2T";
-            case "5":
-                return "7.5T";
-            case "6":
-                return "4.20T";  // 根据错误日志，6应该映射为4.20T
-            case "7":
-                return "4.20F";
-            default:
-                log.warn("未知的category值: {}, 使用默认屏幕类型2.13T", category);
-                return "2.13T";
-        }
     }
     
     /**

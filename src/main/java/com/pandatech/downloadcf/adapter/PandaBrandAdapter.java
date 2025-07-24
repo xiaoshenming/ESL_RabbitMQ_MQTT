@@ -27,8 +27,8 @@ public class PandaBrandAdapter implements BrandAdapter {
     private final ObjectMapper objectMapper;
     
     @Override
-    public String getSupportedBrandCode() {
-        return "PANDA";
+    public String getBrandCode() {
+        return "攀攀";
     }
     
     @Override
@@ -121,90 +121,129 @@ public class PandaBrandAdapter implements BrandAdapter {
             return dataMap;
         }
         
+        log.info("开始构建数据映射，商品ID: {}, 商品名称: {}", product.getProductId(), product.getProductName());
+        
         // 根据字段映射配置进行精确映射（这是核心逻辑）
         if (completeData.getFieldMappings() != null && !completeData.getFieldMappings().isEmpty()) {
-            log.info("使用字段映射配置，共{}个映射", completeData.getFieldMappings().size());
+            log.info("使用字段映射配置，映射数量: {}", completeData.getFieldMappings().size());
+            
+            // 打印所有字段映射配置
+            for (EslBrandFieldMapping mapping : completeData.getFieldMappings()) {
+                log.info("字段映射配置: {} -> {} (格式: {})", 
+                    mapping.getFieldCode(), mapping.getTemplateField(), mapping.getFormatRule());
+            }
             
             for (EslBrandFieldMapping mapping : completeData.getFieldMappings()) {
                 String templateField = mapping.getTemplateField(); // 目标字段 (如 F_01, code, name等)
                 String fieldCode = mapping.getFieldCode(); // 源字段 (如 PRODUCT_RETAIL_PRICE等)
                 
+                log.debug("处理字段映射: {} -> {}", fieldCode, templateField);
+                
                 if (templateField != null && fieldCode != null) {
                     Object value = getProductFieldValue(product, fieldCode);
-                    if (value != null) {
-                        // 标准化目标字段名
-                        String targetField = normalizeFieldName(templateField);
-                        
-                        // 根据目标字段类型进行格式化
-                        Object formattedValue = formatValueByFieldType(targetField, value);
-                        
-                        dataMap.put(targetField, formattedValue);
-                        log.debug("字段映射: {} -> {} = {}", fieldCode, targetField, formattedValue);
+                    log.debug("获取字段值: {} = {}", fieldCode, value);
+                    
+                    // 即使值为null也要处理，某些字段可能需要默认值
+                    // 标准化目标字段名
+                    String targetField = normalizeFieldName(templateField);
+                    log.debug("标准化字段名: {} -> {}", templateField, targetField);
+                    
+                    // 根据目标字段类型进行格式化
+                    Object formattedValue = formatValueByFieldType(targetField, value);
+                    log.debug("格式化字段值: {} = {}", targetField, formattedValue);
+                    
+                    // 对于字符串字段，即使为空也要添加；对于数字字段，只有非null才添加
+                    boolean shouldAdd = false;
+                    if (formattedValue != null) {
+                        shouldAdd = true;
+                    } else if (isStringField(targetField)) {
+                        // 字符串字段即使为null也要添加空字符串
+                        formattedValue = "";
+                        shouldAdd = true;
                     }
+                    
+                    if (shouldAdd) {
+                        dataMap.put(targetField, formattedValue);
+                        log.debug("字段映射成功: {} -> {} = {}", fieldCode, targetField, formattedValue);
+                    } else {
+                        log.debug("字段映射: {} -> {} = null (跳过)", fieldCode, targetField);
+                    }
+                } else {
+                    log.warn("字段映射配置不完整: templateField={}, fieldCode={}", templateField, fieldCode);
                 }
             }
-        } else {
-            // 如果没有字段映射配置，使用默认映射（只映射必要字段）
-            log.warn("没有找到字段映射配置，使用默认映射");
             
-            // 只映射基本的必要字段，不初始化所有F_字段
+            log.info("字段映射完成，实际映射字段数量: {}", dataMap.size());
+            log.info("映射结果: {}", dataMap);
+        } else {
+            // 如果没有字段映射配置，使用最小化的默认映射
+            log.warn("没有找到字段映射配置，使用最小化默认映射");
+            
+            // 只映射基本的必要字段，避免生成过多F_字段
             dataMap.put("GOODS_CODE", formatStringField(product.getProductId()));
             dataMap.put("GOODS_NAME", formatStringField(product.getProductName()));
             dataMap.put("QRCODE", formatStringField(product.getProductQrcode()));
             
-            // 只映射有实际值的字段
-            if (product.getProductRetailPrice() != null) {
-                dataMap.put("F_1", formatPriceAsNumber(product.getProductRetailPrice())); // 零售价
-            }
-            if (product.getProductCategory() != null) {
-                dataMap.put("F_2", formatStringField(product.getProductCategory())); // 分类
-            }
-            if (product.getProductCostPrice() != null) {
-                dataMap.put("F_3", formatPriceAsNumber(product.getProductCostPrice())); // 成本价
-            }
-            if (product.getProductSpecification() != null) {
-                dataMap.put("F_4", formatStringField(product.getProductSpecification())); // 规格
-            }
-            if (product.getProductMembershipPrice() != null) {
-                dataMap.put("F_5", formatPriceAsNumber(product.getProductMembershipPrice())); // 会员价
-            }
-            if (product.getProductBrand() != null) {
-                dataMap.put("F_6", formatStringField(product.getProductBrand())); // 品牌
-            }
-            if (product.getProductDiscount() != null) {
-                dataMap.put("F_7", formatNumberField(product.getProductDiscount())); // 折扣
-            }
-            if (product.getProductWholesalePrice() != null) {
-                dataMap.put("F_8", formatPriceAsNumber(product.getProductWholesalePrice())); // 批发价
-            }
-            if (product.getProductMaterial() != null) {
-                dataMap.put("F_9", formatStringField(product.getProductMaterial())); // 材质
-            }
-            if (product.getProductImage() != null) {
-                dataMap.put("F_10", formatStringField(getSimplifiedImageValue(product.getProductImage()))); // 图片
-            }
-            if (product.getProductOrigin() != null) {
-                dataMap.put("F_11", formatStringField(product.getProductOrigin())); // 产地
-            }
-            if (product.getProductUnit() != null) {
-                dataMap.put("F_12", formatStringField(product.getProductUnit())); // 单位
-            }
-            if (product.getProductWeight() != null) {
-                dataMap.put("F_13", formatNumberField(product.getProductWeight())); // 重量
-            }
-            if (product.getProductStatus() != null) {
-                dataMap.put("F_14", formatStringField(product.getProductStatus())); // 状态
-            }
-            if (product.getProductDescription() != null) {
-                dataMap.put("F_20", formatStringField(product.getProductDescription())); // 描述
-            }
-            if (product.getProductStock() != null) {
-                dataMap.put("F_32", formatIntegerField(product.getProductStock())); // 库存
-            }
+            // 只添加最基本的价格字段
+            dataMap.put("F_1", formatPriceAsNumber(product.getProductRetailPrice())); // 零售价
         }
         
-        log.info("构建PANDA标准数据映射完成，共{}个字段", dataMap.size());
+        log.debug("构建PANDA标准数据映射完成，字段数量: {}", dataMap.size());
         return dataMap;
+    }
+    
+    /**
+     * 判断字段是否为字符串类型
+     */
+    private boolean isStringField(String fieldName) {
+        if (fieldName == null) {
+            return false;
+        }
+        
+        switch (fieldName) {
+            // 字符串字段
+            case "F_2":  // 分类
+            case "F_4":  // 规格
+            case "F_9":  // 材质
+            case "F_10": // 图片
+            case "F_11": // 产地
+            case "F_12": // 单位
+            case "F_14": // 状态
+            case "F_15": // 预留
+            case "F_16": // 预留
+            case "F_17": // 预留
+            case "F_18": // 预留
+            case "F_19": // 预留
+            case "F_20": // 描述
+            case "GOODS_CODE":
+            case "GOODS_NAME":
+            case "QRCODE":
+                return true;
+                
+            // 数字字段
+            case "F_1":  // 零售价
+            case "F_3":  // 成本价
+            case "F_5":  // 会员价
+            case "F_6":  // 折扣价
+            case "F_7":  // 折扣
+            case "F_8":  // 批发价
+            case "F_13": // 重量
+            case "F_32": // 库存
+                return false;
+                
+            // 其他F_字段的处理
+            default:
+                if (fieldName.startsWith("F_")) {
+                    // 对于F_21到F_31等预留字段，认为是字符串
+                    if (fieldName.matches("F_(2[1-9]|3[0-1])")) {
+                        return true;
+                    }
+                    // 其他F_字段默认为字符串
+                    return true;
+                }
+                // 非F_字段默认为字符串
+                return true;
+        }
     }
     
     /**
@@ -394,9 +433,8 @@ public class PandaBrandAdapter implements BrandAdapter {
      * 根据err.md中的标准格式示例进行精确格式化
      */
     private Object formatValueByFieldType(String fieldName, Object value) {
-        if (value == null) {
-            return null;
-        }
+        log.debug("格式化字段值: fieldName={}, value={}, valueType={}", 
+            fieldName, value, value != null ? value.getClass().getSimpleName() : "null");
         
         // 根据字段名判断数据类型，严格按照标准格式示例
         switch (fieldName) {
@@ -404,22 +442,28 @@ public class PandaBrandAdapter implements BrandAdapter {
             case "F_1":  // 零售价
             case "F_3":  // 成本价
             case "F_5":  // 会员价
+            case "F_6":  // 折扣价
             case "F_8":  // 批发价
-                return formatPriceAsNumber(value);
+                Object priceResult = formatPriceAsNumber(value);
+                log.debug("价格字段 {} 格式化结果: {}", fieldName, priceResult);
+                return priceResult;
                 
             // 数字字段 - 应为数字类型（Double）
             case "F_7":  // 折扣
             case "F_13": // 重量
-                return formatNumberField(value);
+                Object numberResult = formatNumberField(value);
+                log.debug("数字字段 {} 格式化结果: {}", fieldName, numberResult);
+                return numberResult;
                 
             // 整数字段 - 应为整数类型（Integer）
             case "F_32": // 库存
-                return formatIntegerField(value);
+                Object intResult = formatIntegerField(value);
+                log.debug("整数字段 {} 格式化结果: {}", fieldName, intResult);
+                return intResult;
                 
-            // 字符串字段 - 应为字符串类型
+            // 字符串字段 - 应为字符串类型，即使为null也返回空字符串
             case "F_2":  // 分类
             case "F_4":  // 规格
-            case "F_6":  // 品牌
             case "F_9":  // 材质
             case "F_10": // 图片
             case "F_11": // 产地
@@ -434,20 +478,27 @@ public class PandaBrandAdapter implements BrandAdapter {
             case "GOODS_CODE":
             case "GOODS_NAME":
             case "QRCODE":
-                return formatStringField(value);
+                String stringResult = formatStringField(value);
+                log.debug("字符串字段 {} 格式化结果: '{}'", fieldName, stringResult);
+                return stringResult;
                 
-            // 其他F_字段默认为null（预留字段）
+            // 其他F_字段的处理
             default:
                 if (fieldName.startsWith("F_")) {
-                    // 对于F_21到F_31等预留字段，保持null
+                    // 对于F_21到F_31等预留字段，返回null
                     if (fieldName.matches("F_(2[1-9]|3[0-1])")) {
+                        log.debug("预留字段 {} 返回null", fieldName);
                         return null;
                     }
                     // 其他F_字段默认为字符串
-                    return formatStringField(value);
+                    String defaultStringResult = formatStringField(value);
+                    log.debug("其他F_字段 {} 格式化为字符串: '{}'", fieldName, defaultStringResult);
+                    return defaultStringResult;
                 }
                 // 非F_字段默认为字符串
-                return formatStringField(value);
+                String nonFStringResult = formatStringField(value);
+                log.debug("非F_字段 {} 格式化为字符串: '{}'", fieldName, nonFStringResult);
+                return nonFStringResult;
         }
     }
     

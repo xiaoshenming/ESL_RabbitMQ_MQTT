@@ -49,9 +49,11 @@ public class DataService {
         completeData.setTemplate(template);
         
         // 4. 获取字段映射配置
-        List<EslBrandFieldMapping> fieldMappings = getFieldMappingsByBrand("PANDA"); // 默认品牌
+        List<EslBrandFieldMapping> fieldMappings = getFieldMappingsByBrand("攀攀"); // 攀攀品牌
         completeData.setFieldMappings(fieldMappings);
-        completeData.setBrandCode("PANDA");
+        completeData.setBrandCode("攀攀");
+        
+        log.info("字段映射配置查询结果: brandCode=攀攀, mappingCount={}", fieldMappings.size());
         
         log.info("成功获取价签完整数据: eslId={}, productId={}, templateId={}", 
                 eslId, product != null ? product.getId() : null, 
@@ -81,17 +83,19 @@ public class DataService {
         // 通过价签获取绑定的商品
         PandaProductWithBLOBs product = getProductByEslId(eslId);
         if (product != null && product.getEslTemplateCode() != null) {
-            // 通过商品的模板编码获取模板
-            PrintTemplateDesignCriteria criteria = new PrintTemplateDesignCriteria();
-            criteria.createCriteria().andCodeEqualTo(product.getEslTemplateCode());
-            
-            List<PrintTemplateDesignWithBLOBs> templates = templateMapper.selectByExampleWithBLOBs(criteria);
-            if (!templates.isEmpty()) {
-                return templates.get(0);
+            // 商品的ESL_TEMPLATE_CODE实际上是模板的ID，直接通过ID查询
+            log.info("查询模板，模板ID: {}", product.getEslTemplateCode());
+            PrintTemplateDesignWithBLOBs template = templateMapper.selectByPrimaryKey(product.getEslTemplateCode());
+            if (template != null) {
+                log.debug("成功找到模板: templateId={}, templateName={}", template.getId(), template.getName());
+                return template;
+            } else {
+                log.warn("通过模板ID未找到模板: templateId={}", product.getEslTemplateCode());
             }
         }
         
         // 如果没有找到模板，使用默认模板
+        log.warn("未找到商品对应的模板，使用默认模板: eslId={}", eslId);
         return getDefaultTemplate();
     }
     

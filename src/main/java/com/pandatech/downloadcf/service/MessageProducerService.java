@@ -1,5 +1,7 @@
 package com.pandatech.downloadcf.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.MessageExecutionData;
 import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
@@ -140,7 +142,7 @@ public class MessageProducerService {
         // 严格按照标准格式的字段顺序：tag, tmpl, model, checksum, forcefrash, value, taskid, token
         dataItem.put("tag", convertEslIdToDecimal(outputData.getActualEslId())); // 使用真正的ESL设备ID进行转换
         dataItem.put("tmpl", getTemplateName(outputData.getEslId())); // 根据ESL ID获取模板名称
-        dataItem.put("model", "6"); // 按照标准格式，固定为"6"
+        dataItem.put("model", getModelByEslId(outputData.getEslId())); // 根据ESL ID获取屏幕类型对应的model
         dataItem.put("checksum", outputData.getChecksum() != null ? outputData.getChecksum() : "");
         dataItem.put("forcefrash", 1); // 保持原有拼写（按照标准格式）
         dataItem.put("value", outputData.getDataMap()); // 直接使用已经格式化的数据映射
@@ -204,9 +206,19 @@ public class MessageProducerService {
         try {
             // 通过ESL ID获取模板信息
             PrintTemplateDesignWithBLOBs template = dataService.getTemplateByEslId(eslId);
+            if (template != null && template.getContent() != null && !template.getContent().trim().isEmpty()) {
+                // 从CONTENT字段解析模板名称
+                String templateName = extractTemplateNameFromContent(template.getContent());
+                if (templateName != null && !templateName.trim().isEmpty()) {
+                    log.debug("从CONTENT字段获取到模板名称: ESL ID={}, 模板名称={}", eslId, templateName);
+                    return templateName;
+                }
+            }
+            
+            // 如果CONTENT解析失败，尝试使用NAME字段
             if (template != null && template.getName() != null && !template.getName().trim().isEmpty()) {
                 String templateName = template.getName().trim();
-                log.debug("获取到模板名称: ESL ID={}, 模板名称={}", eslId, templateName);
+                log.debug("从NAME字段获取到模板名称: ESL ID={}, 模板名称={}", eslId, templateName);
                 return templateName;
             }
             
@@ -216,6 +228,198 @@ public class MessageProducerService {
         } catch (Exception e) {
             log.error("获取模板名称时发生异常: ESL ID={}", eslId, e);
             return "2"; // 异常时返回默认模板名称
+        }
+    }
+    
+    /**
+     * 根据ESL ID获取model值（屏幕类型对应的标识）
+     */
+    private String getModelByEslId(String eslId) {
+        try {
+            // 通过ESL ID获取模板信息
+            PrintTemplateDesignWithBLOBs template = dataService.getTemplateByEslId(eslId);
+            if (template != null) {
+                // 从模板中提取屏幕类型
+                String screenType = extractScreenTypeFromTemplate(template);
+                if (screenType != null && !screenType.trim().isEmpty()) {
+                    // 根据屏幕类型获取对应的TagType
+                    String tagType = getTagType(screenType.trim().toLowerCase());
+                    log.debug("获取到model值: ESL ID={}, 屏幕类型={}, model={}", eslId, screenType, tagType);
+                    return tagType;
+                }
+            }
+            
+            log.warn("未找到ESL ID对应的屏幕类型: {}, 使用默认model值: 06", eslId);
+            return "06"; // 默认model值
+            
+        } catch (Exception e) {
+            log.error("获取model值时发生异常: ESL ID={}", eslId, e);
+            return "06"; // 异常时返回默认model值
+        }
+    }
+    
+    /**
+     * 从CONTENT字段提取模板名称
+     */
+    private String extractTemplateNameFromContent(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode contentData = objectMapper.readTree(content);
+            
+            // 优先检查 panels[0].name
+            JsonNode panels = contentData.get("panels");
+            if (panels != null && panels.isArray() && panels.size() > 0) {
+                JsonNode firstPanel = panels.get(0);
+                JsonNode nameNode = firstPanel.get("name");
+                if (nameNode != null && !nameNode.asText().trim().isEmpty()) {
+                    String name = nameNode.asText().trim();
+                    log.debug("从panels[0].name提取到模板名称: {}", name);
+                    return name;
+                }
+            }
+            
+            // 其次检查根级别的name字段
+            JsonNode nameNode = contentData.get("name");
+            if (nameNode != null && !nameNode.asText().trim().isEmpty()) {
+                String name = nameNode.asText().trim();
+                log.debug("从根级别name提取到模板名称: {}", name);
+                return name;
+            }
+            
+            // 最后检查designConfig.name
+            JsonNode designConfig = contentData.get("designConfig");
+            if (designConfig != null) {
+                JsonNode designNameNode = designConfig.get("name");
+                if (designNameNode != null && !designNameNode.asText().trim().isEmpty()) {
+                    String name = designNameNode.asText().trim();
+                    log.debug("从designConfig.name提取到模板名称: {}", name);
+                    return name;
+                }
+            }
+            
+            log.warn("CONTENT字段中未找到有效的模板名称");
+            return null;
+            
+        } catch (Exception e) {
+            log.error("解析CONTENT字段时发生异常", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 从模板中提取屏幕类型
+     */
+    private String extractScreenTypeFromTemplate(PrintTemplateDesignWithBLOBs template) {
+        // 优先从CONTENT字段的panels[0].eslConfig.screenType中提取
+        if (template.getContent() != null && !template.getContent().trim().isEmpty()) {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode contentData = objectMapper.readTree(template.getContent());
+                
+                JsonNode panels = contentData.get("panels");
+                if (panels != null && panels.isArray() && panels.size() > 0) {
+                    JsonNode firstPanel = panels.get(0);
+                    JsonNode eslConfig = firstPanel.get("eslConfig");
+                    if (eslConfig != null) {
+                        JsonNode screenTypeNode = eslConfig.get("screenType");
+                        if (screenTypeNode != null && !screenTypeNode.asText().trim().isEmpty()) {
+                            String screenType = screenTypeNode.asText().trim();
+                            log.debug("从CONTENT的panels[0].eslConfig.screenType提取到屏幕类型: {}", screenType);
+                            return screenType;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("从CONTENT字段提取屏幕类型失败", e);
+            }
+        }
+        
+        // 其次从EXT_JSON中提取
+        if (template.getExtJson() != null && !template.getExtJson().trim().isEmpty()) {
+            String screenType = extractScreenTypeFromExtJson(template.getExtJson());
+            if (screenType != null && !screenType.trim().isEmpty()) {
+                log.debug("从EXT_JSON提取到屏幕类型: {}", screenType);
+                return screenType;
+            }
+        }
+        
+        // 最后从CATEGORY字段获取
+        if (template.getCategory() != null && !template.getCategory().trim().isEmpty()) {
+            String category = template.getCategory().trim();
+            log.debug("从CATEGORY字段获取到屏幕类型: {}", category);
+            return category;
+        }
+        
+        log.warn("未能从模板中提取到屏幕类型，使用默认值: 2.13T");
+        return "2.13T"; // 默认屏幕类型
+    }
+    
+    /**
+     * 从EXT_JSON中提取屏幕类型
+     */
+    private String extractScreenTypeFromExtJson(String extJson) {
+        if (extJson == null || extJson.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode extData = objectMapper.readTree(extJson);
+            
+            JsonNode designConfig = extData.get("designConfig");
+            if (designConfig != null) {
+                JsonNode panels = designConfig.get("panels");
+                if (panels != null && panels.isArray() && panels.size() > 0) {
+                    JsonNode firstPanel = panels.get(0);
+                    JsonNode eslConfig = firstPanel.get("eslConfig");
+                    if (eslConfig != null) {
+                        JsonNode screenTypeNode = eslConfig.get("screenType");
+                        if (screenTypeNode != null && !screenTypeNode.asText().trim().isEmpty()) {
+                            return screenTypeNode.asText().trim();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("从EXT_JSON提取屏幕类型失败", e);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 根据屏幕类型获取对应的TagType
+     */
+    private String getTagType(String screenType) {
+        if (screenType == null || screenType.trim().isEmpty()) {
+            return "06"; // 默认返回2.13T对应的TagType
+        }
+        
+        String normalizedType = screenType.toLowerCase().trim();
+        
+        switch (normalizedType) {
+            case "2.13t":
+            case "2.13":
+                return "06";
+            case "4.20t":
+            case "4.20":
+                return "1C";
+            case "2.90t":
+            case "2.90":
+                return "0A";
+            case "1.54t":
+            case "1.54":
+                return "02";
+            case "7.50t":
+            case "7.50":
+                return "1E";
+            default:
+                log.warn("未知的屏幕类型: {}, 使用默认TagType: 06", screenType);
+                return "06";
         }
     }
     
