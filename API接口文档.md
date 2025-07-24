@@ -9,6 +9,18 @@
 - **Base URL**: `http://localhost:8999`
 - **Content-Type**: `application/json`
 - **字符编码**: `UTF-8`
+- **CORS支持**: 已配置跨域支持，允许前端应用从不同端口访问API
+
+### 跨域配置说明
+
+系统已配置CORS跨域支持，具体配置如下：
+- **允许的域名**: 所有域名（`*`）
+- **允许的HTTP方法**: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
+- **允许的请求头**: 所有请求头（`*`）
+- **允许携带凭证**: 是
+- **预检请求缓存时间**: 3600秒
+
+前端应用可以从任何端口（如 `http://localhost:81`）正常访问后端API（`http://localhost:8999`）。
 
 ## 接口索引
 
