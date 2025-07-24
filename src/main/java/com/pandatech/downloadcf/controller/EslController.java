@@ -1,6 +1,9 @@
 package com.pandatech.downloadcf.controller;
 
+import com.pandatech.downloadcf.common.ApiResponse;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
+import com.pandatech.downloadcf.dto.EslStoreRefreshRequest;
+import com.pandatech.downloadcf.dto.EslProductRefreshRequest;
 import com.pandatech.downloadcf.service.EslRefreshService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,146 +31,152 @@ public class EslController {
     
     @PostMapping("/refresh")
     @Operation(summary = "刷新单个价签", description = "根据价签ID刷新指定的价签显示内容")
-    public ResponseEntity<Map<String, Object>> refreshEsl(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> refreshEsl(
             @RequestBody EslRefreshRequest request) {
         
         log.info("接收到价签刷新请求: {}", request);
-        
-        Map<String, Object> response = new HashMap<>();
         
         try {
             boolean success = eslRefreshService.refreshEsl(request);
             
             if (success) {
-                response.put("success", true);
-                response.put("message", "价签刷新成功");
-                response.put("eslId", request.getEslId());
-                return ResponseEntity.ok(response);
+                Map<String, Object> data = new HashMap<>();
+                data.put("eslId", request.getEslId());
+                data.put("timestamp", System.currentTimeMillis());
+                
+                return ResponseEntity.ok(ApiResponse.success("价签刷新请求已提交", data));
             } else {
-                response.put("success", false);
-                response.put("message", "价签刷新失败");
-                response.put("eslId", request.getEslId());
-                return ResponseEntity.badRequest().body(response);
+                Map<String, Object> data = new HashMap<>();
+                data.put("eslId", request.getEslId());
+                
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.badRequest("价签不存在或未绑定商品", data));
             }
             
         } catch (Exception e) {
             log.error("价签刷新异常", e);
-            response.put("success", false);
-            response.put("message", "价签刷新异常: " + e.getMessage());
-            response.put("eslId", request.getEslId());
-            return ResponseEntity.internalServerError().body(response);
+            Map<String, Object> data = new HashMap<>();
+            data.put("eslId", request.getEslId());
+            
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error("价签刷新异常: " + e.getMessage(), data));
         }
     }
     
     @PostMapping("/refresh/batch")
     @Operation(summary = "批量刷新价签", description = "批量刷新多个价签的显示内容")
-    public ResponseEntity<Map<String, Object>> batchRefreshEsl(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> batchRefreshEsl(
             @RequestBody List<EslRefreshRequest> requests) {
         
         log.info("接收到批量价签刷新请求: count={}", requests.size());
         
-        Map<String, Object> response = new HashMap<>();
-        
         try {
             int successCount = eslRefreshService.batchRefreshEsl(requests);
+            int failedCount = requests.size() - successCount;
             
-            response.put("success", true);
-            response.put("message", "批量刷新完成");
-            response.put("total", requests.size());
-            response.put("successCount", successCount);
-            response.put("failedCount", requests.size() - successCount);
+            Map<String, Object> data = new HashMap<>();
+            data.put("totalCount", requests.size());
+            data.put("successCount", successCount);
+            data.put("failedCount", failedCount);
             
-            return ResponseEntity.ok(response);
+            // 这里可以添加详细的结果列表，暂时简化处理
+            // TODO: 如果需要详细的每个价签的处理结果，需要修改service层返回更详细的信息
+            
+            if (failedCount == 0) {
+                return ResponseEntity.ok(ApiResponse.success("批量刷新处理完成", data));
+            } else {
+                return ResponseEntity.ok(ApiResponse.partialSuccess("批量刷新处理完成，部分失败", data));
+            }
             
         } catch (Exception e) {
             log.error("批量价签刷新异常", e);
-            response.put("success", false);
-            response.put("message", "批量刷新异常: " + e.getMessage());
-            response.put("total", requests.size());
-            return ResponseEntity.internalServerError().body(response);
+            Map<String, Object> data = new HashMap<>();
+            data.put("totalCount", requests.size());
+            data.put("successCount", 0);
+            data.put("failedCount", requests.size());
+            
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error("批量刷新异常: " + e.getMessage(), data));
         }
     }
     
-    @PostMapping("/refresh/store/{storeCode}")
+    @PostMapping("/refresh/store")
     @Operation(summary = "按门店刷新价签", description = "刷新指定门店的所有价签")
-    public ResponseEntity<Map<String, Object>> refreshEslByStore(
-            @Parameter(description = "门店编码") @PathVariable String storeCode,
-            @Parameter(description = "品牌编码") @RequestParam(defaultValue = "攀攀") String brandCode) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> refreshEslByStore(
+            @RequestBody EslStoreRefreshRequest request) {
         
-        log.info("接收到门店价签刷新请求: storeCode={}, brandCode={}", storeCode, brandCode);
-        
-        Map<String, Object> response = new HashMap<>();
+        log.info("接收到门店价签刷新请求: storeCode={}, brandCode={}", 
+                request.getStoreCode(), request.getBrandCode());
         
         try {
-            int successCount = eslRefreshService.refreshEslByStore(storeCode, brandCode);
+            int refreshCount = eslRefreshService.refreshEslByStore(request);
             
-            response.put("success", true);
-            response.put("message", "门店价签刷新完成");
-            response.put("storeCode", storeCode);
-            response.put("brandCode", brandCode);
-            response.put("successCount", successCount);
+            Map<String, Object> data = new HashMap<>();
+            data.put("storeCode", request.getStoreCode());
+            data.put("brandCode", request.getBrandCode());
+            data.put("refreshCount", refreshCount);
+            data.put("timestamp", System.currentTimeMillis());
             
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success("门店价签刷新处理完成", data));
             
         } catch (Exception e) {
             log.error("门店价签刷新异常", e);
-            response.put("success", false);
-            response.put("message", "门店价签刷新异常: " + e.getMessage());
-            response.put("storeCode", storeCode);
-            return ResponseEntity.internalServerError().body(response);
+            Map<String, Object> data = new HashMap<>();
+            data.put("storeCode", request.getStoreCode());
+            data.put("brandCode", request.getBrandCode());
+            data.put("refreshCount", 0);
+            
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error("门店价签刷新异常: " + e.getMessage(), data));
         }
     }
     
-    @PostMapping("/refresh/product/{productId}")
-    @Operation(summary = "按商品刷新价签", description = "刷新指定商品绑定的所有价签")
-    public ResponseEntity<Map<String, Object>> refreshEslByProduct(
-            @Parameter(description = "商品ID") @PathVariable String productId,
-            @Parameter(description = "品牌编码") @RequestParam(defaultValue = "攀攀") String brandCode) {
+    @PostMapping("/refresh/product")
+    @Operation(summary = "按商品刷新价签", description = "刷新指定商品的所有价签")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> refreshEslByProduct(
+            @RequestBody EslProductRefreshRequest request) {
         
-        log.info("接收到商品价签刷新请求: productId={}, brandCode={}", productId, brandCode);
-        
-        Map<String, Object> response = new HashMap<>();
+        log.info("接收到商品价签刷新请求: productCode={}, brandCode={}", 
+                request.getProductCode(), request.getBrandCode());
         
         try {
-            int successCount = eslRefreshService.refreshEslByProduct(productId, brandCode);
+            int refreshCount = eslRefreshService.refreshEslByProduct(request);
             
-            response.put("success", true);
-            response.put("message", "商品价签刷新完成");
-            response.put("productId", productId);
-            response.put("brandCode", brandCode);
-            response.put("successCount", successCount);
+            Map<String, Object> data = new HashMap<>();
+            data.put("productCode", request.getProductCode());
+            data.put("brandCode", request.getBrandCode());
+            data.put("refreshCount", refreshCount);
+            data.put("timestamp", System.currentTimeMillis());
             
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success("商品价签刷新处理完成", data));
             
         } catch (Exception e) {
             log.error("商品价签刷新异常", e);
-            response.put("success", false);
-            response.put("message", "商品价签刷新异常: " + e.getMessage());
-            response.put("productId", productId);
-            return ResponseEntity.internalServerError().body(response);
+            Map<String, Object> data = new HashMap<>();
+            data.put("productCode", request.getProductCode());
+            data.put("brandCode", request.getBrandCode());
+            data.put("refreshCount", 0);
+            
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error("商品价签刷新异常: " + e.getMessage(), data));
         }
     }
     
     @GetMapping("/brands")
-    @Operation(summary = "获取支持的品牌", description = "获取系统支持的所有品牌列表")
-    public ResponseEntity<Map<String, Object>> getSupportedBrands() {
+    @Operation(summary = "获取支持的品牌", description = "获取系统支持的所有价签品牌列表")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getSupportedBrands() {
         
-        Map<String, Object> response = new HashMap<>();
+        log.info("接收到获取支持品牌请求");
         
         try {
-            List<String> brands = eslRefreshService.getSupportedBrands();
+            List<Map<String, Object>> brands = eslRefreshService.getSupportedBrands();
             
-            response.put("success", true);
-            response.put("message", "获取品牌列表成功");
-            response.put("brands", brands);
-            
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success("获取支持品牌成功", brands));
             
         } catch (Exception e) {
-            log.error("获取品牌列表异常", e);
-            response.put("success", false);
-            response.put("message", "获取品牌列表异常: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
+            log.error("获取支持品牌异常", e);
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error("获取支持品牌异常: " + e.getMessage(), null));
         }
     }
 }

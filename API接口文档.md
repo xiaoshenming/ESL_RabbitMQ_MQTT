@@ -34,16 +34,16 @@ Content-Type: application/json
 #### 响应参数
 | 字段名 | 类型 | 描述 |
 |--------|------|------|
-| success | boolean | 请求是否成功 |
-| message | string | 响应消息 |
-| brands | array | 支持的品牌列表 |
+| code | int | 响应状态码，200表示成功 |
+| msg | string | 响应消息 |
+| data | array | 支持的品牌列表 |
 
 #### 响应示例
 ```json
 {
-    "success": true,
-    "message": "获取品牌列表成功",
-    "brands": [
+    "code": 200,
+    "msg": "获取品牌列表成功",
+    "data": [
         "攀攀"
     ]
 }
@@ -52,9 +52,9 @@ Content-Type: application/json
 #### 错误响应
 ```json
 {
-    "success": false,
-    "message": "获取品牌列表失败",
-    "error": "系统内部错误"
+    "code": 500,
+    "msg": "获取品牌列表失败",
+    "data": null
 }
 ```
 
@@ -92,28 +92,32 @@ Content-Type: application/json
 #### 响应参数
 | 字段名 | 类型 | 描述 |
 |--------|------|------|
-| success | boolean | 请求是否成功 |
-| message | string | 响应消息 |
-| eslId | string | 价签ID |
-| timestamp | long | 处理时间戳 |
+| code | int | 响应状态码，200表示成功 |
+| msg | string | 响应消息 |
+| data | object | 响应数据 |
+| data.eslId | string | 价签ID |
+| data.timestamp | long | 处理时间戳 |
 
 #### 响应示例
 ```json
 {
-    "success": true,
-    "message": "价签刷新请求已提交",
-    "eslId": "ESL001",
-    "timestamp": 1703123456789
+    "code": 200,
+    "msg": "价签刷新请求已提交",
+    "data": {
+        "eslId": "ESL001",
+        "timestamp": 1703123456789
+    }
 }
 ```
 
 #### 错误响应
 ```json
 {
-    "success": false,
-    "message": "价签刷新失败",
-    "error": "价签不存在或未绑定商品",
-    "eslId": "ESL001"
+    "code": 400,
+    "msg": "价签不存在或未绑定商品",
+    "data": {
+        "eslId": "ESL001"
+    }
 }
 ```
 
@@ -161,59 +165,64 @@ Content-Type: application/json
 #### 响应参数
 | 字段名 | 类型 | 描述 |
 |--------|------|------|
-| success | boolean | 请求是否成功 |
-| message | string | 响应消息 |
-| totalCount | int | 总请求数量 |
-| successCount | int | 成功处理数量 |
-| failedCount | int | 失败处理数量 |
-| results | array | 详细处理结果 |
-| results[].eslId | string | 价签ID |
-| results[].success | boolean | 是否成功 |
-| results[].message | string | 处理消息 |
+| code | int | 响应状态码，200表示成功 |
+| msg | string | 响应消息 |
+| data | object | 响应数据 |
+| data.totalCount | int | 总请求数量 |
+| data.successCount | int | 成功处理数量 |
+| data.failedCount | int | 失败处理数量 |
+| data.results | array | 详细处理结果 |
+| data.results[].eslId | string | 价签ID |
+| data.results[].success | boolean | 是否成功 |
+| data.results[].message | string | 处理消息 |
 
 #### 响应示例
 ```json
 {
-    "success": true,
-    "message": "批量刷新处理完成",
-    "totalCount": 2,
-    "successCount": 2,
-    "failedCount": 0,
-    "results": [
-        {
-            "eslId": "ESL001",
-            "success": true,
-            "message": "刷新成功"
-        },
-        {
-            "eslId": "ESL002",
-            "success": true,
-            "message": "刷新成功"
-        }
-    ]
+    "code": 200,
+    "msg": "批量刷新处理完成",
+    "data": {
+        "totalCount": 2,
+        "successCount": 2,
+        "failedCount": 0,
+        "results": [
+            {
+                "eslId": "ESL001",
+                "success": true,
+                "message": "刷新成功"
+            },
+            {
+                "eslId": "ESL002",
+                "success": true,
+                "message": "刷新成功"
+            }
+        ]
+    }
 }
 ```
 
 #### 错误响应
 ```json
 {
-    "success": false,
-    "message": "批量刷新处理完成，部分失败",
-    "totalCount": 2,
-    "successCount": 1,
-    "failedCount": 1,
-    "results": [
-        {
-            "eslId": "ESL001",
-            "success": true,
-            "message": "刷新成功"
-        },
-        {
-            "eslId": "ESL002",
-            "success": false,
-            "message": "价签不存在"
-        }
-    ]
+    "code": 207,
+    "msg": "批量刷新处理完成，部分失败",
+    "data": {
+        "totalCount": 2,
+        "successCount": 1,
+        "failedCount": 1,
+        "results": [
+            {
+                "eslId": "ESL001",
+                "success": true,
+                "message": "刷新成功"
+            },
+            {
+                "eslId": "ESL002",
+                "success": false,
+                "message": "价签不存在"
+            }
+        ]
+    }
 }
 ```
 
@@ -248,31 +257,35 @@ Content-Type: application/json
 #### 响应参数
 | 字段名 | 类型 | 描述 |
 |--------|------|------|
-| success | boolean | 请求是否成功 |
-| message | string | 响应消息 |
-| productId | string | 商品ID |
-| successCount | int | 成功刷新的价签数量 |
-| timestamp | long | 处理时间戳 |
+| code | int | 响应状态码，200表示成功 |
+| msg | string | 响应消息 |
+| data | object | 响应数据 |
+| data.productId | string | 商品ID |
+| data.successCount | int | 成功刷新的价签数量 |
+| data.timestamp | long | 处理时间戳 |
 
 #### 响应示例
 ```json
 {
-    "success": true,
-    "message": "商品价签刷新请求已提交",
-    "productId": "PRODUCT001",
-    "successCount": 3,
-    "timestamp": 1703123456789
+    "code": 200,
+    "msg": "商品价签刷新请求已提交",
+    "data": {
+        "productId": "PRODUCT001",
+        "successCount": 3,
+        "timestamp": 1703123456789
+    }
 }
 ```
 
 #### 错误响应
 ```json
 {
-    "success": false,
-    "message": "商品价签刷新失败",
-    "error": "商品不存在或未绑定价签",
-    "productId": "PRODUCT001",
-    "successCount": 0
+    "code": 404,
+    "msg": "商品不存在或未绑定价签",
+    "data": {
+        "productId": "PRODUCT001",
+        "successCount": 0
+    }
 }
 ```
 
@@ -307,31 +320,35 @@ Content-Type: application/json
 #### 响应参数
 | 字段名 | 类型 | 描述 |
 |--------|------|------|
-| success | boolean | 请求是否成功 |
-| message | string | 响应消息 |
-| storeCode | string | 门店编码 |
-| successCount | int | 成功刷新的价签数量 |
-| timestamp | long | 处理时间戳 |
+| code | int | 响应状态码，200表示成功 |
+| msg | string | 响应消息 |
+| data | object | 响应数据 |
+| data.storeCode | string | 门店编码 |
+| data.successCount | int | 成功刷新的价签数量 |
+| data.timestamp | long | 处理时间戳 |
 
 #### 响应示例
 ```json
 {
-    "success": true,
-    "message": "门店价签刷新请求已提交",
-    "storeCode": "STORE001",
-    "successCount": 15,
-    "timestamp": 1703123456789
+    "code": 200,
+    "msg": "门店价签刷新请求已提交",
+    "data": {
+        "storeCode": "STORE001",
+        "successCount": 15,
+        "timestamp": 1703123456789
+    }
 }
 ```
 
 #### 错误响应
 ```json
 {
-    "success": false,
-    "message": "门店价签刷新失败",
-    "error": "门店不存在或没有价签",
-    "storeCode": "STORE001",
-    "successCount": 0
+    "code": 404,
+    "msg": "门店不存在或没有价签",
+    "data": {
+        "storeCode": "STORE001",
+        "successCount": 0
+    }
 }
 ```
 
@@ -341,6 +358,8 @@ Content-Type: application/json
 
 | 错误码 | 描述 | 解决方案 |
 |--------|------|----------|
+| 200 | 请求成功 | 正常响应 |
+| 207 | 部分成功 | 批量操作中部分成功，检查详细结果 |
 | 400 | 请求参数错误 | 检查请求参数格式和必填字段 |
 | 404 | 资源不存在 | 确认价签ID、商品ID或门店编码是否正确 |
 | 500 | 服务器内部错误 | 联系技术支持或查看服务器日志 |
@@ -392,10 +411,11 @@ async function refreshSingleEsl(eslId, brandCode = '攀攀') {
             forceRefresh: true
         });
         
-        if (response.data.success) {
-            console.log('价签刷新成功:', response.data.message);
+        if (response.data.code === 200) {
+            console.log('价签刷新成功:', response.data.msg);
+            console.log('价签ID:', response.data.data.eslId);
         } else {
-            console.error('价签刷新失败:', response.data.message);
+            console.error('价签刷新失败:', response.data.msg);
         }
     } catch (error) {
         console.error('请求失败:', error.message);
@@ -415,7 +435,13 @@ async function batchRefreshEsl(eslIds, brandCode = '攀攀') {
             requests: requests
         });
         
-        console.log('批量刷新结果:', response.data);
+        if (response.data.code === 200) {
+            console.log('批量刷新成功:', response.data.msg);
+            console.log('成功数量:', response.data.data.successCount);
+            console.log('失败数量:', response.data.data.failedCount);
+        } else {
+            console.log('批量刷新部分失败:', response.data.msg);
+        }
         return response.data;
     } catch (error) {
         console.error('批量刷新失败:', error.message);
@@ -430,11 +456,34 @@ async function refreshEslByProduct(productId, brandCode = '攀攀') {
             `/api/esl/refresh/product/${productId}?brandCode=${brandCode}`
         );
         
-        console.log('商品价签刷新结果:', response.data);
+        if (response.data.code === 200) {
+            console.log('商品价签刷新成功:', response.data.msg);
+            console.log('刷新数量:', response.data.data.successCount);
+        } else {
+            console.error('商品价签刷新失败:', response.data.msg);
+        }
         return response.data;
     } catch (error) {
         console.error('商品价签刷新失败:', error.message);
         throw error;
+    }
+}
+
+// 获取支持的品牌
+async function getSupportedBrands() {
+    try {
+        const response = await axios.get('/api/esl/brands');
+        
+        if (response.data.code === 200) {
+            console.log('获取品牌列表成功:', response.data.data);
+            return response.data.data;
+        } else {
+            console.error('获取品牌列表失败:', response.data.msg);
+            return [];
+        }
+    } catch (error) {
+        console.error('获取品牌列表失败:', error.message);
+        return [];
     }
 }
 ```
@@ -456,11 +505,23 @@ public class EslClientController {
         request.put("brandCode", brandCode);
         request.put("forceRefresh", true);
         
-        return restTemplate.postForEntity(
+        ResponseEntity<Map> response = restTemplate.postForEntity(
             ESL_API_BASE + "/refresh", 
             request, 
             Map.class
         );
+        
+        // 检查响应
+        Map<String, Object> body = response.getBody();
+        if (body != null && (Integer) body.get("code") == 200) {
+            System.out.println("价签刷新成功: " + body.get("msg"));
+            Map<String, Object> data = (Map<String, Object>) body.get("data");
+            System.out.println("价签ID: " + data.get("eslId"));
+        } else {
+            System.err.println("价签刷新失败: " + body.get("msg"));
+        }
+        
+        return response;
     }
     
     // 获取支持的品牌
@@ -471,7 +532,42 @@ public class EslClientController {
         );
         
         Map<String, Object> body = response.getBody();
-        return (List<String>) body.get("brands");
+        if (body != null && (Integer) body.get("code") == 200) {
+            return (List<String>) body.get("data");
+        } else {
+            System.err.println("获取品牌列表失败: " + body.get("msg"));
+            return new ArrayList<>();
+        }
+    }
+    
+    // 批量刷新价签
+    public Map<String, Object> batchRefreshEsl(List<Map<String, Object>> requests) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("requests", requests);
+        
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+            ESL_API_BASE + "/refresh/batch", 
+            requestBody, 
+            Map.class
+        );
+        
+        Map<String, Object> body = response.getBody();
+        if (body != null) {
+            Integer code = (Integer) body.get("code");
+            if (code == 200) {
+                System.out.println("批量刷新成功: " + body.get("msg"));
+            } else if (code == 207) {
+                System.out.println("批量刷新部分成功: " + body.get("msg"));
+            } else {
+                System.err.println("批量刷新失败: " + body.get("msg"));
+            }
+            
+            Map<String, Object> data = (Map<String, Object>) body.get("data");
+            System.out.println("成功数量: " + data.get("successCount"));
+            System.out.println("失败数量: " + data.get("failedCount"));
+        }
+        
+        return body;
     }
 }
 ```
@@ -486,3 +582,116 @@ public class EslClientController {
 ---
 
 *本文档版本：v1.0.0，最后更新：2024年*
+
+
+curl 'http://localhost:8999/api/esl/brands' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H 'Connection: keep-alive' \
+  -b 'JSESSIONID=406CCC878CB84ADC8026DEE2D90EF3FA' \
+  -H 'Referer: http://localhost:8999/swagger-ui/index.html' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
+  -H 'accept: */*' \
+  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"'
+  {
+    "code": 200,
+    "msg": "获取支持品牌成功",
+    "data": [
+        {
+            "brandName": "攀攀",
+            "enabled": true,
+            "brandCode": "攀攀"
+        }
+    ]
+}
+curl 'http://localhost:8999/api/esl/refresh' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: application/json' \
+  -b 'JSESSIONID=406CCC878CB84ADC8026DEE2D90EF3FA' \
+  -H 'Origin: http://localhost:8999' \
+  -H 'Referer: http://localhost:8999/swagger-ui/index.html' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
+  -H 'accept: */*' \
+  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  --data-raw $'{\n  "eslId": "1947313501023105026",\n  "brandCode": "PANDA",\n  "forceRefresh": true,\n  "storeCode": "0002"\n}'
+  {
+    "code": 200,
+    "msg": "价签刷新请求已提交",
+    "data": {
+        "eslId": "1947313501023105026",
+        "timestamp": 1753334448853
+    }
+}
+{
+    "code": 200,
+    "msg": "批量刷新处理完成",
+    "data": {
+        "failedCount": 0,
+        "successCount": 2,
+        "totalCount": 2
+    }
+}
+curl 'http://localhost:8999/api/esl/refresh/product' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: application/json' \
+  -b 'JSESSIONID=406CCC878CB84ADC8026DEE2D90EF3FA' \
+  -H 'Origin: http://localhost:8999' \
+  -H 'Referer: http://localhost:8999/swagger-ui/index.html' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
+  -H 'accept: */*' \
+  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  --data-raw $'{\n  "productCode": "1947222838805917697",\n  "brandCode": "攀攀",\n  "forceRefresh": true\n}'
+  {
+    "code": 200,
+    "msg": "商品价签刷新处理完成",
+    "data": {
+        "productCode": "1947222838805917697",
+        "refreshCount": 1,
+        "brandCode": "攀攀",
+        "timestamp": 1753334710614
+    }
+}
+
+curl 'http://localhost:8999/api/esl/refresh/store' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: application/json' \
+  -b 'JSESSIONID=406CCC878CB84ADC8026DEE2D90EF3FA' \
+  -H 'Origin: http://localhost:8999' \
+  -H 'Referer: http://localhost:8999/swagger-ui/index.html' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
+  -H 'accept: */*' \
+  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  --data-raw $'{\n  "storeCode": "0002",\n  "brandCode": "攀攀",\n  "forceRefresh": true\n}'
+
+  {
+    "code": 200,
+    "msg": "门店价签刷新处理完成",
+    "data": {
+        "refreshCount": 2,
+        "storeCode": "0002",
+        "brandCode": "攀攀",
+        "timestamp": 1753334754224
+    }
+}

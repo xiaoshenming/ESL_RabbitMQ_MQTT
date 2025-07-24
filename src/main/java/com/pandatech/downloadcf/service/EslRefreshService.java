@@ -5,6 +5,8 @@ import com.pandatech.downloadcf.adapter.BrandAdapter;
 import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
+import com.pandatech.downloadcf.dto.EslStoreRefreshRequest;
+import com.pandatech.downloadcf.dto.EslProductRefreshRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -136,25 +138,26 @@ public class EslRefreshService {
     /**
      * 根据门店刷新所有价签
      */
-    public int refreshEslByStore(String storeCode, String brandCode) {
-        log.info("开始按门店刷新价签: storeCode={}, brandCode={}", storeCode, brandCode);
+    public int refreshEslByStore(EslStoreRefreshRequest request) {
+        log.info("开始按门店刷新价签: storeCode={}, brandCode={}", 
+                request.getStoreCode(), request.getBrandCode());
         
         // 获取门店的所有价签
-        var esls = dataService.getEslsByStore(storeCode);
+        var esls = dataService.getEslsByStore(request.getStoreCode());
         if (esls.isEmpty()) {
-            log.warn("门店没有价签: storeCode={}", storeCode);
+            log.warn("门店没有价签: storeCode={}", request.getStoreCode());
             return 0;
         }
         
         // 构建刷新请求
         List<EslRefreshRequest> requests = esls.stream()
                 .map(esl -> {
-                    EslRefreshRequest request = new EslRefreshRequest();
-                    request.setEslId(esl.getId());
-                    request.setBrandCode(brandCode);
-                    request.setStoreCode(storeCode);
-                    request.setForceRefresh(true);
-                    return request;
+                    EslRefreshRequest eslRequest = new EslRefreshRequest();
+                    eslRequest.setEslId(esl.getId());
+                    eslRequest.setBrandCode(request.getBrandCode());
+                    eslRequest.setStoreCode(request.getStoreCode());
+                    eslRequest.setForceRefresh(request.getForceRefresh());
+                    return eslRequest;
                 })
                 .toList();
         
@@ -164,25 +167,26 @@ public class EslRefreshService {
     /**
      * 根据商品刷新相关价签
      */
-    public int refreshEslByProduct(String productId, String brandCode) {
-        log.info("开始按商品刷新价签: productId={}, brandCode={}", productId, brandCode);
+    public int refreshEslByProduct(EslProductRefreshRequest request) {
+        log.info("开始按商品刷新价签: productCode={}, brandCode={}", 
+                request.getProductCode(), request.getBrandCode());
         
         // 获取商品绑定的所有价签
-        var esls = dataService.getEslsByProduct(productId);
+        var esls = dataService.getEslsByProduct(request.getProductCode());
         if (esls.isEmpty()) {
-            log.warn("商品没有绑定价签: productId={}", productId);
+            log.warn("商品没有绑定价签: productCode={}", request.getProductCode());
             return 0;
         }
         
         // 构建刷新请求
         List<EslRefreshRequest> requests = esls.stream()
                 .map(esl -> {
-                    EslRefreshRequest request = new EslRefreshRequest();
-                    request.setEslId(esl.getId());
-                    request.setBrandCode(brandCode);
-                    request.setStoreCode(esl.getStoreCode());
-                    request.setForceRefresh(true);
-                    return request;
+                    EslRefreshRequest eslRequest = new EslRefreshRequest();
+                    eslRequest.setEslId(esl.getId());
+                    eslRequest.setBrandCode(request.getBrandCode());
+                    eslRequest.setStoreCode(esl.getStoreCode());
+                    eslRequest.setForceRefresh(request.getForceRefresh());
+                    return eslRequest;
                 })
                 .toList();
         
@@ -207,9 +211,15 @@ public class EslRefreshService {
     /**
      * 获取支持的品牌列表
      */
-    public List<String> getSupportedBrands() {
+    public List<Map<String, Object>> getSupportedBrands() {
         return brandAdapters.stream()
-                .map(BrandAdapter::getSupportedBrandCode)
+                .map(adapter -> {
+                    Map<String, Object> brand = new HashMap<>();
+                    brand.put("brandCode", adapter.getSupportedBrandCode());
+                    brand.put("brandName", adapter.getSupportedBrandCode()); // 暂时使用编码作为名称
+                    brand.put("enabled", true);
+                    return brand;
+                })
                 .toList();
     }
     
