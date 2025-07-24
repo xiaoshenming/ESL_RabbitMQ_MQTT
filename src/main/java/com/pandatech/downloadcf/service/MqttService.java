@@ -483,7 +483,8 @@ public class MqttService {
      * 将panels格式转换为官方格式
      */
     private String convertPanelsToOfficialFormat(JsonNode rootNode, PrintTemplateDesignWithBLOBs template) throws JsonProcessingException {
-        Map<String, Object> official = new HashMap<>();
+        // 使用LinkedHashMap保持字段顺序
+        Map<String, Object> official = new LinkedHashMap<>();
         List<Map<String, Object>> items = new ArrayList<>();
         
         // 从CONTENT字段的JSON中提取模板名称，而不是直接使用NAME字段
@@ -493,18 +494,20 @@ public class MqttService {
         
         log.info("模板转换开始 - 模板名称: {}, 屏幕类型: {}, TagType: {}", templateName, screenType, tagType);
         
+        // 根据TagType设置正确的hext值
+        String hextValue = "06".equals(tagType) ? "6" : "0";
+        
+        // 按字母顺序添加字段（Items字段除外，它需要在最后处理）
+        // 默认尺寸，会被面板信息覆盖
         official.put("Name", templateName); // 使用从CONTENT中解析的模板名称
+        official.put("Size", "250, 122");
+        official.put("TagType", tagType);
         official.put("Version", 10);
-        official.put("hext", "0");
+        official.put("height", "122");
+        official.put("hext", hextValue);
         official.put("rgb", "3");
         official.put("wext", "0");
-        
-        // 默认尺寸，会被面板信息覆盖
-        official.put("Size", "250, 122");
-        official.put("height", "122");
         official.put("width", "250");
-        
-        official.put("TagType", tagType);
         
         log.info("模板转换 - 屏幕类型: {}, TagType: {}", screenType, tagType);
         
@@ -591,8 +594,20 @@ public class MqttService {
         items = optimizeAndDeduplicateItems(items);
         log.info("优化后Items数量: {}", items.size());
         
-        official.put("Items", items);
-        return objectMapper.writeValueAsString(official);
+        // 按字母顺序插入Items字段（在height之前）
+        Map<String, Object> finalOfficial = new LinkedHashMap<>();
+        finalOfficial.put("Items", items);
+        finalOfficial.put("Name", official.get("Name"));
+        finalOfficial.put("Size", official.get("Size"));
+        finalOfficial.put("TagType", official.get("TagType"));
+        finalOfficial.put("Version", official.get("Version"));
+        finalOfficial.put("height", official.get("height"));
+        finalOfficial.put("hext", official.get("hext"));
+        finalOfficial.put("rgb", official.get("rgb"));
+        finalOfficial.put("wext", official.get("wext"));
+        finalOfficial.put("width", official.get("width"));
+        
+        return objectMapper.writeValueAsString(finalOfficial);
     }
     
     /**
@@ -940,9 +955,11 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
             item.put("Bartype", barcodeType);
             item.put("Barformat", 0);
             
-            // 根据缩放后的高度动态设置条形码高度
-            // 条形码高度应该是元素高度的一部分，留出空间给文字
-            double barcodeHeight = Math.max(8.0, height * 0.7); // 至少8像素，最多占元素高度的70%
+            // 修正条形码高度计算逻辑，使其更接近AP自动修复的结果
+            // 根据元素高度计算合理的条形码高度，通常为元素高度的50%左右
+            double barcodeHeight = Math.max(8.0, height * 0.5); 
+            // 确保条形码高度为合理的数值，避免过长的小数
+            barcodeHeight = Math.round(barcodeHeight * 10.0) / 10.0;
             item.put("Barheight", barcodeHeight);
             
             item.put("Barwidth", 1);
@@ -978,13 +995,6 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         log.debug("坐标转换 - 原始: left={}, top={}, width={}, height={}", leftPt, topPt, widthPt, heightPt);
         log.debug("转换后: x={}, y={}, width={}, height={}, 画布: {}x{}", x, y, width, height, canvasWidth, canvasHeight);
         
-        item.put("x", x);
-        item.put("y", y);
-        item.put("width", width);
-        item.put("height", height);
-        item.put("Location", x + ", " + y);
-        item.put("Size", width + ", " + height);
-        
         // 字体属性 - 根据缩放比例调整字体大小
         int fontSize = 12; // 默认字体大小
         if (options.has("fontSize")) {
@@ -995,7 +1005,6 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
             // 如果没有指定字体大小，根据元素高度估算合适的字体大小
             fontSize = Math.max(8, Math.min(height - 4, 16)); // 字体大小不超过元素高度-4，最大16
         }
-        item.put("FontSize", fontSize);
         
         log.debug("字体大小设置 - 原始: {}, 缩放后: {}, 元素高度: {}", 
                  options.has("fontSize") ? options.get("fontSize").asDouble() : "未指定", 
@@ -1041,7 +1050,81 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         }
         
         log.debug("成功转换printElement为Item: {}", item);
-        return item;
+        
+        // 重新组织字段顺序，按字母顺序排列（与AP自动修复后的格式一致）
+        return createOrderedItem(item, x, y, width, height, fontSize);
+    }
+    
+    /**
+     * 创建字段按字母顺序排列的Item对象
+     */
+    private Map<String, Object> createOrderedItem(Map<String, Object> originalItem, int x, int y, int width, int height, int fontSize) {
+        Map<String, Object> orderedItem = new LinkedHashMap<>();
+        
+        // 按字母顺序添加字段
+        if (originalItem.containsKey("Background")) {
+            orderedItem.put("Background", originalItem.get("Background"));
+        }
+        if (originalItem.containsKey("Barformat")) {
+            orderedItem.put("Barformat", originalItem.get("Barformat"));
+        }
+        if (originalItem.containsKey("Barheight")) {
+            orderedItem.put("Barheight", originalItem.get("Barheight"));
+        }
+        if (originalItem.containsKey("Bartype")) {
+            orderedItem.put("Bartype", originalItem.get("Bartype"));
+        }
+        if (originalItem.containsKey("Barwidth")) {
+            orderedItem.put("Barwidth", originalItem.get("Barwidth"));
+        }
+        if (originalItem.containsKey("BorderColor")) {
+            orderedItem.put("BorderColor", originalItem.get("BorderColor"));
+        }
+        if (originalItem.containsKey("BorderStyle")) {
+            orderedItem.put("BorderStyle", originalItem.get("BorderStyle"));
+        }
+        if (originalItem.containsKey("DataDefault")) {
+            orderedItem.put("DataDefault", originalItem.get("DataDefault"));
+        }
+        if (originalItem.containsKey("DataKey")) {
+            orderedItem.put("DataKey", originalItem.get("DataKey"));
+        }
+        if (originalItem.containsKey("DataKeyStyle")) {
+            orderedItem.put("DataKeyStyle", originalItem.get("DataKeyStyle"));
+        }
+        if (originalItem.containsKey("FontColor")) {
+            orderedItem.put("FontColor", originalItem.get("FontColor"));
+        }
+        if (originalItem.containsKey("FontFamily")) {
+            orderedItem.put("FontFamily", originalItem.get("FontFamily"));
+        }
+        orderedItem.put("FontSize", fontSize);
+        if (originalItem.containsKey("FontSpace")) {
+            orderedItem.put("FontSpace", originalItem.get("FontSpace"));
+        }
+        if (originalItem.containsKey("FontStyle")) {
+            orderedItem.put("FontStyle", originalItem.get("FontStyle"));
+        }
+        if (originalItem.containsKey("Fontinval")) {
+            orderedItem.put("Fontinval", originalItem.get("Fontinval"));
+        }
+        orderedItem.put("Location", x + ", " + y);
+        if (originalItem.containsKey("Showtext")) {
+            orderedItem.put("Showtext", originalItem.get("Showtext"));
+        }
+        orderedItem.put("Size", width + ", " + height);
+        if (originalItem.containsKey("TextAlign")) {
+            orderedItem.put("TextAlign", originalItem.get("TextAlign"));
+        }
+        if (originalItem.containsKey("Type")) {
+            orderedItem.put("Type", originalItem.get("Type"));
+        }
+        orderedItem.put("height", height);
+        orderedItem.put("width", width);
+        orderedItem.put("x", x);
+        orderedItem.put("y", y);
+        
+        return orderedItem;
     }
 
     /**
