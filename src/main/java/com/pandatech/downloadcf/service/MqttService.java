@@ -530,9 +530,11 @@ public class MqttService {
         if (panels.isArray()) {
             for (JsonNode panel : panels) {
                 // 提取面板的基本信息
+                int width = 250;  // 默认宽度
+                int height = 122; // 默认高度
                 if (panel.has("width") && panel.has("height")) {
-                    int width = panel.get("width").asInt();
-                    int height = panel.get("height").asInt();
+                    width = panel.get("width").asInt();
+                    height = panel.get("height").asInt();
                     official.put("Size", width + ", " + height);
                     official.put("width", String.valueOf(width));
                     official.put("height", String.valueOf(height));
@@ -544,10 +546,31 @@ public class MqttService {
                     JsonNode printElements = panel.get("printElements");
                     log.debug("找到printElements数组，元素数量: {}", printElements.size());
                     if (printElements.isArray()) {
+                        // 先计算原始画布尺寸
+                        double originalCanvasWidth = 0;
+                        double originalCanvasHeight = 0;
+                        for (JsonNode elem : printElements) {
+                            JsonNode opts = elem.get("options");
+                            if (opts != null) {
+                                double l = opts.has("left") ? opts.get("left").asDouble() : 0;
+                                double t = opts.has("top") ? opts.get("top").asDouble() : 0;
+                                double w = opts.has("width") ? opts.get("width").asDouble() : 0;
+                                double h = opts.has("height") ? opts.get("height").asDouble() : 0;
+                                originalCanvasWidth = Math.max(originalCanvasWidth, l + w);
+                                originalCanvasHeight = Math.max(originalCanvasHeight, t + h);
+                            }
+                        }
+                        if (originalCanvasWidth == 0) originalCanvasWidth = width;
+                        if (originalCanvasHeight == 0) originalCanvasHeight = height;
+                        // 添加边距
+                        originalCanvasWidth += 10;
+                        originalCanvasHeight += 10;
+                        log.debug("计算原始画布尺寸: {}x{}", originalCanvasWidth, originalCanvasHeight);
+                        // 现在转换元素
                         for (int i = 0; i < printElements.size(); i++) {
                             JsonNode element = printElements.get(i);
                             log.debug("处理第{}个printElement: {}", i, element.toString());
-                            Map<String, Object> item = convertPrintElementToItem(element, template);
+                            Map<String, Object> item = convertPrintElementToItem(element, template, originalCanvasWidth, originalCanvasHeight, width, height);
                             if (item != null) {
                                 items.add(item);
                                 log.debug("成功转换第{}个printElement为Item", i);
@@ -760,7 +783,7 @@ public class MqttService {
     /**
      * 将printElement转换为官方格式的Item
      */
-    private Map<String, Object> convertPrintElementToItem(JsonNode element, PrintTemplateDesignWithBLOBs template) {
+    private Map<String, Object> convertPrintElementToItem(JsonNode element, PrintTemplateDesignWithBLOBs template, double originalCanvasWidth, double originalCanvasHeight, int canvasWidth, int canvasHeight) {
         log.debug("开始转换printElement: {}", element.toString());
         
         // 检查element是否为空
@@ -797,29 +820,6 @@ public class MqttService {
         item.put("TextAlign", 0);
         item.put("DataKeyStyle", 0);
         
-        // 从模板获取目标画布尺寸
-        int canvasWidth = 400;  // 默认宽度
-        int canvasHeight = 300; // 默认高度
-        
-        // 尝试从模板中获取实际画布尺寸
-        if (template != null && template.getContent() != null) {
-            try {
-                JsonNode designConfig = objectMapper.readTree(template.getContent());
-                if (designConfig.has("panels") && designConfig.get("panels").isArray() && 
-                    designConfig.get("panels").size() > 0) {
-                    JsonNode panel = designConfig.get("panels").get(0);
-                    if (panel.has("width")) {
-                        canvasWidth = panel.get("width").asInt(400);
-                    }
-                    if (panel.has("height")) {
-                        canvasHeight = panel.get("height").asInt(300);
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("无法解析模板设计配置，使用默认画布尺寸: {}x{}", canvasWidth, canvasHeight);
-            }
-        }
-        
         log.debug("目标画布尺寸: {}x{}", canvasWidth, canvasHeight);
         
         // 分析原始设计画布尺寸
@@ -827,16 +827,11 @@ public class MqttService {
         // 最大坐标约为: left=912, top=787.5, 加上元素尺寸后约为1032x813
         // 但实际设计画布应该是基于某个标准尺寸的坐标系统
         
-        // 根据数据库中的实际坐标范围，推算原始设计画布尺寸
-        // 观察到的坐标范围: left: 114-912, top: 265.5-787.5
-        // 加上元素尺寸后的边界: right: 1032, bottom: 813
-        // 考虑到设计时的边距，原始画布可能是 1200x900 或类似比例
-        double originalCanvasWidth = 1200.0;   // 原始设计画布宽度
-        double originalCanvasHeight = 900.0;   // 原始设计画布高度
+        // 使用传入的原始画布尺寸
         
         // 计算缩放比例 - 保持宽高比
         double scaleX = (double) canvasWidth / originalCanvasWidth;
-        double scaleY = (double) canvasHeight / originalCanvasHeight;
+double scaleY = (double) canvasHeight / originalCanvasHeight;
         
         // 使用统一的缩放比例以保持元素比例
         double scale = Math.min(scaleX, scaleY);

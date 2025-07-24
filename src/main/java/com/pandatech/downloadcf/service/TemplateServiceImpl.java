@@ -11,6 +11,7 @@ import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import com.pandatech.downloadcf.exception.BusinessException;
 import com.pandatech.downloadcf.util.JsonUtil;
 import com.pandatech.downloadcf.util.BrandCodeUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -199,7 +200,7 @@ public class TemplateServiceImpl implements TemplateService {
      */
     private boolean isOfficialFormat(String content) {
         try {
-            Map<String, Object> templateData = JsonUtil.parseObject(content, Map.class);
+            Map<String, Object> templateData = objectMapper.readValue(content, new TypeReference<Map<String, Object>>() {});
             return templateData.containsKey("TagType") && templateData.containsKey("Items");
         } catch (Exception e) {
             return false;
@@ -211,7 +212,7 @@ public class TemplateServiceImpl implements TemplateService {
      */
     private String extractTagTypeFromTemplate(String officialJson) {
         try {
-            Map<String, Object> templateData = JsonUtil.parseObject(officialJson, Map.class);
+            Map<String, Object> templateData = objectMapper.readValue(officialJson, new TypeReference<Map<String, Object>>() {});
             return (String) templateData.get("TagType");
         } catch (Exception e) {
             log.warn("从模板JSON解析TagType失败: {}", e.getMessage());
