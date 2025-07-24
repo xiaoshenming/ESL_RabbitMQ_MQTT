@@ -13,6 +13,7 @@ import com.pandatech.downloadcf.mapper.PandaEslMapper;
 import com.pandatech.downloadcf.mapper.PandaProductMapper;
 import com.pandatech.downloadcf.mapper.PrintTemplateDesignMapper;
 import com.pandatech.downloadcf.mapper.ProductEslBindingMapper;
+import com.pandatech.downloadcf.util.BrandCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,12 +59,13 @@ public class DataService {
         PrintTemplateDesignWithBLOBs template = getTemplateByEslId(eslId);
         completeData.setTemplate(template);
         
-        // 4. 获取字段映射配置
-        List<EslBrandFieldMapping> fieldMappings = getFieldMappingsByBrand("攀攀"); // 攀攀品牌
+        // 4. 获取字段映射配置 - 使用BrandCodeUtil处理品牌代码
+        String adapterBrandCode = BrandCodeUtil.getDefaultAdapterBrandCode();
+        List<EslBrandFieldMapping> fieldMappings = getFieldMappingsByBrand(adapterBrandCode);
         completeData.setFieldMappings(fieldMappings);
-        completeData.setBrandCode("攀攀");
+        completeData.setBrandCode(BrandCodeUtil.getDefaultBrandCode()); // 设置为标准化的品牌代码
         
-        log.info("字段映射配置查询结果: brandCode=攀攀, mappingCount={}", fieldMappings.size());
+        log.info("字段映射配置查询结果: brandCode={}, mappingCount={}", adapterBrandCode, fieldMappings.size());
         
         log.info("成功获取价签完整数据: eslId={}, productId={}, templateId={}", 
                 eslId, product != null ? product.getId() : null, 

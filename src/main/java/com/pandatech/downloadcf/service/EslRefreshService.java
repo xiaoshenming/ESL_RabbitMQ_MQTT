@@ -7,6 +7,7 @@ import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
 import com.pandatech.downloadcf.dto.EslStoreRefreshRequest;
 import com.pandatech.downloadcf.dto.EslProductRefreshRequest;
+import com.pandatech.downloadcf.util.BrandCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -47,17 +48,22 @@ public class EslRefreshService {
             }
             log.info("获取到价签数据，商品品牌: {}", completeData.getProduct() != null ? completeData.getProduct().getProductBrand() : "null");
             
-            // 2. 设置请求参数
-            String actualBrandCode = null;
-            // 获取实际的品牌编码（应该使用商品数据中的品牌字段）
+            // 2. 设置请求参数 - 使用BrandCodeUtil进行品牌代码兼容性处理
+            String requestBrandCode = BrandCodeUtil.normalizeBrandCode(request.getBrandCode());
             String productBrand = completeData.getProduct().getProductBrand();
-            actualBrandCode = StringUtils.hasText(productBrand) ? productBrand : "攀攀";
+            String normalizedProductBrand = BrandCodeUtil.normalizeBrandCode(productBrand);
             
-            log.info("请求参数中的品牌编码: {} (用于选择解析器)", request.getBrandCode());
-            log.info("商品数据中的品牌字段: {}", productBrand);
-            log.info("实际使用的品牌编码: {} (用于查找品牌适配器)", actualBrandCode);
+            // 优先使用商品数据中的品牌字段，如果为空则使用请求中的品牌代码
+            String actualBrandCode = StringUtils.hasText(normalizedProductBrand) ? normalizedProductBrand : requestBrandCode;
             
-            completeData.setBrandCode(actualBrandCode);
+            // 转换为适配器使用的品牌代码
+            String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(actualBrandCode);
+            
+            log.info("请求参数中的品牌编码: {} -> 标准化: {}", request.getBrandCode(), requestBrandCode);
+            log.info("商品数据中的品牌字段: {} -> 标准化: {}", productBrand, normalizedProductBrand);
+            log.info("实际使用的品牌编码: {} -> 适配器品牌编码: {}", actualBrandCode, adapterBrandCode);
+            
+            completeData.setBrandCode(adapterBrandCode);
             
             if (request.getForceRefresh() != null) {
                 completeData.setForceRefresh(request.getForceRefresh());
@@ -66,8 +72,8 @@ public class EslRefreshService {
                 completeData.setStoreCode(request.getStoreCode());
             }
             
-            // 3. 查找对应的品牌适配器（使用商品数据中的品牌字段）
-            BrandAdapter adapter = findBrandAdapter(actualBrandCode);
+            // 3. 查找对应的品牌适配器
+            BrandAdapter adapter = findBrandAdapter(adapterBrandCode);
             if (adapter == null) {
                 log.error("未找到品牌适配器: brandCode={}", completeData.getBrandCode());
                 return false;
@@ -93,7 +99,7 @@ public class EslRefreshService {
             log.info("数据转换完成，输出数据类型: {}", outputData.getClass().getSimpleName());
             
             // 6. 发送消息到RabbitMQ队列
-            log.info("准备发送消息到RabbitMQ队列，使用品牌编码: {}", actualBrandCode);
+            log.info("准备发送消息到RabbitMQ队列，使用品牌编码: {}", adapterBrandCode);
             boolean success = sendToRefreshQueue(outputData);
             
             if (success) {
@@ -198,7 +204,7 @@ public class EslRefreshService {
      */
     private BrandAdapter findBrandAdapter(String brandCode) {
         if (brandCode == null) {
-            brandCode = "攀攀"; // 默认品牌
+            brandCode = BrandCodeUtil.getDefaultAdapterBrandCode(); // 使用工具类获取默认适配器品牌代码
         }
         
         final String finalBrandCode = brandCode;
@@ -265,9 +271,15 @@ public class EslRefreshService {
         try {
             log.info("直接刷新价签: eslId={}, brandCode={}, storeCode={}", eslId, brandCode, storeCode);
             
+            // 使用BrandCodeUtil进行品牌代码兼容性处理
+            String normalizedBrandCode = BrandCodeUtil.normalizeBrandCode(brandCode);
+            String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(normalizedBrandCode);
+            
+            log.info("品牌代码转换: {} -> 标准化: {} -> 适配器: {}", brandCode, normalizedBrandCode, adapterBrandCode);
+            
             // 构建BrandOutputData对象
             BrandOutputData outputData = new BrandOutputData();
-            outputData.setBrandCode(brandCode);
+            outputData.setBrandCode(adapterBrandCode);
             outputData.setEslId(eslId);
             outputData.setStoreCode(storeCode);
             outputData.setActualEslId(eslId); // 使用eslId作为actualEslId的默认值
@@ -278,7 +290,7 @@ public class EslRefreshService {
             dataMap.put("id", eslId);
             dataMap.put("timestamp", System.currentTimeMillis());
             dataMap.put("shop", storeCode);
-            dataMap.put("brandCode", brandCode);
+            dataMap.put("brandCode", adapterBrandCode);
             outputData.setDataMap(dataMap);
             
             // 直接发送MQTT消息

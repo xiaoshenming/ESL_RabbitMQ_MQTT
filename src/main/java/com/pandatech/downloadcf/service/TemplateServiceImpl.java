@@ -1,6 +1,7 @@
 package com.pandatech.downloadcf.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
 import com.pandatech.downloadcf.dto.LoadTemplateRequest;
@@ -9,6 +10,7 @@ import com.pandatech.downloadcf.dto.TemplateDto;
 import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import com.pandatech.downloadcf.exception.BusinessException;
 import com.pandatech.downloadcf.util.JsonUtil;
+import com.pandatech.downloadcf.util.BrandCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -85,12 +87,17 @@ public class TemplateServiceImpl implements TemplateService {
             log.info("开始刷新价签，价签ID: {}, 门店编码: {}, 品牌编码: {}", 
                     refreshDto.getEslId(), refreshDto.getStoreCode(), refreshDto.getBrandCode());
             
+            // 使用BrandCodeUtil进行品牌代码兼容性处理
+            String normalizedBrandCode = BrandCodeUtil.normalizeBrandCode(refreshDto.getBrandCode());
+            
             // 转换为新架构的请求格式
             EslRefreshRequest request = new EslRefreshRequest();
             request.setEslId(refreshDto.getEslId());
             request.setStoreCode(refreshDto.getStoreCode());
-            request.setBrandCode(refreshDto.getBrandCode() != null ? refreshDto.getBrandCode() : "攀攀");
+            request.setBrandCode(normalizedBrandCode); // 使用标准化的品牌代码
             request.setForceRefresh(refreshDto.getForceRefresh() != null ? refreshDto.getForceRefresh() : false);
+            
+            log.info("品牌代码标准化: {} -> {}", refreshDto.getBrandCode(), normalizedBrandCode);
             
             // 使用新架构的价签刷新服务
             eslRefreshService.refreshEsl(request);

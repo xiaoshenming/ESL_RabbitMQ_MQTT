@@ -5,6 +5,7 @@ import com.pandatech.downloadcf.dto.BatchTemplateDeployRequest;
 import com.pandatech.downloadcf.dto.TemplateDeployRequest;
 import com.pandatech.downloadcf.dto.TemplateDto;
 import com.pandatech.downloadcf.exception.BusinessException;
+import com.pandatech.downloadcf.util.BrandCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,11 +37,16 @@ public class TemplateDeployService {
                 request.getTemplateId(), request.getStoreCode(), request.getBrandCode());
         
         try {
+            // 使用BrandCodeUtil进行品牌代码兼容性处理
+            String normalizedBrandCode = BrandCodeUtil.normalizeBrandCode(request.getBrandCode());
+            
             // 转换为原有的TemplateDto格式
             TemplateDto templateDto = new TemplateDto();
             templateDto.setTemplateId(request.getTemplateId());
             templateDto.setStoreCode(request.getStoreCode());
-            templateDto.setBrandCode(request.getBrandCode());
+            templateDto.setBrandCode(normalizedBrandCode); // 使用标准化的品牌代码
+            
+            log.info("品牌代码标准化: {} -> {}", request.getBrandCode(), normalizedBrandCode);
             
             // 调用原有的模板下发服务
             templateService.sendTemplate(templateDto);
@@ -139,9 +145,12 @@ public class TemplateDeployService {
      * 根据品牌编码获取品牌名称
      */
     private String getBrandName(String brandCode) {
-        switch (brandCode) {
+        // 使用BrandCodeUtil进行品牌代码兼容性处理
+        String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(brandCode);
+        
+        switch (adapterBrandCode) {
             case "攀攀":
-                return "攀攀品牌";
+                return "Panda品牌";
             default:
                 return brandCode + "品牌";
         }

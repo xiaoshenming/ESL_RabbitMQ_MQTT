@@ -7,7 +7,7 @@
 ### 核心功能
 - 🏷️ **价签管理**: 支持单个、批量、按商品、按门店的价签刷新
 - 🎨 **模板管理**: 动态模板下发和管理
-- 🔄 **品牌适配**: 支持多品牌价签协议转换（目前支持"攀攀"品牌）
+- 🔄 **品牌适配**: 支持多品牌价签协议转换（支持panda/PANDA/攀攀三种输入格式）
 - 📊 **负载控制**: 智能负载监控和流量控制
 - 🚀 **异步处理**: 基于消息队列的异步处理机制
 - 📈 **监控统计**: 实时队列监控和处理统计
@@ -182,7 +182,7 @@ private void sendMqttMessage(String topic, byte[] payload) {
 ```json
 {
     "messageType": "refresh",
-    "brandCode": "攀攀",
+    "brandCode": "panda",
     "eslId": "ESL001",
     "storeCode": "STORE001",
     "mqttTopic": "esl/server/data/STORE001",
@@ -218,8 +218,15 @@ private void sendMqttMessage(String topic, byte[] payload) {
 3. **格式化**: 按品牌协议格式化数据
 4. **校验码**: 生成MD5校验码
 
-#### 攀攀品牌适配器
+#### Panda品牌适配器
+
+系统支持panda/PANDA/攀攀三种输入格式的兼容性处理：
+
 ```java
+// 使用BrandCodeUtil进行品牌代码标准化
+String normalizedCode = BrandCodeUtil.normalizeBrandCode("PANDA"); // 返回 "panda"
+String adapterCode = BrandCodeUtil.toAdapterBrandCode("panda"); // 返回 "攀攀"
+
 @Override
 public BrandOutputData transform(EslCompleteData completeData) {
     // 1. 构建数据映射
@@ -233,7 +240,7 @@ public BrandOutputData transform(EslCompleteData completeData) {
     
     // 4. 构建输出数据
     BrandOutputData outputData = new BrandOutputData();
-    outputData.setBrandCode("攀攀");
+    outputData.setBrandCode("panda"); // 支持panda/PANDA/攀攀三种格式
     outputData.setDataMap(dataMap);
     outputData.setTemplate(templateContent);
     outputData.setChecksum(checksum);

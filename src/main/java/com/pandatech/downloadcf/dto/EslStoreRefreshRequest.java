@@ -13,8 +13,8 @@ public class EslStoreRefreshRequest {
     @Schema(description = "门店编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "STORE001")
     private String storeCode;
     
-    @Schema(description = "品牌编码", example = "攀攀")
-    private String brandCode = "攀攀";
+    @Schema(description = "品牌编码", example = "panda")
+    private String brandCode = "panda";
     
     @Schema(description = "是否强制刷新", example = "true")
     private Boolean forceRefresh = true;

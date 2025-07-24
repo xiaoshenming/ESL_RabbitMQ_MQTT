@@ -6,6 +6,7 @@ import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.MessageExecutionData;
 import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import com.pandatech.downloadcf.executor.MessageExecutor;
+import com.pandatech.downloadcf.util.BrandCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -71,12 +72,15 @@ public class MessageProducerService {
      * 根据品牌确定执行器类型
      */
     private String getExecutorTypeByBrand(String brandCode) {
+        // 使用BrandCodeUtil进行品牌代码兼容性处理
+        String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(brandCode);
+        
         // 根据品牌配置确定执行器类型
-        switch (brandCode) {
+        switch (adapterBrandCode) {
             case "攀攀":
                 return "mqtt";
             default:
-                log.warn("未知品牌编码: {}, 使用默认执行器类型: mqtt", brandCode);
+                log.warn("未知品牌编码: {} (原始: {}), 使用默认执行器类型: mqtt", adapterBrandCode, brandCode);
                 return "mqtt"; // 默认使用MQTT
         }
     }

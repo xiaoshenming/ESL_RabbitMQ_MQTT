@@ -20,8 +20,8 @@ public class TemplateDeployRequest {
     @NotBlank(message = "门店编码不能为空")
     private String storeCode;
     
-    @Schema(description = "品牌编码", example = "攀攀")
-    private String brandCode = "攀攀";
+    @Schema(description = "品牌编码", example = "panda")
+    private String brandCode = "panda";
     
     @Schema(description = "是否强制下发", example = "true")
     private Boolean forceDeploy = true;

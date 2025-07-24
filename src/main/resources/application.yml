@@ -86,8 +86,8 @@ app:
     # 品牌配置
     brands:
       panda:
-        name: 攀攀
-        code: 攀攀
+        name: panda
+        code: panda
         enabled: true
         executor-type: MQTT
         template-format: CUSTOM
