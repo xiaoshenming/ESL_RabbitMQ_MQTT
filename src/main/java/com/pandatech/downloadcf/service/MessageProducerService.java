@@ -75,8 +75,6 @@ public class MessageProducerService {
         switch (brandCode) {
             case "攀攀":
                 return "mqtt";
-            case "YALIANG":
-                return "http"; // 预留给雅量品牌
             default:
                 log.warn("未知品牌编码: {}, 使用默认执行器类型: mqtt", brandCode);
                 return "mqtt"; // 默认使用MQTT
