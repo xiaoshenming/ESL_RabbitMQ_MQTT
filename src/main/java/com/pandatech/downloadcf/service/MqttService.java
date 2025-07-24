@@ -147,7 +147,7 @@ public class MqttService {
     }
 
     /**
-     * 发送MQTT消息
+     * 发送MQTT消息 (私有方法)
      */
     private void sendMqttMessage(String topic, byte[] payload) {
         Message<byte[]> message = MessageBuilder
@@ -155,6 +155,33 @@ public class MqttService {
                 .setHeader("mqtt_topic", topic)
                 .build();
         mqttOutboundChannel.send(message);
+    }
+    
+    /**
+     * 发送MQTT消息 (公共方法)
+     * @param topic MQTT主题
+     * @param message 消息内容（String类型）
+     * @return 发送是否成功
+     */
+    public boolean sendMqttMessage(String topic, String message) {
+        try {
+            if (topic == null || topic.trim().isEmpty()) {
+                log.error("MQTT主题不能为空");
+                return false;
+            }
+            if (message == null) {
+                log.error("MQTT消息内容不能为null");
+                return false;
+            }
+            
+            log.debug("发送MQTT消息 - 主题: {}, 消息长度: {}", topic, message.length());
+            sendMqttMessage(topic, message.getBytes("UTF-8"));
+            return true;
+            
+        } catch (Exception e) {
+            log.error("发送MQTT消息失败 - 主题: {}, 错误: {}", topic, e.getMessage(), e);
+            return false;
+        }
     }
 
     /**

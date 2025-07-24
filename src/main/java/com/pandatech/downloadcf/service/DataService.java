@@ -1,8 +1,18 @@
 package com.pandatech.downloadcf.service;
 
 import com.pandatech.downloadcf.dto.EslCompleteData;
-import com.pandatech.downloadcf.entity.*;
-import com.pandatech.downloadcf.mapper.*;
+import com.pandatech.downloadcf.entity.EslBrandFieldMapping;
+import com.pandatech.downloadcf.entity.EslBrandFieldMappingCriteria;
+import com.pandatech.downloadcf.entity.PandaEsl;
+import com.pandatech.downloadcf.entity.PandaEslCriteria;
+import com.pandatech.downloadcf.entity.PandaProductWithBLOBs;
+import com.pandatech.downloadcf.entity.PrintTemplateDesignCriteria;
+import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
+import com.pandatech.downloadcf.mapper.EslBrandFieldMappingMapper;
+import com.pandatech.downloadcf.mapper.PandaEslMapper;
+import com.pandatech.downloadcf.mapper.PandaProductMapper;
+import com.pandatech.downloadcf.mapper.PrintTemplateDesignMapper;
+import com.pandatech.downloadcf.mapper.ProductEslBindingMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

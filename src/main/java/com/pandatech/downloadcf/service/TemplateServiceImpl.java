@@ -51,11 +51,22 @@ public class TemplateServiceImpl implements TemplateService {
                 throw new BusinessException("TEMPLATE_NOT_FOUND", "未找到指定的模板: " + templateDto.getTemplateId());
             }
 
-            // 构建模板下发消息
-            Map<String, Object> templateMessage = buildTemplateMessage(template, templateDto.getStoreCode(), templateDto.getBrandCode());
+            // 构建新格式的队列消息
+            Map<String, Object> queueMessage = new HashMap<>();
+            queueMessage.put("messageType", "template");
+            queueMessage.put("storeCode", templateDto.getStoreCode());
+            queueMessage.put("templateId", templateDto.getTemplateId());
+            queueMessage.put("brandCode", templateDto.getBrandCode());
+            queueMessage.put("mqttTopic", "esl/server/tmpl/" + templateDto.getStoreCode());
+            queueMessage.put("timestamp", System.currentTimeMillis());
+            queueMessage.put("priority", 2); // 模板消息优先级为2
+            
+            // 构建MQTT载荷
+            Map<String, Object> mqttPayload = buildTemplateMessage(template, templateDto.getStoreCode(), templateDto.getBrandCode());
+            queueMessage.put("mqttPayload", mqttPayload);
             
             // 将消息转换为JSON字符串后发送到RabbitMQ队列
-            String jsonMessage = objectMapper.writeValueAsString(templateMessage);
+            String jsonMessage = objectMapper.writeValueAsString(queueMessage);
             rabbitTemplate.convertAndSend("template.queue", jsonMessage);
             
             log.info("模板下发消息已发送到队列，模板ID: {}, 门店编码: {}, 品牌编码: {}", 

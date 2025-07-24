@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 /**
  * 消息生产者服务 - 负责将数据发送到消息队列和执行器
@@ -119,9 +120,9 @@ public class MessageProducerService {
     }
     
     /**
-     * 构建MQTT载荷 - 严格按照PANDA标准格式
+     * 构建MQTT载荷 - 严格按照PANDA标准格式（公共方法）
      */
-    private Object buildMqttPayload(BrandOutputData outputData) {
+    public Object buildMqttPayload(BrandOutputData outputData) {
         log.info("开始构建MQTT载荷，ESL ID: {}, 门店代码: {}", 
                 outputData.getEslId(), outputData.getStoreCode());
         

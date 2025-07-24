@@ -1,0 +1,2 @@
+Topic: esl/server/tmpl/0002QoS: 0
+{"shop":"0002","data":{"tmpls":[{"name":"2_06.json","id":"1946122678071738370","md5":"4d37b133fc8626f9da4f0d30ef2dd938"}],"url":"http://10.3.36.36:8999/api/res/templ/loadtemple","tid":"cc56f1ae-edb7-4e71-b649-853a758af297"},"id":"1946122678071738370","command":"tmpllist","timestamp":1753326543}

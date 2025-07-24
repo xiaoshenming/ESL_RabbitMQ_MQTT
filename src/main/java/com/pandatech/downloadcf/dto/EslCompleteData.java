@@ -1,6 +1,9 @@
 package com.pandatech.downloadcf.dto;
 
-import com.pandatech.downloadcf.entity.*;
+import com.pandatech.downloadcf.entity.EslBrandFieldMapping;
+import com.pandatech.downloadcf.entity.PandaEsl;
+import com.pandatech.downloadcf.entity.PandaProductWithBLOBs;
+import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import lombok.Data;
 import java.util.List;
 
