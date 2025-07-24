@@ -1,237 +1,434 @@
-# 价签模板下发系统
+# 价签模板下发系统 (ESL Template Distribution System)
 
 ## 项目概述
 
-这是一个基于Spring Boot的价签模板下发系统，主要功能包括模板下发、价签刷新和MQTT消息通信。系统通过RabbitMQ消息队列和MQTT协议实现与价签设备的通信。
+价签模板下发系统是一个企业级的电子价签管理平台，专门用于管理和控制电子价签的数据刷新和模板下发。系统采用微服务架构，通过RabbitMQ消息队列和MQTT协议实现高效、可靠的价签数据传输。
+
+### 核心功能
+- 🏷️ **价签管理**: 支持单个、批量、按商品、按门店的价签刷新
+- 🎨 **模板管理**: 动态模板下发和管理
+- 🔄 **品牌适配**: 支持多品牌价签协议转换（目前支持"攀攀"品牌）
+- 📊 **负载控制**: 智能负载监控和流量控制
+- 🚀 **异步处理**: 基于消息队列的异步处理机制
+- 📈 **监控统计**: 实时队列监控和处理统计
 
 ## 技术栈
 
-- **Spring Boot 3.x** - 主框架
-- **MyBatis** - 数据持久化
-- **MySQL** - 数据库
-- **RabbitMQ** - 消息队列
-- **MQTT** - 物联网通信协议
-- **Swagger/OpenAPI 3** - API文档
-- **Jackson** - JSON处理
-- **Lombok** - 代码简化
+### 后端框架
+- **Spring Boot 3.2.5**: 主框架
+- **Spring Integration**: 消息集成
+- **MyBatis**: 数据持久层
+- **Maven**: 项目构建工具
 
-## 项目结构
+### 消息中间件
+- **RabbitMQ**: 消息队列服务
+- **MQTT**: 物联网消息传输协议
 
-```
-src/main/java/com/pandatech/downloadcf/
-├── DownloadcfApplication.java          # Spring Boot启动类
-├── config/                             # 配置类目录
-│   ├── EslRefreshProperties.java       # 价签刷新配置属性
-│   ├── MqttConfig.java                 # MQTT客户端配置
-│   ├── RabbitMQConfig.java             # RabbitMQ队列配置
-│   ├── SwaggerConfig.java              # API文档配置
-│   └── TemplateConfig.java             # 模板相关配置
-├── controller/                         # 控制器目录
-│   └── TemplateController.java         # 模板和价签操作控制器
-├── dto/                                # 数据传输对象目录
-│   ├── LoadTemplateRequest.java        # 模板加载请求DTO
-│   ├── MqttDataDto.java               # MQTT数据DTO
-│   ├── MqttMessageDto.java            # MQTT消息DTO
-│   ├── RefreshDto.java                # 价签刷新请求DTO
-│   └── TemplateDto.java               # 模板下发请求DTO
-├── entity/                            # 实体类目录
-│   ├── EslBrand.java                  # 价签品牌实体
-│   ├── EslBrandExample.java           # 价签品牌查询条件
-│   ├── EslBrandFieldMapping.java      # 价签品牌字段映射实体
-│   ├── EslBrandFieldMappingExample.java # 字段映射查询条件
-│   ├── EslFieldDefinition.java        # 价签字段定义实体
-│   ├── EslFieldDefinitionExample.java # 字段定义查询条件
-│   ├── EslModel.java                  # 价签型号实体
-│   ├── EslModelExample.java           # 价签型号查询条件
-│   ├── PandaEsl.java                  # 价签设备实体
-│   ├── PandaEslExample.java           # 价签设备查询条件
-│   ├── PandaProduct.java              # 商品信息实体
-│   ├── PandaProductExample.java       # 商品查询条件
-│   ├── PandaProductWithBLOBs.java     # 包含大字段的商品实体
-│   ├── PrintTemplateDesign.java       # 模板设计实体
-│   ├── PrintTemplateDesignExample.java # 模板设计查询条件
-│   ├── PrintTemplateDesignWithBLOBs.java # 包含大字段的模板实体
-│   ├── ProductEslBinding.java         # 商品价签绑定实体
-│   └── ProductEslBindingExample.java  # 绑定关系查询条件
-├── exception/                         # 异常类目录
-│   └── TemplateException.java         # 模板相关异常类
-├── mapper/                            # MyBatis映射器目录
-│   ├── EslBrandFieldMappingMapper.java # 字段映射数据访问接口
-│   ├── EslBrandMapper.java            # 价签品牌数据访问接口
-│   ├── EslFieldDefinitionMapper.java  # 字段定义数据访问接口
-│   ├── EslModelMapper.java            # 价签型号数据访问接口
-│   ├── PandaEslMapper.java            # 价签设备数据访问接口
-│   ├── PandaProductMapper.java        # 商品信息数据访问接口
-│   ├── PrintTemplateDesignMapper.java # 模板设计数据访问接口
-│   └── ProductEslBindingMapper.java   # 商品价签绑定数据访问接口
-├── service/                           # 服务层目录
-│   ├── EslRefreshService.java         # 价签刷新服务接口
-│   ├── EslRefreshServiceImpl.java     # 价签刷新服务实现
-│   ├── FieldMappingService.java       # 字段映射服务
-│   ├── MqttService.java               # MQTT消息处理服务
-│   ├── RabbitMQListener.java          # RabbitMQ消息监听器
-│   ├── TemplateService.java           # 模板服务接口
-│   └── TemplateServiceImpl.java       # 模板服务实现
-└── util/                              # 工具类目录
-    ├── ScreenTypeConverter.java       # 屏幕类型转换工具
-    ├── ScreenTypeMapper.java          # 屏幕类型映射工具
-    └── TemplateValidator.java         # 模板验证工具
-```
+### 数据库
+- **MySQL**: 主数据库
+- **Druid**: 数据库连接池
 
-## 核心功能模块
-
-### 1. 配置模块 (config/)
-
-- **EslRefreshProperties.java**: 价签刷新相关配置，包括默认租户ID、门店编码、模板ID/名称等
-- **MqttConfig.java**: MQTT客户端配置，包括连接选项、消息处理器和通道配置
-- **RabbitMQConfig.java**: RabbitMQ队列配置，定义模板队列和刷新队列
-- **SwaggerConfig.java**: API文档配置，提供详细的接口文档和示例
-- **TemplateConfig.java**: 模板相关配置，包括默认模板、屏幕类型映射、MQTT和验证配置
-
-### 2. 控制器模块 (controller/)
-
-- **TemplateController.java**: 提供三个核心API接口
-  - `/api/res/templ/send` - 模板下发接口
-  - `/api/res/templ/refresh` - 价签刷新接口
-  - `/api/res/templ/loadtemple` - 模板文件下载接口
-
-### 3. 数据传输对象 (dto/)
-
-- **TemplateDto.java**: 模板下发请求体，包含模板ID和门店编码
-- **RefreshDto.java**: 价签刷新请求体，包含价签ID
-- **LoadTemplateRequest.java**: 模板加载请求体，支持按ID或名称查询
-- **MqttMessageDto.java**: MQTT消息格式，包含命令、数据、时间戳等
-- **MqttDataDto.java**: MQTT数据格式，包含价签标签、模板、型号、校验码等
-
-### 4. 实体类模块 (entity/)
-
-包含所有数据库表对应的实体类和查询条件类：
-- **价签相关**: PandaEsl、EslModel、EslBrand等
-- **商品相关**: PandaProduct、ProductEslBinding等
-- **模板相关**: PrintTemplateDesign等
-- **配置相关**: EslFieldDefinition、EslBrandFieldMapping等
-
-### 5. 异常处理 (exception/)
-
-- **TemplateException.java**: 模板相关异常基类，包含多个子异常类
-  - TemplateNotFoundException - 模板未找到异常
-  - InvalidTemplateFormatException - 模板格式无效异常
-  - TemplateConversionException - 模板转换异常
-  - TemplateValidationException - 模板验证异常
-  - MqttSendException - MQTT发送异常
-  - ScreenTypeConversionException - 屏幕类型转换异常
-
-### 6. 数据访问层 (mapper/)
-
-基于MyBatis的数据访问接口，提供标准的CRUD操作：
-- 支持按条件查询、分页查询
-- 支持批量操作
-- 包含BLOB字段的特殊处理
-
-### 7. 服务层 (service/)
-
-- **TemplateService**: 模板服务，处理模板下发、加载和价签刷新
-- **EslRefreshService**: 价签刷新服务，构建MQTT消息和发送刷新请求
-- **MqttService**: MQTT消息处理服务，处理消息发送和接收
-- **FieldMappingService**: 字段映射服务，管理品牌字段映射关系
-- **RabbitMQListener**: RabbitMQ消息监听器，处理队列消息
-
-### 8. 工具类 (util/)
-
-- **ScreenTypeConverter.java**: 屏幕类型转换工具，支持多种转换策略
-- **ScreenTypeMapper.java**: 屏幕类型映射工具，提供静态映射关系
-- **TemplateValidator.java**: 模板验证工具，验证模板格式和内容
+### 工具库
+- **Lombok**: 代码简化
+- **Hutool**: Java工具库
+- **Jackson**: JSON处理
+- **Swagger/OpenAPI**: API文档
 
 ## 系统架构
 
+### 整体架构图
 ```
-客户端请求 → REST API → RabbitMQ队列 → 后端处理 → MQTT推送 → 价签设备
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   前端应用      │───▶│   REST API      │───▶│   业务服务层    │
+│   (Web/App)     │    │   Controller    │    │   Service       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                        │
+                                                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   数据库        │◀───│   数据访问层    │◀───│   品牌适配器    │
+│   MySQL         │    │   Mapper/DAO    │    │   BrandAdapter  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                        │
+                                                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   MQTT Broker   │◀───│   消息消费者    │◀───│   RabbitMQ      │
+│   (价签设备)    │    │   Listener      │    │   消息队列      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### 消息流程
+### 数据流转图
+```
+数据库数据 ──▶ 数据提取 ──▶ 品牌适配器 ──▶ 数据转换 ──▶ RabbitMQ队列
+                                                           │
+                                                           ▼
+价签设备 ◀── MQTT消息 ◀── 负载控制 ◀── 消息消费 ◀── 队列监控
+```
 
-1. **模板下发流程**:
-   - 客户端调用 `/send` 接口
-   - 系统查询数据库获取模板信息
-   - 构造MQTT消息并发送到RabbitMQ
-   - RabbitMQ监听器处理消息并通过MQTT推送到设备
+## 核心概念详解
 
-2. **价签刷新流程**:
-   - 客户端调用 `/refresh` 接口
-   - 系统根据价签ID查询设备和商品信息
-   - 通过字段映射构造完整的刷新数据
-   - 发送MQTT消息到指定设备
+### 1. 队列 (Queue)
 
-3. **模板下载流程**:
-   - 客户端调用 `/loadtemple` 接口
-   - 系统根据ID或名称查询模板
-   - 返回模板文件的二进制流
+系统使用RabbitMQ实现两个核心队列：
 
-## 数据库设计
+#### 模板队列 (template.queue)
+- **用途**: 处理模板下发消息
+- **持久化**: 是
+- **优先级**: 高
+- **消费者**: 模板消息监听器
 
-系统涉及的主要数据表：
-- **PANDA_ESL**: 价签设备信息
-- **PANDA_PRODUCT**: 商品信息
-- **PRINT_TEMPLATE_DESIGN**: 模板设计
-- **ESL_BRAND_FIELD_MAPPING**: 品牌字段映射
-- **ESL_MODEL**: 价签型号
-- **PRODUCT_ESL_BINDING**: 商品价签绑定关系
+#### 刷新队列 (refresh.queue)
+- **用途**: 处理价签刷新消息
+- **持久化**: 是
+- **优先级**: 中
+- **消费者**: 刷新消息监听器
+
+```java
+// 队列配置示例
+@Bean
+public Queue templateQueue() {
+    return new Queue("template.queue", true); // 持久化队列
+}
+
+@Bean
+public Queue refreshQueue() {
+    return new Queue("refresh.queue", true); // 持久化队列
+}
+```
+
+### 2. 延迟 (Delay)
+
+系统实现多层次的延迟控制机制：
+
+#### 处理间隔延迟
+- **最小处理间隔**: 100ms
+- **目的**: 防止系统过载
+- **实现**: `LoadInfoService.MIN_INTERVAL_MS`
+
+#### 重试延迟
+- **初始延迟**: 1秒
+- **延迟倍数**: 2.0
+- **最大重试**: 3次
+- **实现**: 指数退避算法
+
+```java
+// 延迟控制示例
+private static final long MIN_INTERVAL_MS = 100;
+private void controlProcessingRate() {
+    long timeSinceLastProcess = System.currentTimeMillis() - lastProcessTime.get();
+    if (timeSinceLastProcess < MIN_INTERVAL_MS) {
+        Thread.sleep(MIN_INTERVAL_MS - timeSinceLastProcess);
+    }
+}
+```
+
+### 3. 等待 (Wait)
+
+系统实现智能等待机制：
+
+#### 负载等待
+- **最大并发数**: 10个消息
+- **等待条件**: 当前负载 >= 最大并发数
+- **等待策略**: 阻塞等待直到负载降低
+
+#### 队列等待
+- **监控频率**: 每30秒检查一次
+- **告警阈值**: 模板队列>100, 刷新队列>1000
+- **处理策略**: 自动调整消费速率
+
+```java
+// 负载控制示例
+public boolean canProcess() {
+    return currentLoad.get() < MAX_CONCURRENT_MESSAGES;
+}
+
+public void waitForCapacity() {
+    while (!canProcess()) {
+        Thread.sleep(50); // 等待50ms后重试
+    }
+}
+```
+
+### 4. MQTT
+
+MQTT协议用于与价签设备通信：
+
+#### 连接配置
+- **Broker地址**: tcp://10.3.36.25:1883
+- **客户端ID**: data_server_1
+- **用户名/密码**: panda/panda@123
+- **保活间隔**: 2秒
+
+#### 主题规则
+- **数据主题**: `esl/server/data/{storeCode}`
+- **模板主题**: `esl/template/{templateId}`
+- **QoS级别**: 1 (至少一次传递)
+
+```java
+// MQTT消息发送示例
+private void sendMqttMessage(String topic, byte[] payload) {
+    Message<byte[]> message = MessageBuilder
+            .withPayload(payload)
+            .setHeader("mqtt_topic", topic)
+            .build();
+    mqttOutboundChannel.send(message);
+}
+```
+
+### 5. 消息 (Message)
+
+系统定义了标准的消息格式：
+
+#### 刷新消息格式
+```json
+{
+    "messageType": "refresh",
+    "brandCode": "攀攀",
+    "eslId": "ESL001",
+    "storeCode": "STORE001",
+    "mqttTopic": "esl/server/data/STORE001",
+    "mqttPayload": {
+        "data": "...",
+        "template": "...",
+        "checksum": "..."
+    },
+    "timestamp": 1703123456789,
+    "priority": 1
+}
+```
+
+#### 模板消息格式
+```json
+{
+    "messageType": "template",
+    "templateId": "TEMPLATE001",
+    "storeCode": "STORE001",
+    "templateData": "...",
+    "timestamp": 1703123456789,
+    "priority": 0
+}
+```
+
+### 6. 数据转化 (Data Transformation)
+
+品牌适配器负责数据格式转换：
+
+#### 转换流程
+1. **数据验证**: 检查必要字段完整性
+2. **字段映射**: 根据品牌字段映射表转换
+3. **格式化**: 按品牌协议格式化数据
+4. **校验码**: 生成MD5校验码
+
+#### 攀攀品牌适配器
+```java
+@Override
+public BrandOutputData transform(EslCompleteData completeData) {
+    // 1. 构建数据映射
+    Map<String, Object> dataMap = buildDataMap(completeData);
+    
+    // 2. 处理模板
+    String templateContent = processTemplate(completeData);
+    
+    // 3. 生成校验码
+    String checksum = generateChecksum(dataMap, templateContent);
+    
+    // 4. 构建输出数据
+    BrandOutputData outputData = new BrandOutputData();
+    outputData.setBrandCode("攀攀");
+    outputData.setDataMap(dataMap);
+    outputData.setTemplate(templateContent);
+    outputData.setChecksum(checksum);
+    
+    return outputData;
+}
+```
+
+### 7. 数据提取 (Data Extraction)
+
+数据服务层负责从数据库提取完整数据：
+
+#### 数据提取流程
+1. **价签信息**: 从`PANDA_ESL`表获取基本信息
+2. **商品信息**: 从`PANDA_PRODUCT`表获取商品数据
+3. **模板信息**: 从`PRINT_TEMPLATE_DESIGN`表获取模板
+4. **字段映射**: 从`ESL_BRAND_FIELD_MAPPING`表获取映射规则
+
+```java
+public EslCompleteData getEslCompleteData(String eslId) {
+    // 1. 获取价签基本信息
+    PandaEsl esl = pandaEslMapper.selectByPrimaryKey(eslId);
+    
+    // 2. 获取绑定的商品信息
+    PandaProductWithBLOBs product = getProductByEslId(eslId);
+    
+    // 3. 获取模板信息
+    PrintTemplateDesignWithBLOBs template = getTemplateByEslId(eslId);
+    
+    // 4. 获取字段映射
+    List<EslBrandFieldMapping> fieldMappings = getFieldMappingsByBrand(brandCode);
+    
+    // 5. 组装完整数据
+    EslCompleteData completeData = new EslCompleteData();
+    completeData.setEsl(esl);
+    completeData.setProduct(product);
+    completeData.setTemplate(template);
+    completeData.setFieldMappings(fieldMappings);
+    
+    return completeData;
+}
+```
+
+## 整体业务逻辑
+
+### 价签刷新完整流程
+
+1. **接收请求**: REST API接收刷新请求
+2. **数据提取**: DataService从数据库提取完整数据
+3. **品牌适配**: BrandAdapter进行数据格式转换
+4. **消息生产**: 将转换后的数据发送到RabbitMQ队列
+5. **负载控制**: 系统监控当前负载，控制消费速率
+6. **消息消费**: RabbitMQListener消费队列消息
+7. **MQTT发送**: 通过MQTT协议发送到价签设备
+
+### 负载控制机制
+
+```java
+// 负载控制核心逻辑
+@RabbitListener(queues = "refresh.queue")
+public void handleRefreshMessage(String message) {
+    // 1. 检查系统负载
+    if (!loadInfoService.canProcess()) {
+        loadInfoService.waitForCapacity();
+    }
+    
+    // 2. 增加负载计数
+    loadInfoService.incrementLoad();
+    
+    try {
+        // 3. 处理消息
+        processRefreshMessage(message);
+        
+        // 4. 记录成功
+        queueMonitorService.recordMessageSuccess("refresh");
+        
+    } catch (Exception e) {
+        // 5. 记录失败
+        queueMonitorService.recordMessageFailure("refresh");
+        
+    } finally {
+        // 6. 减少负载计数
+        loadInfoService.decrementLoad();
+        
+        // 7. 更新最后处理时间
+        loadInfoService.updateLastProcessTime();
+    }
+}
+```
 
 ## 配置说明
 
-### 应用配置
+### 数据库配置
 ```yaml
-app:
-  template:
-    base-url: http://localhost:8999/api/res/templ/loadtemple
-  esl:
-    refresh:
-      default-tenant-id: "1"
-      default-store-code: "001"
-      default-template-id: "PRICEPROMO"
-      default-template-name: "2"
+spring:
+  datasource:
+    url: jdbc:mysql://10.3.36.25:3306/eslplatform
+    username: panda
+    password: panda@123
+    type: com.alibaba.druid.pool.DruidDataSource
+```
+
+### RabbitMQ配置
+```yaml
+spring:
+  rabbitmq:
+    host: 10.3.36.15
+    port: 5672
+    username: panda
+    password: panda@123
 ```
 
 ### MQTT配置
-- 支持消息重试和超时设置
-- 可配置是否包含模板内容
-- 支持消息压缩
+```yaml
+spring:
+  mqtt:
+    username: panda
+    password: panda@123
+    url: tcp://10.3.36.25:1883
+    client:
+      id: data_server_1
+```
 
-### RabbitMQ队列
-- `template.queue`: 模板下发队列
-- `refresh.queue`: 价签刷新队列
+### 业务配置
+```yaml
+app:
+  esl:
+    refresh:
+      default-tenant-id: "396a5189-53d8-4354-bcfa-27d57d9d69ad"
+      default-store-code: "STORE001"
+      force-refresh: true
+      checksum-algorithm: "md5"
+    batch:
+      size: 100
+      timeout: 30000
+    retry:
+      max-attempts: 3
+      delay: 1000
+      multiplier: 2.0
+```
 
-## API接口
+## 监控和运维
 
-### 1. 模板下发
-```http
-POST /api/res/templ/send
-Content-Type: application/json
+### 队列监控
+- **监控频率**: 每30秒
+- **统计输出**: 每5分钟
+- **健康检查**: 队列积压和成功率监控
 
-{
-  "templateId": "1945045387689762818",
-  "storeCode": "009"
+### 性能指标
+- **最大并发**: 10个消息同时处理
+- **处理间隔**: 最小100ms
+- **队列告警**: 模板队列>100, 刷新队列>1000
+- **成功率**: 目标>95%
+
+### 日志配置
+```yaml
+logging:
+  level:
+    com.pandatech.downloadcf.mapper: debug
+```
+
+## 扩展性设计
+
+### 品牌适配器扩展
+系统支持添加新的品牌适配器：
+
+```java
+// 添加雅量品牌适配器示例
+@Component
+public class YaliangBrandAdapter implements BrandAdapter {
+    @Override
+    public String getSupportedBrandCode() {
+        return "雅量";
+    }
+    
+    @Override
+    public BrandOutputData transform(EslCompleteData completeData) {
+        // 雅量品牌特定的转换逻辑
+        return transformToYaliangFormat(completeData);
+    }
 }
 ```
 
-### 2. 价签刷新
-```http
-POST /api/res/templ/refresh
-Content-Type: application/json
+### 输出层扩展
+系统支持添加新的输出方式：
 
-{
-  "eslId": "1"
-}
-```
-
-### 3. 模板下载
-```http
-POST /api/res/templ/loadtemple
-Content-Type: application/json
-
-{
-  "id": "1945045387689762818",
-  "name": "模板名称"
+```java
+// 添加HTTP输出层示例
+@Component
+public class HttpOutputAdapter implements OutputAdapter {
+    @Override
+    public void sendMessage(BrandOutputData outputData) {
+        // HTTP方式发送消息
+        httpClient.post(outputData);
+    }
 }
 ```
 
@@ -241,7 +438,7 @@ Content-Type: application/json
 - JDK 17+
 - MySQL 8.0+
 - RabbitMQ 3.8+
-- MQTT Broker
+- MQTT Broker (如Mosquitto)
 
 ### 启动步骤
 1. 配置数据库连接
@@ -249,32 +446,35 @@ Content-Type: application/json
 3. 启动MQTT Broker
 4. 运行Spring Boot应用
 
-### 访问地址
-- 应用地址: http://localhost:8999
-- API文档: http://localhost:8999/swagger-ui.html
-- 测试环境: http://10.3.36.25:8999
+```bash
+# 编译项目
+mvn clean package
 
-## 代码质量检查结果
+# 启动应用
+java -jar target/cfdownloadexample-1.0.0.jar
+```
 
-经过全面的代码检查，确认：
+### API文档
+启动后访问: http://localhost:8999/swagger-ui.html
 
-✅ **无冗余代码**: 所有类和方法都有明确的业务用途
-✅ **架构清晰**: 分层架构合理，职责分离明确
-✅ **配置完整**: 所有配置类都有实际用途
-✅ **异常处理**: 完善的异常处理机制
-✅ **工具类实用**: 所有工具类都被实际使用
-✅ **服务层完整**: 业务逻辑封装良好
-✅ **数据访问规范**: MyBatis映射器标准化
+## 故障排查
 
-## 维护说明
+### 常见问题
+1. **队列积压**: 检查消费者是否正常工作
+2. **MQTT连接失败**: 检查网络和认证配置
+3. **数据转换错误**: 检查字段映射配置
+4. **负载过高**: 调整并发参数
 
-- 定期检查MQTT连接状态
-- 监控RabbitMQ队列积压情况
-- 关注模板验证错误日志
-- 定期清理过期的消息数据
+### 日志分析
+- 查看队列处理日志
+- 监控MQTT连接状态
+- 分析错误堆栈信息
+
+## 版本信息
+- **当前版本**: 1.0.0
+- **开发团队**: PandaTech
+- **最后更新**: 2024年
 
 ---
 
-**开发团队**: 熊猫科技开发团队  
-**联系邮箱**: dev@pandatech.com  
-**项目版本**: 1.0.0
+*本文档详细介绍了价签模板下发系统的架构设计、核心概念和使用方法。如有疑问，请联系开发团队。*
