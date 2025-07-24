@@ -57,7 +57,7 @@ public class TemplateServiceImpl implements TemplateService {
             queueMessage.put("storeCode", templateDto.getStoreCode());
             queueMessage.put("templateId", templateDto.getTemplateId());
             queueMessage.put("brandCode", templateDto.getBrandCode());
-            queueMessage.put("mqttTopic", "esl/server/tmpl/" + templateDto.getStoreCode());
+            queueMessage.put("mqttTopic", "esl/server/data/" + templateDto.getStoreCode());
             queueMessage.put("timestamp", System.currentTimeMillis());
             queueMessage.put("priority", 2); // 模板消息优先级为2
             
