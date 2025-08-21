@@ -149,8 +149,12 @@ public class TemplateDeployService {
         String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(brandCode);
         
         switch (adapterBrandCode) {
-            case "攀攀":
-                return "Panda品牌";
+            case "AES001":
+                return "攀攀科技品牌";
+            case "YALIANG001":
+                return "雅量科技品牌";
+            case "攀攀": // 向后兼容
+                return "攀攀科技品牌";
             default:
                 return brandCode + "品牌";
         }

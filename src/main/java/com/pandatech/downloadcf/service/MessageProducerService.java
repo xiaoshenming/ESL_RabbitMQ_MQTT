@@ -77,7 +77,11 @@ public class MessageProducerService {
         
         // 根据品牌配置确定执行器类型
         switch (adapterBrandCode) {
-            case "攀攀":
+            case "AES001":
+                return "mqtt";
+            case "YALIANG001":
+                return "mqtt";
+            case "攀攀": // 向后兼容
                 return "mqtt";
             default:
                 log.warn("未知品牌编码: {} (原始: {}), 使用默认执行器类型: mqtt", adapterBrandCode, brandCode);

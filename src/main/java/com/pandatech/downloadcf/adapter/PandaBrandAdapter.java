@@ -17,7 +17,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 攀攀品牌适配器 - 处理攀攀品牌的数据转换
+ * 攀攀科技品牌适配器 - 处理攀攀科技品牌的数据转换
+ * 支持新的品牌编码 AES001
  */
 @Slf4j
 @Component
@@ -28,7 +29,7 @@ public class PandaBrandAdapter implements BrandAdapter {
     
     @Override
     public String getSupportedBrandCode() {
-        return "攀攀";
+        return "AES001";
     }
     
     @Override
