@@ -931,7 +931,28 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         }
         
         // 针对不同元素类型进行特殊处理
-        if ("qrcode".equals(textType)) {
+        if ("image".equals(elementType)) {
+            // 图片元素特殊处理 - 根据AP手动修复后的正确格式
+            item.put("Type", "pic");
+            item.put("Background", "Transparent");
+            item.put("BorderColor", "Transparent");
+            item.put("BorderStyle", 0);
+            
+            // 图片特有属性
+            item.put("Imgdeal", 0);
+            item.put("Imgfill", 0);
+            item.put("Imgtype", "png");
+            item.put("dval", "");
+            
+            // 移除文本相关属性，因为图片元素不需要这些属性
+            item.remove("FontFamily");
+            item.remove("FontColor");
+            item.remove("FontStyle");
+            item.remove("FontSpace");
+            item.remove("TextAlign");
+            
+            log.debug("识别为图片元素，使用pic类型");
+        } else if ("qrcode".equals(textType)) {
             // 二维码特殊处理
             item.put("Type", "qrcode");
             item.put("Background", "Transparent");
@@ -956,10 +977,8 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
             item.put("Barformat", 0);
             
             // 修正条形码高度计算逻辑，使其更接近AP自动修复的结果
-            // 根据元素高度计算合理的条形码高度，通常为元素高度的50%左右
-            double barcodeHeight = Math.max(8.0, height * 0.5); 
-            // 确保条形码高度为合理的数值，避免过长的小数
-            barcodeHeight = Math.round(barcodeHeight * 10.0) / 10.0;
+            // 根据AP修复后的结果，条形码高度应该是5
+            int barcodeHeight = 5;
             item.put("Barheight", barcodeHeight);
             
             item.put("Barwidth", 1);
@@ -1040,8 +1059,8 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
             item.put("DataDefault", "");
         }
         
-        // 颜色属性
-        if (options.has("color")) {
+        // 颜色属性 - 图片元素不需要FontColor
+        if (options.has("color") && !"pic".equals(item.get("Type"))) {
             item.put("FontColor", options.get("color").asText());
         }
         
@@ -1092,13 +1111,20 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         if (originalItem.containsKey("DataKeyStyle")) {
             orderedItem.put("DataKeyStyle", originalItem.get("DataKeyStyle"));
         }
+        // 添加图片元素的dval属性支持
+        if (originalItem.containsKey("dval")) {
+            orderedItem.put("dval", originalItem.get("dval"));
+        }
         if (originalItem.containsKey("FontColor")) {
             orderedItem.put("FontColor", originalItem.get("FontColor"));
         }
         if (originalItem.containsKey("FontFamily")) {
             orderedItem.put("FontFamily", originalItem.get("FontFamily"));
         }
-        orderedItem.put("FontSize", fontSize);
+        // 只有非图片元素才添加FontSize属性
+        if (!"pic".equals(originalItem.get("Type"))) {
+            orderedItem.put("FontSize", fontSize);
+        }
         if (originalItem.containsKey("FontSpace")) {
             orderedItem.put("FontSpace", originalItem.get("FontSpace"));
         }
@@ -1107,6 +1133,16 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         }
         if (originalItem.containsKey("Fontinval")) {
             orderedItem.put("Fontinval", originalItem.get("Fontinval"));
+        }
+        // 添加图片特有属性支持
+        if (originalItem.containsKey("Imgdeal")) {
+            orderedItem.put("Imgdeal", originalItem.get("Imgdeal"));
+        }
+        if (originalItem.containsKey("Imgfill")) {
+            orderedItem.put("Imgfill", originalItem.get("Imgfill"));
+        }
+        if (originalItem.containsKey("Imgtype")) {
+            orderedItem.put("Imgtype", originalItem.get("Imgtype"));
         }
         orderedItem.put("Location", x + ", " + y);
         if (originalItem.containsKey("Showtext")) {
