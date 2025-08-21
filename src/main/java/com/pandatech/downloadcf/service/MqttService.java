@@ -824,16 +824,20 @@ public class MqttService {
         }
         item.put("Type", elementType);
         
-        // 设置默认属性
-        item.put("FontFamily", "阿里普惠");
-        item.put("FontColor", "Black");
+        // 设置通用默认属性
         item.put("Background", "Transparent");
         item.put("BorderColor", "Transparent");
         item.put("BorderStyle", 0);
-        item.put("FontStyle", 0);
-        item.put("FontSpace", 0);
-        item.put("TextAlign", 0);
         item.put("DataKeyStyle", 0);
+        
+        // 只有非图片元素才设置文本相关属性
+        if (!"image".equals(elementType)) {
+            item.put("FontFamily", "阿里普惠");
+            item.put("FontColor", "Black");
+            item.put("FontStyle", 0);
+            item.put("FontSpace", 0);
+            item.put("TextAlign", 0);
+        }
         
         log.debug("目标画布尺寸: {}x{}", canvasWidth, canvasHeight);
         
@@ -934,22 +938,12 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         if ("image".equals(elementType)) {
             // 图片元素特殊处理 - 根据AP手动修复后的正确格式
             item.put("Type", "pic");
-            item.put("Background", "Transparent");
-            item.put("BorderColor", "Transparent");
-            item.put("BorderStyle", 0);
             
             // 图片特有属性
             item.put("Imgdeal", 0);
             item.put("Imgfill", 0);
             item.put("Imgtype", "png");
             item.put("dval", "");
-            
-            // 移除文本相关属性，因为图片元素不需要这些属性
-            item.remove("FontFamily");
-            item.remove("FontColor");
-            item.remove("FontStyle");
-            item.remove("FontSpace");
-            item.remove("TextAlign");
             
             log.debug("识别为图片元素，使用pic类型");
         } else if ("qrcode".equals(textType)) {
@@ -1053,7 +1047,10 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         
         item.put("DataKey", templateField != null ? templateField : "");
         
-        if (options.has("testData")) {
+        // 图片元素的DataDefault应该为空字符串，其他元素使用testData
+        if ("pic".equals(item.get("Type"))) {
+            item.put("DataDefault", "");
+        } else if (options.has("testData")) {
             item.put("DataDefault", options.get("testData").asText());
         } else {
             item.put("DataDefault", "");
@@ -1115,21 +1112,21 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         if (originalItem.containsKey("dval")) {
             orderedItem.put("dval", originalItem.get("dval"));
         }
-        if (originalItem.containsKey("FontColor")) {
-            orderedItem.put("FontColor", originalItem.get("FontColor"));
-        }
-        if (originalItem.containsKey("FontFamily")) {
-            orderedItem.put("FontFamily", originalItem.get("FontFamily"));
-        }
-        // 只有非图片元素才添加FontSize属性
+        // 只有非图片元素才添加文本相关属性
         if (!"pic".equals(originalItem.get("Type"))) {
+            if (originalItem.containsKey("FontColor")) {
+                orderedItem.put("FontColor", originalItem.get("FontColor"));
+            }
+            if (originalItem.containsKey("FontFamily")) {
+                orderedItem.put("FontFamily", originalItem.get("FontFamily"));
+            }
             orderedItem.put("FontSize", fontSize);
-        }
-        if (originalItem.containsKey("FontSpace")) {
-            orderedItem.put("FontSpace", originalItem.get("FontSpace"));
-        }
-        if (originalItem.containsKey("FontStyle")) {
-            orderedItem.put("FontStyle", originalItem.get("FontStyle"));
+            if (originalItem.containsKey("FontSpace")) {
+                orderedItem.put("FontSpace", originalItem.get("FontSpace"));
+            }
+            if (originalItem.containsKey("FontStyle")) {
+                orderedItem.put("FontStyle", originalItem.get("FontStyle"));
+            }
         }
         if (originalItem.containsKey("Fontinval")) {
             orderedItem.put("Fontinval", originalItem.get("Fontinval"));
@@ -1149,7 +1146,8 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
             orderedItem.put("Showtext", originalItem.get("Showtext"));
         }
         orderedItem.put("Size", width + ", " + height);
-        if (originalItem.containsKey("TextAlign")) {
+        // 只有非图片元素才添加TextAlign属性
+        if (!"pic".equals(originalItem.get("Type")) && originalItem.containsKey("TextAlign")) {
             orderedItem.put("TextAlign", originalItem.get("TextAlign"));
         }
         if (originalItem.containsKey("Type")) {
