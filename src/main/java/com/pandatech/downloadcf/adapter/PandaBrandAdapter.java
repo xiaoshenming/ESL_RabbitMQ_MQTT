@@ -185,8 +185,8 @@ public class PandaBrandAdapter implements BrandAdapter {
             dataMap.put("GOODS_NAME", formatStringField(product.getProductName()));
             dataMap.put("QRCODE", formatStringField(product.getProductQrcode()));
             
-            // 只添加最基本的价格字段
-            dataMap.put("F_1", formatPriceAsNumber(product.getProductRetailPrice())); // 零售价
+            // 只添加最基本的价格字段（使用正确的F_01格式和字符串类型）
+            dataMap.put("F_01", formatPriceAsString(product.getProductRetailPrice())); // 零售价
         }
         
         log.debug("构建PANDA标准数据映射完成，字段数量: {}", dataMap.size());
@@ -195,56 +195,11 @@ public class PandaBrandAdapter implements BrandAdapter {
     
     /**
      * 判断字段是否为字符串类型
+     * 根据err.md标准，所有字段都应该返回字符串类型
      */
     private boolean isStringField(String fieldName) {
-        if (fieldName == null) {
-            return false;
-        }
-        
-        switch (fieldName) {
-            // 字符串字段
-            case "F_2":  // 分类
-            case "F_4":  // 规格
-            case "F_9":  // 材质
-            case "F_10": // 图片
-            case "F_11": // 产地
-            case "F_12": // 单位
-            case "F_14": // 状态
-            case "F_15": // 预留
-            case "F_16": // 预留
-            case "F_17": // 预留
-            case "F_18": // 预留
-            case "F_19": // 预留
-            case "F_20": // 描述
-            case "GOODS_CODE":
-            case "GOODS_NAME":
-            case "QRCODE":
-                return true;
-                
-            // 数字字段
-            case "F_1":  // 零售价
-            case "F_3":  // 成本价
-            case "F_5":  // 会员价
-            case "F_6":  // 折扣价
-            case "F_7":  // 折扣
-            case "F_8":  // 批发价
-            case "F_13": // 重量
-            case "F_32": // 库存
-                return false;
-                
-            // 其他F_字段的处理
-            default:
-                if (fieldName.startsWith("F_")) {
-                    // 对于F_21到F_31等预留字段，认为是字符串
-                    if (fieldName.matches("F_(2[1-9]|3[0-1])")) {
-                        return true;
-                    }
-                    // 其他F_字段默认为字符串
-                    return true;
-                }
-                // 非F_字段默认为字符串
-                return true;
-        }
+        // 根据err.md标准，所有字段值都应该是字符串类型
+        return true;
     }
     
     /**
@@ -260,15 +215,16 @@ public class PandaBrandAdapter implements BrandAdapter {
     
     /**
      * 标准化字段名 - 处理字段名的格式转换
+     * 根据err.md标准，保持F_01、F_02等两位数字格式
      */
     private String normalizeFieldName(String fieldName) {
         if (fieldName == null) {
             return null;
         }
         
-        // 处理 F_01 -> F_1 的转换
-        if (fieldName.matches("F_0\\d")) {
-            return "F_" + fieldName.substring(3); // 去掉前导0
+        // 处理 F_1 -> F_01 的转换（确保两位数字格式）
+        if (fieldName.matches("F_\\d")) {
+            return "F_0" + fieldName.substring(2); // 添加前导0
         }
         
         // 处理其他特殊字段名
@@ -372,13 +328,69 @@ public class PandaBrandAdapter implements BrandAdapter {
     }
     
     /**
-     * 格式化字符串字段 - 按照PANDA标准格式
+     * 格式化字符串字段 - 按照err.md标准格式
      */
     private String formatStringField(Object value) {
         if (value == null) {
             return "";
         }
         return value.toString().trim();
+    }
+    
+    /**
+     * 格式化价格为字符串 - 按照err.md标准格式
+     */
+    private String formatPriceAsString(Object price) {
+        if (price == null) {
+            return "0.00";
+        }
+        
+        try {
+            double priceValue = Double.parseDouble(price.toString());
+            return String.format("%.2f", priceValue);
+        } catch (NumberFormatException e) {
+            log.warn("价格格式错误: {}", price);
+            return "0.00";
+        }
+    }
+    
+    /**
+     * 格式化数字为字符串 - 按照err.md标准格式
+     */
+    private String formatNumberAsString(Object number) {
+        if (number == null) {
+            return "0";
+        }
+        
+        try {
+            double numberValue = Double.parseDouble(number.toString());
+            // 如果是整数，不显示小数点
+            if (numberValue == Math.floor(numberValue)) {
+                return String.format("%.0f", numberValue);
+            } else {
+                return String.format("%.2f", numberValue);
+            }
+        } catch (NumberFormatException e) {
+            log.warn("数字格式错误: {}", number);
+            return "0";
+        }
+    }
+    
+    /**
+     * 格式化整数为字符串 - 按照err.md标准格式
+     */
+    private String formatIntegerAsString(Object integer) {
+        if (integer == null) {
+            return "0";
+        }
+        
+        try {
+            int intValue = Integer.parseInt(integer.toString());
+            return String.valueOf(intValue);
+        } catch (NumberFormatException e) {
+            log.warn("整数格式错误: {}", integer);
+            return "0";
+        }
     }
     
     /**
@@ -430,52 +442,48 @@ public class PandaBrandAdapter implements BrandAdapter {
     }
     
     /**
-     * 根据字段类型格式化值 - 按照PANDA标准格式
-     * 根据err.md中的标准格式示例进行精确格式化
+     * 根据字段类型格式化值 - 按照err.md标准格式
+     * 所有字段值统一返回字符串类型，确保与MQTT协议兼容
      */
     private Object formatValueByFieldType(String fieldName, Object value) {
         log.debug("格式化字段值: fieldName={}, value={}, valueType={}", 
             fieldName, value, value != null ? value.getClass().getSimpleName() : "null");
         
-        // 根据字段名判断数据类型，严格按照标准格式示例
+        // 根据err.md标准，所有字段值都应该是字符串类型
         switch (fieldName) {
-            // 价格字段 - 应为数字类型（Double）
-            case "F_1":  // 零售价
-            case "F_3":  // 成本价
-            case "F_5":  // 会员价
-            case "F_6":  // 折扣价
-            case "F_8":  // 批发价
-                Object priceResult = formatPriceAsNumber(value);
-                log.debug("价格字段 {} 格式化结果: {}", fieldName, priceResult);
+            // 价格字段 - 格式化为字符串（保留两位小数）
+            case "F_01":  // 零售价
+            case "F_03":  // 成本价
+            case "F_05":  // 会员价
+            case "F_06":  // 折扣价
+            case "F_08":  // 批发价
+                String priceResult = formatPriceAsString(value);
+                log.debug("价格字段 {} 格式化结果: '{}'", fieldName, priceResult);
                 return priceResult;
                 
-            // 数字字段 - 应为数字类型（Double）
-            case "F_7":  // 折扣
-            case "F_13": // 重量
-                Object numberResult = formatNumberField(value);
-                log.debug("数字字段 {} 格式化结果: {}", fieldName, numberResult);
+            // 数字字段 - 格式化为字符串
+            case "F_07":  // 折扣
+            case "F_12":  // 重量
+            case "F_13":  // 重量（备用）
+                String numberResult = formatNumberAsString(value);
+                log.debug("数字字段 {} 格式化结果: '{}'", fieldName, numberResult);
                 return numberResult;
                 
-            // 整数字段 - 应为整数类型（Integer）
-            case "F_32": // 库存
-                Object intResult = formatIntegerField(value);
-                log.debug("整数字段 {} 格式化结果: {}", fieldName, intResult);
-                return intResult;
+            // 库存字段 - 格式化为字符串
+            case "F_14": // 库存
+            case "F_32": // 库存（备用）
+                String stockResult = formatIntegerAsString(value);
+                log.debug("库存字段 {} 格式化结果: '{}'", fieldName, stockResult);
+                return stockResult;
                 
-            // 字符串字段 - 应为字符串类型，即使为null也返回空字符串
-            case "F_2":  // 分类
-            case "F_4":  // 规格
-            case "F_9":  // 材质
-            case "F_10": // 图片
-            case "F_11": // 产地
-            case "F_12": // 单位
-            case "F_14": // 状态
-            case "F_15": // 预留
-            case "F_16": // 预留
-            case "F_17": // 预留
-            case "F_18": // 预留
-            case "F_19": // 预留
-            case "F_20": // 描述
+            // 字符串字段 - 直接格式化为字符串
+            case "F_02":  // 分类
+            case "F_04":  // 规格
+            case "F_09":  // 材质
+            case "F_10":  // 图片/描述
+            case "F_11":  // 单位
+            case "F_15":  // 二维码
+            case "F_16":  // 条形码
             case "GOODS_CODE":
             case "GOODS_NAME":
             case "QRCODE":
@@ -486,20 +494,15 @@ public class PandaBrandAdapter implements BrandAdapter {
             // 其他F_字段的处理
             default:
                 if (fieldName.startsWith("F_")) {
-                    // 对于F_21到F_31等预留字段，返回null
-                    if (fieldName.matches("F_(2[1-9]|3[0-1])")) {
-                        log.debug("预留字段 {} 返回null", fieldName);
-                        return null;
-                    }
-                    // 其他F_字段默认为字符串
-                    String defaultStringResult = formatStringField(value);
-                    log.debug("其他F_字段 {} 格式化为字符串: '{}'", fieldName, defaultStringResult);
-                    return defaultStringResult;
+                    // 对于F_17到F_32等预留字段，如果有值则格式化为字符串
+                    String defaultResult = formatStringField(value);
+                    log.debug("F_字段 {} 格式化为字符串: '{}'", fieldName, defaultResult);
+                    return defaultResult;
                 }
                 // 非F_字段默认为字符串
-                String nonFStringResult = formatStringField(value);
-                log.debug("非F_字段 {} 格式化为字符串: '{}'", fieldName, nonFStringResult);
-                return nonFStringResult;
+                String nonFResult = formatStringField(value);
+                log.debug("非F_字段 {} 格式化为字符串: '{}'", fieldName, nonFResult);
+                return nonFResult;
         }
     }
     

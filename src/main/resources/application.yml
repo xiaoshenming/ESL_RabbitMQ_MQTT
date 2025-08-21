@@ -85,9 +85,15 @@ app:
     
     # 品牌配置
     brands:
-      panda:
-        name: panda
-        code: panda
+      aes001:
+        name: "攀攀科技"
+        code: "AES001"
+        enabled: true
+        executor-type: MQTT
+        template-format: CUSTOM
+      yaliang001:
+        name: "雅量科技"
+        code: "YALIANG001"
         enabled: true
         executor-type: MQTT
         template-format: CUSTOM

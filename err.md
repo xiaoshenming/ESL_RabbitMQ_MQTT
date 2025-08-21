@@ -1,65 +1,123 @@
-E:\JAVA\JAVA22\bin\java.exe -Dmaven.multiModuleProjectDirectory=E:\IdeaProjects\cfdownloadexample -Djansi.passthrough=true -Dmaven.home=C:\Users\Ming\.m2\wrapper\dists\apache-maven-3.9.9-bin\4nf9hui3q3djbarqar9g711ggc\apache-maven-3.9.9 -Dclassworlds.conf=C:\Users\Ming\.m2\wrapper\dists\apache-maven-3.9.9-bin\4nf9hui3q3djbarqar9g711ggc\apache-maven-3.9.9\bin\m2.conf "-Dmaven.ext.class.path=D:\JetBrains\IntelliJ IDEA 2024.2.1\plugins\maven\lib\maven-event-listener.jar" "-javaagent:D:\JetBrains\IntelliJ IDEA 2024.2.1\lib\idea_rt.jar=11798:D:\JetBrains\IntelliJ IDEA 2024.2.1\bin" -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\Ming\.m2\wrapper\dists\apache-maven-3.9.9-bin\4nf9hui3q3djbarqar9g711ggc\apache-maven-3.9.9\boot\plexus-classworlds-2.8.0.jar;C:\Users\Ming\.m2\wrapper\dists\apache-maven-3.9.9-bin\4nf9hui3q3djbarqar9g711ggc\apache-maven-3.9.9\boot\plexus-classworlds.license org.codehaus.classworlds.Launcher -Didea.version=2024.2.1 -s D:\Maven\conf\setting.xml -Dmaven.repo.local=D:\Maven\repository package
-[INFO] Scanning for projects...
-[WARNING] 
-[WARNING] Some problems were encountered while building the effective model for com.pandatech:downloadcf:jar:0.0.1-SNAPSHOT
-[WARNING] 'dependencies.dependency.version' for org.projectlombok:lombok:jar is either LATEST or RELEASE (both of them are being deprecated) @ line 52, column 22
-[WARNING] 
-[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
-[WARNING] 
-[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
-[WARNING] 
-[INFO] 
-[INFO] ----------------------< com.pandatech:downloadcf >----------------------
-[INFO] Building downloadcf 0.0.1-SNAPSHOT
-[INFO]   from pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ downloadcf ---
-[INFO] Copying 1 resource from src\main\resources to target\classes
-[INFO] Copying 6 resources from src\main\resources to target\classes
-[INFO] 
-[INFO] --- compiler:3.11.0:compile (default-compile) @ downloadcf ---
-[INFO] Changes detected - recompiling the module! :source
-[INFO] Compiling 66 source files with javac [debug release 17] to target\classes
-[INFO] 由于在类路径中发现了一个或多个处理程序，因此启用了
-  批注处理。未来发行版的 javac 可能会禁用批注处理，
-  除非至少按名称指定了一个处理程序 (-processor)，
-  或指定了搜索路径 (--processor-path, --processor-module-path)，
-  或显式启用了批注处理 (-proc:only, -proc:full)。
-  可使用 -Xlint:-options 隐藏此消息。
-  可使用 -proc:none 禁用批注处理。
-[INFO] -------------------------------------------------------------
-[ERROR] COMPILATION ERROR : 
-[INFO] -------------------------------------------------------------
-[ERROR] /E:/IdeaProjects/cfdownloadexample/src/main/java/com/pandatech/downloadcf/adapter/YaliangBrandAdapter.java:[264,77] 找不到符号
-  符号:   方法 getTemplateContent()
-  位置: 类 com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs
-[ERROR] /E:/IdeaProjects/cfdownloadexample/src/main/java/com/pandatech/downloadcf/adapter/YaliangBrandAdapter.java:[269,60] 找不到符号
-  符号:   方法 getTemplateContent()
-  位置: 类 com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs
-[INFO] 2 errors 
-[INFO] -------------------------------------------------------------
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD FAILURE
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  5.601 s
-[INFO] Finished at: 2025-08-21T20:54:13+08:00
-[INFO] ------------------------------------------------------------------------
-[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project downloadcf: Compilation failure: Compilation failure: 
-[ERROR] /E:/IdeaProjects/cfdownloadexample/src/main/java/com/pandatech/downloadcf/adapter/YaliangBrandAdapter.java:[264,77] 找不到符号
-[ERROR]   符号:   方法 getTemplateContent()
-[ERROR]   位置: 类 com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs
-[ERROR] /E:/IdeaProjects/cfdownloadexample/src/main/java/com/pandatech/downloadcf/adapter/YaliangBrandAdapter.java:[269,60] 找不到符号
-[ERROR]   符号:   方法 getTemplateContent()
-[ERROR]   位置: 类 com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs
-[ERROR] -> [Help 1]
-[ERROR] 
-[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-[ERROR] Re-run Maven using the -X switch to enable full debug logging.
-[ERROR] 
-[ERROR] For more information about the errors and possible solutions, please read the following articles:
-[ERROR] [Help 1] 
+{
+  "command": "fmap",
+  "data": [
+    { "f": "name", "t": "GOODS_NAME", "n": "商品名称" },
+    { "f": "code", "t": "GOODS_CODE", "n": "商品编号" },
+    { "f": "F_01", "t": "F_01", "n": "价格" },
+    { "f": "F_02", "t": "F_02", "n": "商品分类" },
+    { "f": "F_03", "t": "F_03", "n": "商品成本价" },
+    { "f": "F_04", "t": "F_04", "n": "商品规格" },
+    { "f": "F_05", "t": "F_05", "n": "商品会员价" },
+    { "f": "F_06", "t": "F_06", "n": "商品折扣价" },
+    { "f": "F_07", "t": "F_07", "n": "商品折扣" },
+    { "f": "F_08", "t": "F_08", "n": "商品批发" },
+    { "f": "F_09", "t": "F_09", "n": "商品材质" },
+    { "f": "F_10", "t": "F_10", "n": "二维码" },
+    { "f": "F_11", "t": "F_11", "n": "商品单位" },
+    { "f": "F_12", "t": "F_12", "n": "产品重量（单位：kg）" },
+    { "f": "F_13", "t": "F_13", "n": "商品状态（如：上架、下架、预售等）" },
+    { "f": "F_14", "t": "F_14", "n": "商品库存" },
+    { "f": "F_15", "t": "F_15", "n": "二维码" },
+    { "f": "F_16", "t": "F_16", "n": "条形码" },
+    { "f": "F_17", "t": "F_17", "n": "F_17(F_17)" },
+    { "f": "F_18", "t": "F_18", "n": "F_18(F_18)" },
+    { "f": "F_19", "t": "F_19", "n": "F_19(F_19)" },
+    { "f": "F_20", "t": "F_20", "n": "F_19(F_20)" },
+    { "f": "F_21", "t": "F_21", "n": "F_21(F_21)" },
+    { "f": "F_22", "t": "F_22", "n": "F_22(F_22)" },
+    { "f": "F_23", "t": "F_23", "n": "F_23(F_23)" },
+    { "f": "F_24", "t": "F_24", "n": "F_24(F_24)" },
+    { "f": "F_25", "t": "F_25", "n": "F_25(F_25)" },
+    { "f": "F_26", "t": "F_26", "n": "F_26(F_26)" },
+    { "f": "F_27", "t": "F_27", "n": "F_27(F_27)" },
+    { "f": "F_28", "t": "F_28", "n": "F_28(F_28)" },
+    { "f": "F_29", "t": "F_29", "n": "F_29(F_29)" },
+    { "f": "F_30", "t": "F_30", "n": "F_30(F_30)" },
+    { "f": "F_31", "t": "F_31", "n": "F_31(F_31)" },
+    { "f": "F_32", "t": "F_32", "n": "F_32(F_32)" }
+  ],
+  "id": "84d5c75c-7187-4898-a3e5-836d19ec6432",
+  "timestamp": 1713507092.7359166,
+  "shop": "BY001"
+}
 
-进程已结束，退出代码为 1
 
-编译报错，请修复！
+
+
+
+然后这是你单挑刷新的例子（攀攀科技的AES001）
+
+{
+  "command": "wtag",
+  "data": [
+    {
+      "tag": 6597069773146,
+      "tmpl": "test1",
+      "model": "06",
+      "checksum": "12780dc2f9234a1406c5853435f7296a",
+      "forcefrash": 1,
+      "value": {
+        "GOODS_CODE": "001",
+        "GOODS_NAME": "测试商品",
+        "F_1": 99.99,
+        "F_2": "PRODUCT_FRUIT",
+        "F_3": 9.99,
+        "F_4": "PRODUCT_FRUIT",
+        "F_5": 99.9,
+        "F_6": 99.0,
+        "F_7": 0.09,
+        "F_8": 99.0,
+        "F_9": "测试材质",
+        "F_10": "<p>测试描述</p>",
+        "F_11": "ge",
+        "F_12": "9.00",
+        "F_14": "99",
+        "F_15": "www.bing.com",
+        "F_16": "www.bing.com"
+      },
+      "taskid": 1039,
+      "token": 417813
+    }
+  ],
+  "id": "60221127-e66a-4a75-a306-69d13fe56d7f",
+  "timestamp": 1.755783701028e9,
+  "shop": "BY001"
+}
+
+这样是错误的，正确的应该是
+{
+  "command": "wtag",
+  "data": [
+    {
+      "tag": 6597069773146,
+      "tmpl": "test1",
+      "model": "06",
+      "checksum": "12780dc2f9234a1406c5853435f7296a",
+      "forcefrash": 1,
+      "value": {
+        "GOODS_CODE": "001",
+        "GOODS_NAME": "测试商品",
+        "F_01": "99.99",
+        "F_02": "PRODUCT_FRUIT",
+        "F_03": "9.99",
+        "F_04": "PRODUCT_FRUIT",
+        "F_05": "99.9",
+        "F_06": "99.0",
+        "F_07": "0.09",
+        "F_08": "99.0",
+        "F_09": "测试材质",
+        "F_10": "<p>测试描述</p>",
+        "F_11": "ge",
+        "F_12": "9.00",
+        "F_14": "99",
+        "F_15": "www.bing.com",
+        "F_16": "www.bing.com"
+      },
+      "taskid": 1039,
+      "token": 417813
+    }
+  ],
+  "id": "60221127-e66a-4a75-a306-69d13fe56d7f",
+  "timestamp": 1.755783701028e9,
+  "shop": "BY001"
+}
