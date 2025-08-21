@@ -1008,32 +1008,66 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         log.debug("坐标转换 - 原始: left={}, top={}, width={}, height={}", leftPt, topPt, widthPt, heightPt);
         log.debug("转换后: x={}, y={}, width={}, height={}, 画布: {}x{}", x, y, width, height, canvasWidth, canvasHeight);
         
-        // 字体属性 - 根据缩放比例调整字体大小
+        // 字体属性处理
         int fontSize = 12; // 默认字体大小
         if (options.has("fontSize")) {
             double originalFontSize = options.get("fontSize").asDouble();
-            // 字体大小也需要根据缩放比例调整，但不要过小
-            fontSize = Math.max(8, (int) Math.round(originalFontSize * scale));
+            // 保持原始字体大小，不进行缩放，让AP自己处理显示
+            fontSize = Math.max(8, (int) Math.round(originalFontSize));
         } else {
             // 如果没有指定字体大小，根据元素高度估算合适的字体大小
-            fontSize = Math.max(8, Math.min(height - 4, 16)); // 字体大小不超过元素高度-4，最大16
+            fontSize = Math.max(8, Math.min(height - 4, 16));
         }
         
-        log.debug("字体大小设置 - 原始: {}, 缩放后: {}, 元素高度: {}", 
-                 options.has("fontSize") ? options.get("fontSize").asDouble() : "未指定", 
-                 fontSize, height);
+        // 字符间距处理
+        int letterSpacing = 0; // 默认字符间距
+        if (options.has("letterSpacing")) {
+            double originalLetterSpacing = options.get("letterSpacing").asDouble();
+            letterSpacing = Math.max(0, (int) Math.round(originalLetterSpacing));
+        }
         
+        log.debug("字体属性设置 - 原始字体大小: {}, 设置字体大小: {}, 原始字符间距: {}, 设置字符间距: {}", 
+                 options.has("fontSize") ? options.get("fontSize").asDouble() : "未指定", 
+                 fontSize, 
+                 options.has("letterSpacing") ? options.get("letterSpacing").asDouble() : "未指定",
+                 letterSpacing);
+        
+        // 字体样式处理 - 支持粗体、斜体、粗斜体
+        int fontStyle = 0; // 默认正常
         if (options.has("fontWeight")) {
             String fontWeight = options.get("fontWeight").asText();
-            item.put("FontStyle", "bold".equals(fontWeight) ? 1 : 0);
+            if ("bold".equals(fontWeight) || "900".equals(fontWeight)) {
+                fontStyle = 1; // 粗体
+            }
         }
         
+        // 文本对齐处理 - 支持左对齐、居中、右对齐、两端对齐
+        int textAlign = 0; // 默认左对齐
         if (options.has("textAlign")) {
-            String textAlign = options.get("textAlign").asText();
-            int align = 0; // left
-            if ("center".equals(textAlign)) align = 1;
-            else if ("right".equals(textAlign)) align = 2;
-            item.put("TextAlign", align);
+            String align = options.get("textAlign").asText();
+            switch (align) {
+                case "left":
+                    textAlign = 0;
+                    break;
+                case "center":
+                    textAlign = 1;
+                    break;
+                case "right":
+                    textAlign = 2;
+                    break;
+                case "justify":
+                    textAlign = 0; // AP中justify映射为左对齐
+                    break;
+                default:
+                    textAlign = 0;
+            }
+        }
+        
+        // 只有非图片元素才设置字体相关属性
+        if (!"image".equals(elementType)) {
+            item.put("FontStyle", fontStyle);
+            item.put("FontSpace", letterSpacing);
+            item.put("TextAlign", textAlign);
         }
         
         // 数据绑定
@@ -1063,6 +1097,88 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         
         if (options.has("backgroundColor")) {
             item.put("Background", options.get("backgroundColor").asText());
+        }
+        
+        // 边框处理 - 根据前端的边框设置转换为AP格式
+        if (options.has("borderColor")) {
+            item.put("BorderColor", options.get("borderColor").asText());
+        }
+        
+        // 边框样式处理
+        int borderStyle = 0; // 默认无边框
+        if (options.has("borderLeft") || options.has("borderTop") || 
+            options.has("borderRight") || options.has("borderBottom")) {
+            
+            String borderType = "solid"; // 默认实线
+            if (options.has("borderLeft")) {
+                borderType = options.get("borderLeft").asText();
+            } else if (options.has("borderTop")) {
+                borderType = options.get("borderTop").asText();
+            }
+            
+            // 根据边框类型设置样式
+            switch (borderType) {
+                case "solid":
+                    borderStyle = 10; // 实线边框
+                    break;
+                case "dotted":
+                case "dashed":
+                    borderStyle = 1; // 虚线边框
+                    break;
+                default:
+                    borderStyle = 0;
+            }
+        }
+        
+        if (borderStyle > 0) {
+            item.put("BorderStyle", borderStyle);
+        }
+        
+        // 处理字段替换样式 - DataKeyStyle
+        // 0: 纯替换, 1: 前缀, 2: 后缀
+        int dataKeyStyle = 0; // 默认纯替换
+        if (options.has("dataKeyStyle")) {
+            String style = options.get("dataKeyStyle").asText();
+            switch (style) {
+                case "prefix":
+                    dataKeyStyle = 1;
+                    break;
+                case "suffix":
+                    dataKeyStyle = 2;
+                    break;
+                default:
+                    dataKeyStyle = 0;
+            }
+        }
+        item.put("DataKeyStyle", dataKeyStyle);
+        
+        // 处理价格类型元素的特殊属性
+        if ("price".equals(elementType)) {
+            item.put("Type", "price");
+            
+            // 价格分隔符
+            String spacer = ".";
+            if (options.has("priceSeparator")) {
+                spacer = options.get("priceSeparator").asText();
+            }
+            item.put("Spacer", spacer);
+            
+            // 小数样式: 0-中间对齐, 1-顶部对齐, 2-底部对齐
+            int decimalsStyle = 0;
+            if (options.has("textContentVerticalAlign")) {
+                String align = options.get("textContentVerticalAlign").asText();
+                switch (align) {
+                    case "top":
+                        decimalsStyle = 1;
+                        break;
+                    case "bottom":
+                        decimalsStyle = 2;
+                        break;
+                    default:
+                        decimalsStyle = 0; // middle
+                }
+            }
+            item.put("DecimalsStyle", decimalsStyle);
         }
         
         log.debug("成功转换printElement为Item: {}", item);
@@ -1108,6 +1224,10 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         if (originalItem.containsKey("DataKeyStyle")) {
             orderedItem.put("DataKeyStyle", originalItem.get("DataKeyStyle"));
         }
+        // 添加价格元素的DecimalsStyle属性
+        if (originalItem.containsKey("DecimalsStyle")) {
+            orderedItem.put("DecimalsStyle", originalItem.get("DecimalsStyle"));
+        }
         // 添加图片元素的dval属性支持
         if (originalItem.containsKey("dval")) {
             orderedItem.put("dval", originalItem.get("dval"));
@@ -1146,6 +1266,10 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
             orderedItem.put("Showtext", originalItem.get("Showtext"));
         }
         orderedItem.put("Size", width + ", " + height);
+        // 添加价格元素的Spacer属性
+        if (originalItem.containsKey("Spacer")) {
+            orderedItem.put("Spacer", originalItem.get("Spacer"));
+        }
         // 只有非图片元素才添加TextAlign属性
         if (!"pic".equals(originalItem.get("Type")) && originalItem.containsKey("TextAlign")) {
             orderedItem.put("TextAlign", originalItem.get("TextAlign"));
