@@ -2,6 +2,7 @@ package com.pandatech.downloadcf.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.adapter.BrandAdapter;
+import com.pandatech.downloadcf.brands.BrandAdapterFactory;
 import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
@@ -28,7 +29,7 @@ public class EslRefreshService {
     
     private final DataService dataService;
     private final MessageProducerService messageProducerService;
-    private final List<BrandAdapter> brandAdapters;
+    private final BrandAdapterFactory brandAdapterFactory;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     
@@ -73,7 +74,7 @@ public class EslRefreshService {
             }
             
             // 3. 查找对应的品牌适配器
-            BrandAdapter adapter = findBrandAdapter(adapterBrandCode);
+            BrandAdapter adapter = brandAdapterFactory.getAdapter(adapterBrandCode);
             if (adapter == null) {
                 log.error("未找到品牌适配器: brandCode={}", completeData.getBrandCode());
                 return false;
@@ -202,31 +203,13 @@ public class EslRefreshService {
     /**
      * 查找品牌适配器
      */
-    private BrandAdapter findBrandAdapter(String brandCode) {
-        if (brandCode == null) {
-            brandCode = BrandCodeUtil.getDefaultAdapterBrandCode(); // 使用工具类获取默认适配器品牌代码
-        }
-        
-        final String finalBrandCode = brandCode;
-        return brandAdapters.stream()
-                .filter(adapter -> finalBrandCode.equals(adapter.getSupportedBrandCode()))
-                .findFirst()
-                .orElse(null);
-    }
+
     
     /**
      * 获取支持的品牌列表
      */
     public List<Map<String, Object>> getSupportedBrands() {
-        return brandAdapters.stream()
-                .map(adapter -> {
-                    Map<String, Object> brand = new HashMap<>();
-                    brand.put("brandCode", adapter.getSupportedBrandCode());
-                    brand.put("brandName", adapter.getSupportedBrandCode()); // 暂时使用编码作为名称
-                    brand.put("enabled", true);
-                    return brand;
-                })
-                .toList();
+        return brandAdapterFactory.getSupportedBrands();
     }
     
     /**

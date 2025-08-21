@@ -2,7 +2,6 @@ package com.pandatech.downloadcf.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.adapter.BrandAdapter;
-import com.pandatech.downloadcf.adapter.PandaBrandAdapter;
 import com.pandatech.downloadcf.executor.MessageExecutor;
 import com.pandatech.downloadcf.executor.MqttExecutor;
 import lombok.RequiredArgsConstructor;
@@ -27,17 +26,13 @@ public class EslConfig {
     
     /**
      * 配置品牌适配器列表
+     * 注意：品牌适配器现在通过 BrandAdapterConfig 进行配置
+     * 这个方法保留用于向后兼容，但实际的适配器由各自的配置类管理
      */
     @Bean
-    public List<BrandAdapter> brandAdapters() {
-        log.info("初始化品牌适配器列表");
-        
-        return Arrays.asList(
-            new PandaBrandAdapter(objectMapper)
-            // 可以在这里添加更多品牌适配器
-            // new YaliangBrandAdapter(),
-            // new OtherBrandAdapter()
-        );
+    public List<BrandAdapter> brandAdapters(List<BrandAdapter> configuredAdapters) {
+        log.info("初始化品牌适配器列表，共找到 {} 个适配器", configuredAdapters.size());
+        return configuredAdapters;
     }
     
     /**

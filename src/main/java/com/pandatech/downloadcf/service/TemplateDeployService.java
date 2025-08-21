@@ -1,6 +1,7 @@
 package com.pandatech.downloadcf.service;
 
 import com.pandatech.downloadcf.adapter.BrandAdapter;
+import com.pandatech.downloadcf.brands.BrandAdapterFactory;
 import com.pandatech.downloadcf.dto.BatchTemplateDeployRequest;
 import com.pandatech.downloadcf.dto.TemplateDeployRequest;
 import com.pandatech.downloadcf.dto.TemplateDto;
@@ -26,7 +27,7 @@ import java.util.concurrent.Executors;
 public class TemplateDeployService {
     
     private final TemplateService templateService;
-    private final List<BrandAdapter> brandAdapters;
+    private final BrandAdapterFactory brandAdapterFactory;
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     
     /**
@@ -130,33 +131,6 @@ public class TemplateDeployService {
      * 获取支持的品牌列表
      */
     public List<Map<String, Object>> getSupportedBrands() {
-        return brandAdapters.stream()
-                .map(adapter -> {
-                    Map<String, Object> brand = new HashMap<>();
-                    brand.put("brandCode", adapter.getSupportedBrandCode());
-                    brand.put("brandName", getBrandName(adapter.getSupportedBrandCode()));
-                    brand.put("enabled", true);
-                    return brand;
-                })
-                .toList();
-    }
-    
-    /**
-     * 根据品牌编码获取品牌名称
-     */
-    private String getBrandName(String brandCode) {
-        // 使用BrandCodeUtil进行品牌代码兼容性处理
-        String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(brandCode);
-        
-        switch (adapterBrandCode) {
-            case "AES001":
-                return "攀攀科技品牌";
-            case "YALIANG001":
-                return "雅量科技品牌";
-            case "攀攀": // 向后兼容
-                return "攀攀科技品牌";
-            default:
-                return brandCode + "品牌";
-        }
+        return brandAdapterFactory.getSupportedBrands();
     }
 }
