@@ -1081,9 +1081,17 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         
         item.put("DataKey", templateField != null ? templateField : "");
         
-        // 图片元素的DataDefault应该为空字符串，其他元素使用testData
+        // 图片元素的DataDefault处理
         if ("pic".equals(item.get("Type"))) {
-            item.put("DataDefault", "");
+            // 对于单一图片组件（没有绑定字段但有src属性），使用src作为默认值
+            if ((templateField == null || templateField.trim().isEmpty()) && options.has("src")) {
+                String srcValue = options.get("src").asText();
+                item.put("DataDefault", srcValue);
+                log.debug("单一图片组件，使用src作为DataDefault: {}", srcValue);
+            } else {
+                // 有绑定字段的图片组件，DataDefault为空字符串
+                item.put("DataDefault", "");
+            }
         } else if (options.has("testData")) {
             item.put("DataDefault", options.get("testData").asText());
         } else {
