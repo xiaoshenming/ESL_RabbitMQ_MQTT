@@ -68,7 +68,8 @@ public class ImageMagickProcessor {
     }
     
     /**
-     * 使用ImageMagick处理图像，生成完美的电子墨水屏显示效果
+     * 使用ImageMagick处理图像，完全按照Python标准实现
+     * 与原始Python代码_deal_draw_pic_data方法100%一致
      * 
      * @param base64Image Base64编码的原始图像
      * @param rgbMode 颜色模式代码
@@ -83,45 +84,40 @@ public class ImageMagickProcessor {
         }
         
         String inputFile = null;
-        String paletteFile = null;
         String outputFile = null;
         
         try {
-            // 解析Base64数据
+            // 步骤1: 解析Base64数据（与Python完全一致）
             String imageData = extractBase64Data(base64Image);
             byte[] imgBytes = Base64.getDecoder().decode(imageData);
             
-            // 创建临时文件
+            // 步骤2: 创建临时文件（与Python路径结构一致）
             long timestamp = System.currentTimeMillis();
-            inputFile = TEMP_DIR + File.separator + "input_" + timestamp + ".png";
-            paletteFile = TEMP_DIR + File.separator + "palette_" + timestamp + ".png";
-            outputFile = TEMP_DIR + File.separator + "output_" + timestamp + ".png";
+            inputFile = TEMP_DIR + File.separator + "raw_temp.png";  // 与Python一致的文件名
+            outputFile = TEMP_DIR + File.separator + "out_temp.png"; // 与Python一致的文件名
             
-            // 保存输入图像
+            // 步骤3: 保存输入图像到临时文件（与Python完全一致）
             Files.write(Paths.get(inputFile), imgBytes);
             log.debug("输入图像已保存: {}", inputFile);
             
-            // 获取颜色模式
-            EInkColorMode colorMode = EInkColorMode.fromCode(rgbMode);
+            // 步骤4: 根据rgb参数选择颜色映射文件（与Python完全一致）
+            String paletteFile = getPaletteFilePath(rgbMode);
+            log.debug("使用调色板文件: {}", paletteFile);
             
-            // 生成调色板文件
-            createPaletteFile(paletteFile, colorMode);
-            log.debug("调色板文件已创建: {}", paletteFile);
-            
-            // 执行ImageMagick处理命令
-            boolean success = executeImageMagickCommand(inputFile, paletteFile, outputFile, targetWidth, targetHeight, colorMode);
+            // 步骤5: 执行ImageMagick处理命令（与Python完全一致）
+            boolean success = executeImageMagickCommand(inputFile, paletteFile, outputFile, targetWidth, targetHeight);
             
             if (!success) {
                 log.error("ImageMagick处理失败");
                 return "";
             }
             
-            // 读取处理后的图像并转换为Base64
+            // 步骤6: 读取处理后的图像并转换为Base64（与Python完全一致）
             byte[] processedBytes = Files.readAllBytes(Paths.get(outputFile));
             String result = Base64.getEncoder().encodeToString(processedBytes);
             
             log.info("ImageMagick处理成功 - 原始: {} bytes, 处理后: {} bytes, 尺寸: {}x{}, 模式: {}", 
-                    imgBytes.length, processedBytes.length, targetWidth, targetHeight, colorMode.name());
+                    imgBytes.length, processedBytes.length, targetWidth, targetHeight, rgbMode);
             
             return result;
             
@@ -130,7 +126,7 @@ public class ImageMagickProcessor {
             return "";
         } finally {
             // 清理临时文件
-            cleanupTempFiles(inputFile, paletteFile, outputFile);
+            cleanupTempFiles(inputFile, null, outputFile);
         }
     }
     
@@ -145,84 +141,81 @@ public class ImageMagickProcessor {
     }
     
     /**
-     * 创建ImageMagick调色板文件
-     * 这是获得完美电子墨水屏效果的关键
+     * 根据rgb参数选择颜色映射文件（与Python完全一致）
+     * Python原始逻辑:
+     * if rgb == "2": ftcolor = "2color.png"
+     * elif rgb == "3": ftcolor = "3color.png" 
+     * elif rgb == "4": ftcolor = "4color.png"
+     * else: ftcolor = "3color.png"  # 默认3色
      */
-    private void createPaletteFile(String paletteFile, EInkColorMode colorMode) throws IOException {
-        // 创建1x1像素的调色板图像，每个颜色占一个像素
-        String[] colors = colorMode.getColors();
-        int paletteWidth = colors.length;
-        int paletteHeight = 1;
+    private String getPaletteFilePath(String rgbMode) {
+        // 获取项目根目录下的color-palettes文件夹
+        String projectRoot = System.getProperty("user.dir");
+        String paletteDir = projectRoot + File.separator + "color-palettes";
         
-        // 构建ImageMagick命令创建调色板
-        StringBuilder paletteCommand = new StringBuilder();
-        paletteCommand.append("magick -size ").append(paletteWidth).append("x").append(paletteHeight).append(" xc:none");
+        String paletteFileName;
         
-        for (int i = 0; i < colors.length; i++) {
-            paletteCommand.append(" -fill \"").append(colors[i]).append("\"");
-            paletteCommand.append(" -draw \"point ").append(i).append(",0\"");
+        // 完全按照Python逻辑选择调色板文件
+        if ("2".equals(rgbMode)) {
+            paletteFileName = "2color.png";
+        } else if ("3".equals(rgbMode)) {
+            paletteFileName = "3color.png";
+        } else if ("4".equals(rgbMode)) {
+            paletteFileName = "4color.png";
+        } else {
+            // 默认使用3色调色板（与Python一致）
+            paletteFileName = "3color.png";
+            log.debug("未知的rgb模式: {}, 使用默认3色调色板", rgbMode);
         }
         
-        paletteCommand.append(" \"").append(paletteFile).append("\"");
+        String paletteFilePath = paletteDir + File.separator + paletteFileName;
         
-        try {
-            executeCommand(paletteCommand.toString());
-            log.debug("调色板创建命令执行成功: {}", paletteCommand.toString());
-        } catch (Exception e) {
-            log.error("创建调色板文件失败: {}", e.getMessage());
-            throw new IOException("调色板创建失败", e);
+        // 验证调色板文件是否存在
+        if (!Files.exists(Paths.get(paletteFilePath))) {
+            log.error("调色板文件不存在: {}", paletteFilePath);
+            // 如果指定文件不存在，尝试使用默认的3color.png
+            String defaultPalette = paletteDir + File.separator + "3color.png";
+            if (Files.exists(Paths.get(defaultPalette))) {
+                log.warn("使用默认调色板文件: {}", defaultPalette);
+                return defaultPalette;
+            } else {
+                throw new RuntimeException("找不到任何可用的调色板文件，请确保color-palettes目录存在且包含调色板文件");
+            }
         }
+        
+        log.debug("选择调色板文件: {} (rgb模式: {})", paletteFilePath, rgbMode);
+        return paletteFilePath;
     }
     
     /**
      * 执行核心的ImageMagick图像处理命令
-     * 使用最优参数获得完美的电子墨水屏显示效果
+     * 完全按照原始Python标准实现，确保100%一致的效果
+     * 原始Python命令: convert input -resize WxH! -dither FloydSteinberg -define dither:diffusion-amount=85% -remap palette output
      */
     private boolean executeImageMagickCommand(String inputFile, String paletteFile, String outputFile, 
-                                            int targetWidth, int targetHeight, EInkColorMode colorMode) {
+                                            int targetWidth, int targetHeight) {
         try {
-            // 构建完美的ImageMagick处理命令
+            // 构建与Python完全一致的ImageMagick命令
+            // Python原始命令格式: convert {} -resize {}X{}! -dither FloydSteinberg -define dither:diffusion-amount={}% -remap {} {}
             StringBuilder command = new StringBuilder();
-            command.append("magick \"").append(inputFile).append("\"");
+            command.append("convert \"").append(inputFile).append("\"");
             
-            // 第一步：调整图像尺寸，使用高质量的Lanczos滤镜
-            command.append(" -resize ").append(targetWidth).append("x").append(targetHeight).append("!");
-            command.append(" -filter Lanczos");
+            // 步骤1: 精确调整尺寸（与Python完全一致）
+            command.append(" -resize ").append(targetWidth).append("X").append(targetHeight).append("!");
             
-            // 第二步：颜色空间转换和优化
-            command.append(" -colorspace sRGB");
-            
-            // 第三步：针对不同颜色模式的特殊优化
-            switch (colorMode) {
-                case BLACK_WHITE:
-                    // 黑白模式：增强对比度
-                    command.append(" -contrast-stretch 2%x1%");
-                    break;
-                case BLACK_WHITE_RED:
-                    // 三色模式：保护红色通道，增强对比度
-                    command.append(" -channel RGB -contrast-stretch 1%x1%");
-                    command.append(" -modulate 100,120,100"); // 轻微增加饱和度
-                    break;
-                case BLACK_WHITE_RED_YELLOW:
-                    // 四色模式：平衡处理
-                    command.append(" -contrast-stretch 1%x1%");
-                    command.append(" -modulate 100,110,100");
-                    break;
-                default:
-                    command.append(" -contrast-stretch 1%x1%");
-            }
-            
-            // 第四步：应用Floyd-Steinberg抖动算法到指定调色板
-            // 这是获得完美效果的关键步骤
+            // 步骤2: Floyd-Steinberg抖动算法（与Python完全一致）
             command.append(" -dither FloydSteinberg");
+            
+            // 步骤3: 抖动强度85%（与Python完全一致）
+            command.append(" -define dither:diffusion-amount=85%");
+            
+            // 步骤4: 颜色重映射到调色板（与Python完全一致）
             command.append(" -remap \"").append(paletteFile).append("\"");
             
-            // 第五步：最终优化和输出
-            command.append(" -quality 100");
-            command.append(" -depth 8");
+            // 步骤5: 输出文件（与Python完全一致）
             command.append(" \"").append(outputFile).append("\"");
             
-            log.info("执行ImageMagick命令: {}", command.toString());
+            log.info("执行标准ImageMagick命令（Python兼容）: {}", command.toString());
             
             // 执行命令
             executeCommand(command.toString());
@@ -304,14 +297,25 @@ public class ImageMagickProcessor {
     
     /**
      * 检查ImageMagick是否可用
+     * 首先尝试convert命令（与Python一致），如果失败则尝试magick命令
      */
     public boolean isImageMagickAvailable() {
+        // 首先尝试convert命令（与Python实现一致）
         try {
-            executeCommand("magick -version");
-            log.info("ImageMagick可用性检查通过");
+            executeCommand("convert -version");
+            log.info("ImageMagick可用性检查通过（convert命令）");
             return true;
         } catch (Exception e) {
-            log.warn("ImageMagick不可用: {}", e.getMessage());
+            log.debug("convert命令不可用，尝试magick命令: {}", e.getMessage());
+        }
+        
+        // 如果convert不可用，尝试magick命令
+        try {
+            executeCommand("magick -version");
+            log.info("ImageMagick可用性检查通过（magick命令）");
+            return true;
+        } catch (Exception e) {
+            log.warn("ImageMagick不可用（convert和magick命令都失败）: {}", e.getMessage());
             return false;
         }
     }
