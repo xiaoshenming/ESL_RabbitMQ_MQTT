@@ -551,9 +551,13 @@ public class MqttService {
                     JsonNode printElements = panel.get("printElements");
                     log.debug("找到printElements数组，元素数量: {}", printElements.size());
                     if (printElements.isArray()) {
-                        // 先计算原始画布尺寸
-                        double originalCanvasWidth = 0;
-                        double originalCanvasHeight = 0;
+                        // 计算原始画布尺寸 - 修复版本
+                        // 分析所有元素的边界，找到实际的设计区域
+                        double minLeft = Double.MAX_VALUE;
+                        double minTop = Double.MAX_VALUE;
+                        double maxRight = 0;
+                        double maxBottom = 0;
+                        
                         for (JsonNode elem : printElements) {
                             JsonNode opts = elem.get("options");
                             if (opts != null) {
@@ -561,15 +565,48 @@ public class MqttService {
                                 double t = opts.has("top") ? opts.get("top").asDouble() : 0;
                                 double w = opts.has("width") ? opts.get("width").asDouble() : 0;
                                 double h = opts.has("height") ? opts.get("height").asDouble() : 0;
-                                originalCanvasWidth = Math.max(originalCanvasWidth, l + w);
-                                originalCanvasHeight = Math.max(originalCanvasHeight, t + h);
+                                
+                                minLeft = Math.min(minLeft, l);
+                                minTop = Math.min(minTop, t);
+                                maxRight = Math.max(maxRight, l + w);
+                                maxBottom = Math.max(maxBottom, t + h);
                             }
                         }
-                        if (originalCanvasWidth == 0) originalCanvasWidth = width;
-                        if (originalCanvasHeight == 0) originalCanvasHeight = height;
-                        // 添加边距
-                        originalCanvasWidth += 10;
-                        originalCanvasHeight += 10;
+                        
+                        // 如果没有找到有效元素，使用目标画布尺寸
+                        if (minLeft == Double.MAX_VALUE) {
+                            minLeft = 0;
+                            minTop = 0;
+                            maxRight = width;
+                            maxBottom = height;
+                        }
+                        
+                        // 计算实际内容区域
+                        double contentWidth = maxRight - minLeft;
+                        double contentHeight = maxBottom - minTop;
+                        
+                        // 计算左右边距和上下边距
+                        double leftMargin = minLeft;
+                        double topMargin = minTop;
+                        
+                        // 根据内容分布计算合理的原始画布尺寸
+                        // 确保左右边距相等，上下边距相等，实现居中效果
+                        double rightMargin = leftMargin; // 右边距等于左边距
+                        double bottomMargin = topMargin; // 下边距等于上边距
+                        
+                        // 如果边距太小，设置最小边距
+                        double minMargin = Math.max(contentWidth, contentHeight) * 0.05; // 内容区域的5%作为最小边距
+                        leftMargin = Math.max(leftMargin, minMargin);
+                        rightMargin = Math.max(rightMargin, minMargin);
+                        topMargin = Math.max(topMargin, minMargin);
+                        bottomMargin = Math.max(bottomMargin, minMargin);
+                        
+                        // 计算原始画布尺寸
+                        double originalCanvasWidth = contentWidth + leftMargin + rightMargin;
+                        double originalCanvasHeight = contentHeight + topMargin + bottomMargin;
+                        
+                        log.debug("元素边界分析 - 最小坐标: ({}, {}), 最大坐标: ({}, {})", minLeft, minTop, maxRight, maxBottom);
+                        log.debug("内容区域: {}x{}, 边距: 左{} 右{} 上{} 下{}", contentWidth, contentHeight, leftMargin, rightMargin, topMargin, bottomMargin);
                         log.debug("计算原始画布尺寸: {}x{}", originalCanvasWidth, originalCanvasHeight);
                         // 现在转换元素
                         for (int i = 0; i < printElements.size(); i++) {
@@ -865,15 +902,25 @@ public class MqttService {
         
         // 使用传入的原始画布尺寸
         
-        // 计算缩放比例 - 保持宽高比
+        // 计算缩放比例 - 修复版本
         double scaleX = (double) canvasWidth / originalCanvasWidth;
-double scaleY = (double) canvasHeight / originalCanvasHeight;
+        double scaleY = (double) canvasHeight / originalCanvasHeight;
         
-        // 使用统一的缩放比例以保持元素比例
+        // 使用统一的缩放比例以保持元素比例，但要确保充分利用画布空间
         double scale = Math.min(scaleX, scaleY);
+        
+        // 计算缩放后的实际内容尺寸
+        double scaledContentWidth = originalCanvasWidth * scale;
+        double scaledContentHeight = originalCanvasHeight * scale;
+        
+        // 计算居中偏移量
+        double offsetX = (canvasWidth - scaledContentWidth) / 2.0;
+        double offsetY = (canvasHeight - scaledContentHeight) / 2.0;
         
         log.debug("坐标转换参数 - 原始画布: {}x{}, 目标画布: {}x{}, 缩放比例: {}", 
                  originalCanvasWidth, originalCanvasHeight, canvasWidth, canvasHeight, scale);
+        log.debug("居中偏移 - 缩放后内容尺寸: {}x{}, 偏移量: ({}, {})", 
+                 scaledContentWidth, scaledContentHeight, offsetX, offsetY);
         
         // 获取原始坐标和尺寸
         double leftPt = options.has("left") ? options.get("left").asDouble() : 0;
@@ -884,9 +931,9 @@ double scaleY = (double) canvasHeight / originalCanvasHeight;
         log.debug("原始坐标和尺寸 - left: {}, top: {}, width: {}, height: {}", 
                  leftPt, topPt, widthPt, heightPt);
         
-        // 应用缩放转换
-        int x = (int) Math.round(leftPt * scale);
-        int y = (int) Math.round(topPt * scale);
+        // 应用缩放转换和居中偏移
+        int x = (int) Math.round(leftPt * scale + offsetX);
+        int y = (int) Math.round(topPt * scale + offsetY);
         int width = (int) Math.round(widthPt * scale);
         int height = (int) Math.round(heightPt * scale);
         
