@@ -499,6 +499,9 @@ public class MqttService {
         // 根据TagType设置正确的hext值
         String hextValue = "06".equals(tagType) ? "6" : "0";
         
+        // 从CONTENT字段中提取颜色模式
+        String rgbMode = extractColorModeFromTemplate(template);
+        
         // 按字母顺序添加字段（Items字段除外，它需要在最后处理）
         // 默认尺寸，会被面板信息覆盖
         official.put("Name", templateName); // 使用从CONTENT中解析的模板名称
@@ -507,7 +510,7 @@ public class MqttService {
         official.put("Version", 10);
         official.put("height", "122");
         official.put("hext", hextValue);
-        official.put("rgb", "3");
+        official.put("rgb", rgbMode);
         official.put("wext", "0");
         official.put("width", "250");
         
@@ -634,7 +637,7 @@ public class MqttService {
         log.info("优化后Items数量: {}", items.size());
         
         // 为图片元素生成dval字段
-        String rgbMode = official.get("rgb").toString();
+        // 使用之前从模板中提取的rgbMode值
         for (Map<String, Object> item : items) {
             if ("pic".equals(item.get("Type"))) {
                 String dataDefault = (String) item.get("DataDefault");
@@ -847,6 +850,79 @@ public class MqttService {
         }
         
         return null;
+    }
+    
+    /**
+     * 从模板中提取颜色模式并返回对应的rgb值
+     */
+    @SuppressWarnings("unchecked")
+    private String extractColorModeFromTemplate(PrintTemplateDesignWithBLOBs template) {
+        // 首先尝试从CONTENT字段的panels[0].eslConfig.colorMode中提取
+        if (template.getContent() != null && !template.getContent().trim().isEmpty()) {
+            try {
+                Map<String, Object> contentData = objectMapper.readValue(template.getContent(), Map.class);
+                
+                // 检查panels[0].eslConfig.colorMode字段
+                if (contentData.containsKey("panels")) {
+                    Object panelsObj = contentData.get("panels");
+                    if (panelsObj instanceof List) {
+                        List<Map<String, Object>> panels = (List<Map<String, Object>>) panelsObj;
+                        if (!panels.isEmpty()) {
+                            Map<String, Object> firstPanel = panels.get(0);
+                            if (firstPanel.containsKey("eslConfig")) {
+                                Object eslConfigObj = firstPanel.get("eslConfig");
+                                if (eslConfigObj instanceof Map) {
+                                    Map<String, Object> eslConfig = (Map<String, Object>) eslConfigObj;
+                                    if (eslConfig.containsKey("colorMode")) {
+                                        Object colorModeObj = eslConfig.get("colorMode");
+                                        if (colorModeObj instanceof Map) {
+                                            Map<String, Object> colorMode = (Map<String, Object>) colorModeObj;
+                                            
+                                            // 统计启用的颜色数量
+                                            int colorCount = 0;
+                                            
+                                            // 检查各种颜色是否启用
+                                            if (colorMode.containsKey("black") && Boolean.TRUE.equals(colorMode.get("black"))) {
+                                                colorCount++;
+                                            }
+                                            if (colorMode.containsKey("white") && Boolean.TRUE.equals(colorMode.get("white"))) {
+                                                colorCount++;
+                                            }
+                                            if (colorMode.containsKey("red") && Boolean.TRUE.equals(colorMode.get("red"))) {
+                                                colorCount++;
+                                            }
+                                            if (colorMode.containsKey("yellow") && Boolean.TRUE.equals(colorMode.get("yellow"))) {
+                                                colorCount++;
+                                            }
+                                            
+                                            // 根据颜色数量返回对应的rgb值
+                                            String rgbValue;
+                                            if (colorCount >= 4) {
+                                                rgbValue = "4";
+                                            } else if (colorCount >= 3) {
+                                                rgbValue = "3";
+                                            } else if (colorCount >= 2) {
+                                                rgbValue = "2";
+                                            } else {
+                                                rgbValue = "3"; // 默认值
+                                            }
+                                            
+                                            log.info("从CONTENT.panels[0].eslConfig.colorMode字段提取颜色模式: 启用颜色数={}, rgb值={}", colorCount, rgbValue);
+                                            return rgbValue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析CONTENT字段中的颜色模式失败: {}", e.getMessage());
+            }
+        }
+        
+        log.info("未找到颜色模式配置，使用默认rgb值: 3");
+        return "3"; // 默认值为3色
     }
 
     /**
