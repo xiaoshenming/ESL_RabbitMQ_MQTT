@@ -7,6 +7,13 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.Base64;
+import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageChannel;
@@ -498,8 +505,8 @@ public class MqttService {
         
         log.info("模板转换开始 - 模板名称: {}, 屏幕类型: {}, TagType: {}", templateName, screenType, tagType);
         
-        // 根据TagType设置正确的hext值
-        String hextValue = "06".equals(tagType) ? "6" : "0";
+        // 🎯 根据TagType设置正确的hext值 - 修复2.13F问题
+        String hextValue = getHextValue(tagType);
         
         // 从CONTENT字段中提取颜色模式
         String rgbMode = extractColorModeFromTemplate(template);
@@ -661,7 +668,7 @@ public class MqttService {
         items = optimizeAndDeduplicateItems(items);
         log.info("优化后Items数量: {}", items.size());
         
-        // 为图片元素生成dval字段
+        // 🎯 为图片元素生成dval字段 - 针对2.13F优化
         // 使用之前从模板中提取的rgbMode值
         for (Map<String, Object> item : items) {
             if ("pic".equals(item.get("Type"))) {
@@ -669,9 +676,21 @@ public class MqttService {
                 if (dataDefault != null && !dataDefault.trim().isEmpty()) {
                     int width = (Integer) item.get("width");
                     int height = (Integer) item.get("height");
-                    String dval = generateDval(dataDefault, rgbMode, width, height);
-                    item.put("dval", dval);
-                    log.debug("为图片元素生成dval，尺寸: {}x{}, dval长度: {}", width, height, dval.length());
+                    
+                    // 针对2.13F模板，使用简化的图片处理
+                    if ("07".equals(tagType)) {
+                        String dval = generateSimplifiedDval(dataDefault, rgbMode, width, height);
+                        item.put("dval", dval);
+                        log.debug("为2.13F图片元素生成简化dval，尺寸: {}x{}, dval长度: {}", width, height, dval.length());
+                    } else {
+                        String dval = generateDval(dataDefault, rgbMode, width, height);
+                        item.put("dval", dval);
+                        log.debug("为图片元素生成标准dval，尺寸: {}x{}, dval长度: {}", width, height, dval.length());
+                    }
+                } else {
+                    // 如果没有图片数据，设置空的dval
+                    item.put("dval", "");
+                    log.debug("图片元素无数据，设置空dval");
                 }
             }
         }
@@ -1134,9 +1153,10 @@ public class MqttService {
             item.put("Bartype", barcodeType);
             item.put("Barformat", 0);
             
-            // 直接设置条形码高度，避免fixItemSize的最小高度限制
-            // 根据err.md分析，正确的Barheight应该是缩放后的实际高度
-            item.put("Barheight", (double) height);
+            // 🎯 修复条形码高度计算 - 基于成功案例的分析
+            // 条形码高度应该是元素高度的50%左右，以确保文本和条形码都能正确显示
+            double barcodeHeight = height * 0.5; // 使用元素高度的50%作为条形码高度
+            item.put("Barheight", barcodeHeight);
             
             // 使用模板中定义的条形码宽度，而不是硬编码
             item.put("Barwidth", width);
@@ -1276,30 +1296,38 @@ public class MqttService {
             item.put("BorderColor", options.get("borderColor").asText());
         }
         
-        // 边框样式处理
+        // 🎯 完美的边框样式处理 - 根据边框宽度动态转换
         int borderStyle = 0; // 默认无边框
         if (options.has("borderLeft") || options.has("borderTop") || 
             options.has("borderRight") || options.has("borderBottom")) {
             
             String borderType = "solid"; // 默认实线
+            double borderWidth = 0.75; // 默认边框宽度(pt)
+            
+            // 获取边框类型
             if (options.has("borderLeft")) {
                 borderType = options.get("borderLeft").asText();
             } else if (options.has("borderTop")) {
                 borderType = options.get("borderTop").asText();
             }
             
-            // 根据边框类型设置样式
-            switch (borderType) {
-                case "solid":
-                    borderStyle = 10; // 实线边框
-                    break;
-                case "dotted":
-                case "dashed":
-                    borderStyle = 1; // 虚线边框
-                    break;
-                default:
-                    borderStyle = 0;
+            // 🎯 智能获取边框宽度 - 支持多种字段名和格式
+            if (options.has("borderWidth")) {
+                borderWidth = parseBorderWidth(options.get("borderWidth"));
+            } else if (options.has("borderLeftWidth")) {
+                borderWidth = parseBorderWidth(options.get("borderLeftWidth"));
+            } else if (options.has("borderTopWidth")) {
+                borderWidth = parseBorderWidth(options.get("borderTopWidth"));
+            } else if (options.has("strokeWidth")) {
+                borderWidth = parseBorderWidth(options.get("strokeWidth"));
+            } else if (options.has("lineWidth")) {
+                borderWidth = parseBorderWidth(options.get("lineWidth"));
             }
+            
+            // 🎯 根据边框宽度映射到BorderStyle值
+            borderStyle = convertBorderWidthToStyle(borderWidth, borderType);
+            
+            log.debug("🖼️ 边框转换 - 类型: {}, 宽度: {}pt -> BorderStyle: {}", borderType, borderWidth, borderStyle);
         }
         
         if (borderStyle > 0) {
@@ -1531,6 +1559,174 @@ public class MqttService {
                 return "1E";
             default:
                 return "06";
+        }
+    }
+
+    /**
+     * 🎯 根据TagType获取正确的hext值 - 修复2.13F关键问题
+     * 基于成功案例的分析结果
+     */
+    private String getHextValue(String tagType) {
+        if (tagType == null) return "6";
+        
+        switch (tagType) {
+            case "06": // 2.13T
+                return "6";
+            case "07": // 2.13F - 关键修复！
+                return "6"; // 之前错误设置为"0"，现在修正为"6"
+            case "0B": // 2.66T
+                return "0";
+            case "0C": // 2.66F
+                return "0";
+            case "04": // 1.54T
+                return "0";
+            case "08": // 2.9T
+                return "0";
+            case "10": // 4.2T
+                return "0";
+            case "1C": // 4.20T
+                return "0";
+            case "1D": // 4.20F
+                return "0";
+            case "1E": // 7.5T
+                return "0";
+            default:
+                log.debug("未知TagType: {}, 使用默认hext值: 6", tagType);
+                return "6";
+        }
+    }
+
+    /**
+     * 🎯 智能边框宽度解析器 - 支持多种格式
+     * 能够解析数字、字符串、带单位的宽度值
+     */
+    private double parseBorderWidth(JsonNode borderWidthNode) {
+        if (borderWidthNode == null || borderWidthNode.isNull()) {
+            return 0.75; // 默认宽度
+        }
+        
+        try {
+            // 如果是数字类型，直接返回
+            if (borderWidthNode.isNumber()) {
+                return borderWidthNode.asDouble();
+            }
+            
+            // 如果是字符串类型，进行智能解析
+            String borderWidthStr = borderWidthNode.asText().trim();
+            if (borderWidthStr.isEmpty()) {
+                return 0.75;
+            }
+            
+            // 移除单位后缀（pt、px等）并解析数字
+            String numericPart = borderWidthStr.replaceAll("[a-zA-Z%]+$", "");
+            
+            // 解析数字
+            double width = Double.parseDouble(numericPart);
+            
+            // 如果原始字符串包含px单位，需要转换为pt（1px ≈ 0.75pt）
+            if (borderWidthStr.toLowerCase().contains("px")) {
+                width = width * 0.75; // px转pt
+                log.debug("🔄 边框宽度单位转换: {}px -> {}pt", width / 0.75, width);
+            }
+            
+            return width;
+            
+        } catch (Exception e) {
+            log.warn("⚠️ 解析边框宽度失败: {}, 使用默认值0.75pt", borderWidthNode.asText(), e);
+            return 0.75;
+        }
+    }
+
+    /**
+     * 🎯 完美的边框宽度转换系统 - 根据映射关系动态转换
+     * 实现pt宽度到BorderStyle值的精确映射
+     */
+    private int convertBorderWidthToStyle(double borderWidthPt, String borderType) {
+        // 如果是无边框类型，直接返回0
+        if ("none".equals(borderType) || "transparent".equals(borderType)) {
+            return 0;
+        }
+        
+        // 🎯 根据你提供的完美映射关系进行转换
+        // 0.75pt-1, 1.5pt-2, 2.25pt-3, 3pt-4, 3.75pt-5, 4.5pt-6, 5.25pt-7, 6pt-8, 6.75pt-9
+        if (borderWidthPt <= 0) {
+            return 0; // 无边框
+        } else if (borderWidthPt <= 0.75) {
+            return 1; // 0.75pt
+        } else if (borderWidthPt <= 1.5) {
+            return 2; // 1.5pt
+        } else if (borderWidthPt <= 2.25) {
+            return 3; // 2.25pt
+        } else if (borderWidthPt <= 3.0) {
+            return 4; // 3pt
+        } else if (borderWidthPt <= 3.75) {
+            return 5; // 3.75pt
+        } else if (borderWidthPt <= 4.5) {
+            return 6; // 4.5pt
+        } else if (borderWidthPt <= 5.25) {
+            return 7; // 5.25pt
+        } else if (borderWidthPt <= 6.0) {
+            return 8; // 6pt
+        } else if (borderWidthPt <= 6.75) {
+            return 9; // 6.75pt
+        } else {
+            // 超过6.75pt的边框，使用最大值9
+            log.debug("⚠️ 边框宽度{}pt超出映射范围，使用最大值9", borderWidthPt);
+            return 9;
+        }
+    }
+
+    /**
+     * 🎯 为2.13F生成简化的dval - 修复关键问题
+     * 基于成功案例的分析，2.13F需要更简洁的图片处理
+     */
+    private String generateSimplifiedDval(String base64Image, String rgbMode, int width, int height) {
+        if (base64Image == null || base64Image.trim().isEmpty()) {
+            log.debug("图片数据为空，返回简化的空dval");
+            return "";
+        }
+
+        try {
+            // 简化的图片处理，专门针对2.13F优化
+            log.debug("为2.13F生成简化dval - 尺寸: {}x{}, 颜色模式: {}", width, height, rgbMode);
+            
+            // 解析Base64数据
+            String imageData;
+            if (base64Image.contains(",")) {
+                String[] parts = base64Image.split(",", 2);
+                imageData = parts[1];
+            } else {
+                imageData = base64Image;
+            }
+            
+            // 解码Base64
+            byte[] imageBytes = Base64.getDecoder().decode(imageData);
+            
+            // 使用Java原生处理，生成简化的图像数据
+            BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            if (originalImage == null) {
+                log.warn("无法解析图片数据，返回空dval");
+                return "";
+            }
+            
+            // 简化处理：直接调整尺寸并转换为简单的黑白图像
+            BufferedImage resizedImage = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_BINARY);
+            Graphics2D g2d = resizedImage.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.drawImage(originalImage, 0, 0, width, height, null);
+            g2d.dispose();
+            
+            // 转换为Base64
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(resizedImage, "PNG", baos);
+            String result = Base64.getEncoder().encodeToString(baos.toByteArray());
+            
+            log.debug("2.13F简化dval生成成功，长度: {} 字符", result.length());
+            return result;
+            
+        } catch (Exception e) {
+            log.error("生成2.13F简化dval时出错: {}", e.getMessage(), e);
+            return "";
         }
     }
 
