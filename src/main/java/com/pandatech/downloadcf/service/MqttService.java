@@ -208,6 +208,8 @@ public class MqttService {
                 // 条形码宽度应该大于高度
                 width = Math.max(width, 60); // 最小宽度60像素
                 height = Math.max(height, 15); // 最小高度15像素
+                // 注意：不在这里设置Barheight，因为已经在convertPrintElementToItem中正确设置
+                // 避免覆盖已经计算好的缩放后高度值
             }
             
             item.put("width", width);
@@ -554,13 +556,14 @@ public class MqttService {
                     JsonNode printElements = panel.get("printElements");
                     log.debug("找到printElements数组，元素数量: {}", printElements.size());
                     if (printElements.isArray()) {
-                        // 计算原始画布尺寸 - 修复版本
-                        // 分析所有元素的边界，找到实际的设计区域
+                        // 🎯 智能动态尺寸调整算法 - 完美版本
+                        // 第一步：精确分析所有元素的边界
                         double minLeft = Double.MAX_VALUE;
                         double minTop = Double.MAX_VALUE;
-                        double maxRight = 0;
-                        double maxBottom = 0;
+                        double maxRight = Double.MIN_VALUE;
+                        double maxBottom = Double.MIN_VALUE;
                         
+                        // 收集所有有效元素的边界信息
                         for (JsonNode elem : printElements) {
                             JsonNode opts = elem.get("options");
                             if (opts != null) {
@@ -569,14 +572,17 @@ public class MqttService {
                                 double w = opts.has("width") ? opts.get("width").asDouble() : 0;
                                 double h = opts.has("height") ? opts.get("height").asDouble() : 0;
                                 
-                                minLeft = Math.min(minLeft, l);
-                                minTop = Math.min(minTop, t);
-                                maxRight = Math.max(maxRight, l + w);
-                                maxBottom = Math.max(maxBottom, t + h);
+                                // 只考虑有实际尺寸的元素
+                                if (w > 0 && h > 0) {
+                                    minLeft = Math.min(minLeft, l);
+                                    minTop = Math.min(minTop, t);
+                                    maxRight = Math.max(maxRight, l + w);
+                                    maxBottom = Math.max(maxBottom, t + h);
+                                }
                             }
                         }
                         
-                        // 如果没有找到有效元素，使用目标画布尺寸
+                        // 如果没有找到有效元素，使用默认值
                         if (minLeft == Double.MAX_VALUE) {
                             minLeft = 0;
                             minTop = 0;
@@ -584,38 +590,57 @@ public class MqttService {
                             maxBottom = height;
                         }
                         
-                        // 计算实际内容区域
+                        // 第二步：计算实际内容区域
                         double contentWidth = maxRight - minLeft;
                         double contentHeight = maxBottom - minTop;
                         
-                        // 计算左右边距和上下边距
-                        double leftMargin = minLeft;
-                        double topMargin = minTop;
+                        log.debug("📊 元素边界分析 - minLeft: {}, minTop: {}, maxRight: {}, maxBottom: {}", 
+                                 minLeft, minTop, maxRight, maxBottom);
+                        log.debug("📏 实际内容尺寸 - contentWidth: {}, contentHeight: {}", contentWidth, contentHeight);
+                        log.debug("🎨 目标画布尺寸 - targetWidth: {}, targetHeight: {}", width, height);
                         
-                        // 根据内容分布计算合理的原始画布尺寸
-                        // 确保左右边距相等，上下边距相等，实现居中效果
-                        double rightMargin = leftMargin; // 右边距等于左边距
-                        double bottomMargin = topMargin; // 下边距等于上边距
+                        // 第三步：智能确定原始设计画布尺寸和坐标偏移
+                        double originalCanvasWidth, originalCanvasHeight;
+                        double offsetX = 0, offsetY = 0;
                         
-                        // 如果边距太小，设置最小边距
-                        double minMargin = Math.max(contentWidth, contentHeight) * 0.05; // 内容区域的5%作为最小边距
-                        leftMargin = Math.max(leftMargin, minMargin);
-                        rightMargin = Math.max(rightMargin, minMargin);
-                        topMargin = Math.max(topMargin, minMargin);
-                        bottomMargin = Math.max(bottomMargin, minMargin);
+                        // 检查内容是否超出声明的画布尺寸（允许10%的容差）
+                        boolean contentExceedsCanvas = (maxRight > width * 1.1) || (maxBottom > height * 1.1);
                         
-                        // 计算原始画布尺寸
-                        double originalCanvasWidth = contentWidth + leftMargin + rightMargin;
-                        double originalCanvasHeight = contentHeight + topMargin + bottomMargin;
+                        if (contentExceedsCanvas) {
+                            // 🔥 情况1：内容超出画布 - 使用实际内容边界作为设计尺寸
+                            originalCanvasWidth = contentWidth;
+                            originalCanvasHeight = contentHeight;
+                            // 设置偏移量，将内容左上角对齐到原点
+                            offsetX = -minLeft;
+                            offsetY = -minTop;
+                            log.debug("🚀 检测到内容超出画布，使用实际内容尺寸作为原始画布");
+                            log.debug("🎯 设置坐标偏移 - offsetX: {}, offsetY: {}", offsetX, offsetY);
+                        } else {
+                            // ✨ 情况2：内容在画布内 - 使用声明的画布尺寸，保持原有布局
+                            originalCanvasWidth = width;
+                            originalCanvasHeight = height;
+                            offsetX = 0;
+                            offsetY = 0;
+                            log.debug("✅ 内容在画布范围内，使用声明的画布尺寸，保持原有布局");
+                        }
                         
-                        log.debug("元素边界分析 - 最小坐标: ({}, {}), 最大坐标: ({}, {})", minLeft, minTop, maxRight, maxBottom);
-                        log.debug("内容区域: {}x{}, 边距: 左{} 右{} 上{} 下{}", contentWidth, contentHeight, leftMargin, rightMargin, topMargin, bottomMargin);
-                        log.debug("计算原始画布尺寸: {}x{}", originalCanvasWidth, originalCanvasHeight);
+                        // 第四步：安全性检查，确保尺寸合理
+                        if (originalCanvasWidth < 50) {
+                            originalCanvasWidth = Math.max(contentWidth, 100);
+                            log.debug("⚠️ 原始画布宽度过小，调整为: {}", originalCanvasWidth);
+                        }
+                        if (originalCanvasHeight < 30) {
+                            originalCanvasHeight = Math.max(contentHeight, 60);
+                            log.debug("⚠️ 原始画布高度过小，调整为: {}", originalCanvasHeight);
+                        }
+                        
+                        log.debug("🎪 最终转换参数 - 原始画布: {}x{}, 目标画布: {}x{}, 坐标偏移: ({}, {})", 
+                                 originalCanvasWidth, originalCanvasHeight, width, height, offsetX, offsetY);
                         // 现在转换元素
                         for (int i = 0; i < printElements.size(); i++) {
                             JsonNode element = printElements.get(i);
                             log.debug("处理第{}个printElement: {}", i, element.toString());
-                            Map<String, Object> item = convertPrintElementToItem(element, template, originalCanvasWidth, originalCanvasHeight, width, height);
+                            Map<String, Object> item = convertPrintElementToItem(element, template, originalCanvasWidth, originalCanvasHeight, width, height, offsetX, offsetY);
                             if (item != null) {
                                 items.add(item);
                                 log.debug("成功转换第{}个printElement为Item", i);
@@ -926,9 +951,12 @@ public class MqttService {
     }
 
     /**
-     * 将printElement转换为官方格式的Item
+     * 🎯 将printElement转换为官方格式的Item - 完美版本
+     * 支持智能动态尺寸调整和坐标偏移
      */
-    private Map<String, Object> convertPrintElementToItem(JsonNode element, PrintTemplateDesignWithBLOBs template, double originalCanvasWidth, double originalCanvasHeight, int canvasWidth, int canvasHeight) {
+    private Map<String, Object> convertPrintElementToItem(JsonNode element, PrintTemplateDesignWithBLOBs template, 
+            double originalCanvasWidth, double originalCanvasHeight, int canvasWidth, int canvasHeight, 
+            double offsetX, double offsetY) {
         log.debug("开始转换printElement: {}", element.toString());
         
         // 检查element是否为空
@@ -969,104 +997,98 @@ public class MqttService {
             item.put("TextAlign", 0);
         }
         
-        log.debug("目标画布尺寸: {}x{}", canvasWidth, canvasHeight);
+        // 🎯 完美的动态坐标转换算法
+        log.debug("🎨 转换参数 - 原始画布: {}x{}, 目标画布: {}x{}, 坐标偏移: ({}, {})", 
+                 originalCanvasWidth, originalCanvasHeight, canvasWidth, canvasHeight, offsetX, offsetY);
         
-        // 分析原始设计画布尺寸
-        // 从数据库数据可以看出，原始设计使用的是更大的坐标系统
-        // 最大坐标约为: left=912, top=787.5, 加上元素尺寸后约为1032x813
-        // 但实际设计画布应该是基于某个标准尺寸的坐标系统
-        
-        // 使用传入的原始画布尺寸
-        
-        // 计算缩放比例 - 修复版本
+        // 第一步：计算缩放比例
         double scaleX = (double) canvasWidth / originalCanvasWidth;
         double scaleY = (double) canvasHeight / originalCanvasHeight;
         
-        // 使用统一的缩放比例以保持元素比例，但要确保充分利用画布空间
+        // 使用等比例缩放以保持元素比例，选择较小的缩放比例确保内容完全适应画布
         double scale = Math.min(scaleX, scaleY);
         
-        // 计算缩放后的实际内容尺寸
-        double scaledContentWidth = originalCanvasWidth * scale;
-        double scaledContentHeight = originalCanvasHeight * scale;
+        // 第二步：计算缩放后的画布尺寸和居中偏移
+        double scaledWidth = originalCanvasWidth * scale;
+        double scaledHeight = originalCanvasHeight * scale;
+        double centerOffsetX = (canvasWidth - scaledWidth) / 2.0;
+        double centerOffsetY = (canvasHeight - scaledHeight) / 2.0;
         
-        // 计算居中偏移量
-        double offsetX = (canvasWidth - scaledContentWidth) / 2.0;
-        double offsetY = (canvasHeight - scaledContentHeight) / 2.0;
+        log.debug("📐 缩放参数 - scaleX: {}, scaleY: {}, 最终scale: {}", scaleX, scaleY, scale);
+        log.debug("🎪 居中参数 - 缩放后尺寸: {}x{}, 居中偏移: ({}, {})", 
+                 scaledWidth, scaledHeight, centerOffsetX, centerOffsetY);
         
-        log.debug("坐标转换参数 - 原始画布: {}x{}, 目标画布: {}x{}, 缩放比例: {}", 
-                 originalCanvasWidth, originalCanvasHeight, canvasWidth, canvasHeight, scale);
-        log.debug("居中偏移 - 缩放后内容尺寸: {}x{}, 偏移量: ({}, {})", 
-                 scaledContentWidth, scaledContentHeight, offsetX, offsetY);
-        
-        // 获取原始坐标和尺寸
+        // 第三步：获取原始元素坐标和尺寸
         double leftPt = options.has("left") ? options.get("left").asDouble() : 0;
         double topPt = options.has("top") ? options.get("top").asDouble() : 0;
         double widthPt = options.has("width") ? options.get("width").asDouble() : 50;
         double heightPt = options.has("height") ? options.get("height").asDouble() : 20;
         
-        log.debug("原始坐标和尺寸 - left: {}, top: {}, width: {}, height: {}", 
+        log.debug("📍 原始元素 - left: {}, top: {}, width: {}, height: {}", 
                  leftPt, topPt, widthPt, heightPt);
         
-        // 应用缩放转换和居中偏移
-        int x = (int) Math.round(leftPt * scale + offsetX);
-        int y = (int) Math.round(topPt * scale + offsetY);
+        // 第四步：应用完整的坐标变换
+        // 变换顺序：1.坐标偏移 -> 2.缩放 -> 3.居中偏移
+        int x = (int) Math.round((leftPt + offsetX) * scale + centerOffsetX);
+        int y = (int) Math.round((topPt + offsetY) * scale + centerOffsetY);
         int width = (int) Math.round(widthPt * scale);
         int height = (int) Math.round(heightPt * scale);
         
-        // 智能边界处理 - 避免过度压缩
-        if (x < 0) {
-            log.warn("元素X坐标小于0，调整为0。原始值: {}", x);
-            x = 0;
-        }
-        if (y < 0) {
-            log.warn("元素Y坐标小于0，调整为0。原始值: {}", y);
-            y = 0;
+        // 🛡️ 智能边界处理 - 保持比例，避免过度压缩
+        log.debug("🔍 变换后坐标 - x: {}, y: {}, width: {}, height: {}", x, y, width, height);
+        
+        // 第五步：温和的边界调整，优先保持元素可读性
+        boolean needsAdjustment = false;
+        
+        // 检查是否需要调整
+        if (x < 0 || y < 0 || x + width > canvasWidth || y + height > canvasHeight) {
+            needsAdjustment = true;
+            log.debug("⚠️ 元素超出画布边界，需要调整");
         }
         
-        // 如果元素完全超出画布，进行适当调整而不是强制压缩
-        if (x >= canvasWidth) {
-            log.warn("元素X坐标超出画布宽度，调整到边界内。原始值: {}, 画布宽度: {}", x, canvasWidth);
-            x = Math.max(0, canvasWidth - width);
-        }
-        if (y >= canvasHeight) {
-            log.warn("元素Y坐标超出画布高度，调整到边界内。原始值: {}, 画布高度: {}", y, canvasHeight);
-            y = Math.max(0, canvasHeight - height);
-        }
-        
-        // 如果元素尺寸超出画布，按比例缩小而不是截断
-        if (x + width > canvasWidth) {
-            int availableWidth = canvasWidth - x;
-            if (availableWidth > 0) {
-                width = availableWidth;
-            } else {
-                // 如果没有可用空间，重新计算位置和尺寸
-                width = Math.min(width, canvasWidth);
-                x = Math.max(0, canvasWidth - width);
+        if (needsAdjustment) {
+            // 保守的边界调整策略
+            if (x < 0) {
+                log.debug("🔧 X坐标调整: {} -> 0", x);
+                x = 0;
             }
-            log.debug("调整元素宽度以适应画布。新宽度: {}, X坐标: {}", width, x);
-        }
-        
-        if (y + height > canvasHeight) {
-            int availableHeight = canvasHeight - y;
-            if (availableHeight > 0) {
-                height = availableHeight;
-            } else {
-                // 如果没有可用空间，重新计算位置和尺寸
-                height = Math.min(height, canvasHeight);
-                y = Math.max(0, canvasHeight - height);
+            if (y < 0) {
+                log.debug("🔧 Y坐标调整: {} -> 0", y);
+                y = 0;
             }
-            log.debug("调整元素高度以适应画布。新高度: {}, Y坐标: {}", height, y);
+            
+            // 智能尺寸调整 - 保持最小可读尺寸
+            int minWidth = Math.max(1, (int)(widthPt * scale * 0.3)); // 保持原尺寸的30%
+            int minHeight = Math.max(1, (int)(heightPt * scale * 0.3)); // 保持原尺寸的30%
+            
+            if (x + width > canvasWidth) {
+                int newWidth = canvasWidth - x;
+                width = Math.max(newWidth, minWidth);
+                if (width > newWidth) {
+                    // 如果最小宽度仍然超出，重新计算位置
+                    x = Math.max(0, canvasWidth - width);
+                }
+                log.debug("🔧 宽度调整: 新宽度={}, X坐标={}", width, x);
+            }
+            
+            if (y + height > canvasHeight) {
+                int newHeight = canvasHeight - y;
+                height = Math.max(newHeight, minHeight);
+                if (height > newHeight) {
+                    // 如果最小高度仍然超出，重新计算位置
+                    y = Math.max(0, canvasHeight - height);
+                }
+                log.debug("🔧 高度调整: 新高度={}, Y坐标={}", height, y);
+            }
         }
         
-        // 确保最小可见尺寸
-        if (width < 1) {
-            width = 1;
-            log.debug("元素宽度过小，设置为最小值1");
-        }
-        if (height < 1) {
-            height = 1;
-            log.debug("元素高度过小，设置为最小值1");
-        }
+        // 最终安全检查 - 确保元素在画布范围内
+        x = Math.max(0, Math.min(x, canvasWidth - 1));
+        y = Math.max(0, Math.min(y, canvasHeight - 1));
+        width = Math.max(1, Math.min(width, canvasWidth - x));
+        height = Math.max(1, Math.min(height, canvasHeight - y));
+        
+        log.debug("✅ 最终坐标 - x: {}, y: {}, width: {}, height: {}", x, y, width, height);
         
         // 检查是否为二维码或条形码（通过textType字段判断）
         String textType = null;
@@ -1112,15 +1134,15 @@ public class MqttService {
             item.put("Bartype", barcodeType);
             item.put("Barformat", 0);
             
-            // 修正条形码高度计算逻辑，使其更接近AP自动修复的结果
-            // 根据AP修复后的结果，条形码高度应该是5
-            int barcodeHeight = 5;
-            item.put("Barheight", barcodeHeight);
+            // 直接设置条形码高度，避免fixItemSize的最小高度限制
+            // 根据err.md分析，正确的Barheight应该是缩放后的实际高度
+            item.put("Barheight", (double) height);
             
-            item.put("Barwidth", 1);
+            // 使用模板中定义的条形码宽度，而不是硬编码
+            item.put("Barwidth", width);
             item.put("Showtext", 1);
             item.put("Fontinval", 1);
-            log.debug("识别为条形码元素，类型: {}, 高度: {}", barcodeType, barcodeHeight);
+            log.debug("识别为条形码元素，类型: {}, 高度: {}", barcodeType, height);
         } else if ("rect".equals(elementType) || "oval".equals(elementType)) {
             // 图形元素设置边框样式
             item.put("BorderStyle", 1); // 显示边框
@@ -1378,10 +1400,6 @@ public class MqttService {
         if (originalItem.containsKey("DecimalsStyle")) {
             orderedItem.put("DecimalsStyle", originalItem.get("DecimalsStyle"));
         }
-        // 添加图片元素的dval属性支持
-        if (originalItem.containsKey("dval")) {
-            orderedItem.put("dval", originalItem.get("dval"));
-        }
         // 只有非图片元素才添加文本相关属性
         if (!"pic".equals(originalItem.get("Type"))) {
             if (originalItem.containsKey("FontColor")) {
@@ -1431,6 +1449,11 @@ public class MqttService {
         orderedItem.put("width", width);
         orderedItem.put("x", x);
         orderedItem.put("y", y);
+        
+        // 添加图片元素的dval属性支持 - 放在最后以匹配成功版本的字段顺序
+        if (originalItem.containsKey("dval")) {
+            orderedItem.put("dval", originalItem.get("dval"));
+        }
         
         return orderedItem;
     }
@@ -1483,6 +1506,12 @@ public class MqttService {
             case "2.13t":
             case "2.13":
                 return "06";
+            case "2.13f":
+                return "07";
+            case "2.66t":
+                return "0B";
+            case "2.66f":
+                return "0C";
             case "1.54t":
             case "1.54":
                 return "04";

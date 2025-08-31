@@ -467,9 +467,21 @@ public class MessageProducerService {
             case "2.13":
                 result = "06";
                 break;
+            case "2.13f":
+                result = "07";
+                break;
+            case "2.66t":
+                result = "0B";
+                break;
+            case "2.66f":
+                result = "0C";
+                break;
             case "4.20t":
             case "4.20":
                 result = "1C";
+                break;
+            case "4.20f":
+                result = "1D";
                 break;
             case "2.90t":
             case "2.90":
