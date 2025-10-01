@@ -7,7 +7,6 @@ import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.entity.EslBrandFieldMapping;
 import com.pandatech.downloadcf.entity.PandaProductWithBLOBs;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -22,10 +21,13 @@ import java.util.Map;
  * 提供所有品牌适配器的通用功能和模板方法
  */
 @Slf4j
-@RequiredArgsConstructor
 public abstract class BaseBrandAdapter implements BrandAdapter {
     
     protected final ObjectMapper objectMapper;
+    
+    public BaseBrandAdapter(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
     
     @Override
     public BrandOutputData transform(EslCompleteData completeData) {
