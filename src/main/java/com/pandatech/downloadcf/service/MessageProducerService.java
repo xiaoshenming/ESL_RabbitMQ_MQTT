@@ -101,7 +101,12 @@ public class MessageProducerService {
         
         // 根据执行器类型构建不同的载荷和目标地址
         if ("mqtt".equals(executorType)) {
-            executionData.setDestination(buildMqttTopic(outputData.getStoreCode()));
+            // 根据品牌选择不同的MQTT主题格式
+            if ("YALIANG001".equals(outputData.getBrandCode())) {
+                executionData.setDestination(buildYaliangMqttTopic(outputData.getStoreCode()));
+            } else {
+                executionData.setDestination(buildMqttTopic(outputData.getStoreCode()));
+            }
             executionData.setPayload(buildMqttPayload(outputData));
         } else if ("http".equals(executorType)) {
             executionData.setDestination(buildHttpUrl(outputData.getStoreCode()));
@@ -119,17 +124,87 @@ public class MessageProducerService {
     }
     
     /**
-     * 构建MQTT主题 - 按照标准格式
+     * 构建MQTT主题 - 按照品牌特定格式
      */
     private String buildMqttTopic(String storeCode) {
         return String.format("esl/server/data/%s", storeCode);
     }
     
     /**
-     * 构建MQTT载荷 - 严格按照PANDA标准格式（公共方法）
+     * 为YALIANG品牌构建特定的MQTT主题
+     */
+    private String buildYaliangMqttTopic(String storeCode) {
+        // YALIANG品牌使用特定的MQTT主题格式
+        return String.format("yl-esl/%s/refresh/queue", storeCode);
+    }
+    
+    /**
+     * 构建MQTT载荷 - 根据品牌选择不同格式
      */
     public Object buildMqttPayload(BrandOutputData outputData) {
-        log.info("开始构建MQTT载荷，ESL ID: {}, 门店代码: {}", 
+        log.info("开始构建MQTT载荷，品牌: {}, ESL ID: {}, 门店代码: {}", 
+                outputData.getBrandCode(), outputData.getEslId(), outputData.getStoreCode());
+        
+        // 根据品牌选择不同的载荷格式
+        if ("YALIANG001".equals(outputData.getBrandCode())) {
+            return buildYaliangMqttPayload(outputData);
+        } else {
+            return buildPandaMqttPayload(outputData);
+        }
+    }
+    
+    /**
+     * 构建雅量品牌MQTT载荷
+     */
+    private Object buildYaliangMqttPayload(BrandOutputData outputData) {
+        log.info("构建雅量品牌MQTT载荷，ESL ID: {}", outputData.getEslId());
+        
+        Map<String, Object> payload = new LinkedHashMap<>();
+        
+        // 解析雅量ESL ID格式：CG101F6D-00125414A7B9B046
+        String actualEslId = outputData.getActualEslId();
+        String[] parts = actualEslId.split("-");
+        if (parts.length != 2) {
+            log.error("雅量ESL ID格式错误: {}", actualEslId);
+            throw new RuntimeException("雅量ESL ID格式错误: " + actualEslId);
+        }
+        
+        String deviceCode = parts[0];
+        String deviceMac = parts[1];
+        
+        // 构建雅量格式的消息
+        payload.put("queueId", generateYaliangQueueId());
+        payload.put("deviceType", 1);
+        payload.put("deviceCode", deviceCode);
+        payload.put("deviceMac", deviceMac);
+        payload.put("deviceVersion", "4.0.0");
+        payload.put("refreshAction", 3);
+        payload.put("refreshArea", 1);
+        
+        // 构建content数组
+        List<Map<String, Object>> contentList = new ArrayList<>();
+        Map<String, Object> contentItem = new HashMap<>();
+        contentItem.put("dataType", 3);
+        
+        // 从EXT_JSON中提取templateBase64
+        String templateBase64 = extractTemplateBase64FromOutputData(outputData);
+        contentItem.put("dataRef", templateBase64 != null ? templateBase64 : "iVxxxYII=");
+        contentItem.put("layerEnd", true);
+        contentList.add(contentItem);
+        
+        payload.put("content", contentList);
+        
+        log.info("雅量MQTT载荷构建完成: queueId={}, deviceCode={}, deviceMac={}", 
+                payload.get("queueId"), deviceCode, deviceMac);
+        
+        return payload;
+    }
+    
+    /**
+     * 构建PANDA标准MQTT载荷
+     */
+    private Object buildPandaMqttPayload(BrandOutputData outputData) {
+        log.info("构建PANDA标准MQTT载荷，ESL ID: {}, 门店代码: {}", 
                 outputData.getEslId(), outputData.getStoreCode());
         
         Map<String, Object> payload = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
@@ -147,9 +222,73 @@ public class MessageProducerService {
         payload.put("timestamp", timestamp); // 使用完整时间戳
         payload.put("shop", outputData.getStoreCode());
         
-        log.info("MQTT载荷构建完成，载荷大小: {} 字段，消息ID: {}, 时间戳: {}", 
+        log.info("PANDA MQTT载荷构建完成，载荷大小: {} 字段，消息ID: {}, 时间戳: {}", 
                 payload.size(), messageId, timestamp);
         return payload;
+    }
+    
+    /**
+     * 生成雅量品牌的queueId
+     */
+    private int generateYaliangQueueId() {
+        // 使用当前时间戳的后4位作为queueId，确保唯一性
+        return (int) (System.currentTimeMillis() % 10000);
+    }
+    
+    /**
+     * 从BrandOutputData中提取templateBase64
+     */
+    private String extractTemplateBase64FromOutputData(BrandOutputData outputData) {
+        try {
+            // 尝试从ESL数据中获取模板信息
+            String eslId = outputData.getEslId();
+            PrintTemplateDesignWithBLOBs template = dataService.getTemplateByEslId(eslId);
+            
+            if (template != null && template.getExtJson() != null) {
+                String extJson = template.getExtJson();
+                return extractTemplateBase64FromExtJson(extJson);
+            }
+            
+            log.warn("无法从ESL数据中获取templateBase64: eslId={}", eslId);
+            return null;
+        } catch (Exception e) {
+            log.error("提取templateBase64失败", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 从EXT_JSON中提取templateBase64字段
+     */
+    private String extractTemplateBase64FromExtJson(String extJson) {
+        if (extJson == null || extJson.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(extJson);
+            
+            // 查找templateBase64字段
+            JsonNode templateBase64Node = rootNode.get("templateBase64");
+            if (templateBase64Node != null && !templateBase64Node.isNull()) {
+                String templateBase64 = templateBase64Node.asText();
+                // 如果是data:image格式，提取base64部分
+                if (templateBase64.startsWith("data:image/")) {
+                    int commaIndex = templateBase64.indexOf(",");
+                    if (commaIndex > 0 && commaIndex < templateBase64.length() - 1) {
+                        return templateBase64.substring(commaIndex + 1);
+                    }
+                }
+                return templateBase64;
+            }
+            
+            log.warn("EXT_JSON中未找到templateBase64字段");
+            return null;
+        } catch (Exception e) {
+            log.error("解析EXT_JSON失败", e);
+            return null;
+        }
     }
     
     /**
@@ -183,9 +322,9 @@ public class MessageProducerService {
     }
     
     /**
-     * 将十六进制ESL ID转换为十进制 - 严格按照标准格式要求
-     * 例如：06000000195A → 6597069773146
-     * 参考原始代码的convertHexEslIdToLong方法实现
+     * 将ESL ID转换为十进制 - 支持多种格式
+     * 攀攀格式：06000000195A → 6597069773146
+     * 雅量格式：CG101F6D-00125414A7B9B046 → 使用MAC部分进行转换
      */
     private long convertEslIdToDecimal(String eslId) {
         if (eslId == null || eslId.trim().isEmpty()) {
@@ -193,9 +332,54 @@ public class MessageProducerService {
             return 0L;
         }
         
+        String cleanEslId = eslId.trim().toUpperCase();
+        
+        // 检查是否为雅量格式 (包含连字符的code-mac格式)
+        if (cleanEslId.contains("-")) {
+            return convertYaliangEslIdToDecimal(cleanEslId);
+        }
+        
+        // 处理攀攀标准十六进制格式
+        return convertPandaEslIdToDecimal(cleanEslId);
+    }
+    
+    /**
+     * 转换雅量ESL ID格式 (CG101F6D-00125414A7B9B046)
+     * 使用MAC地址部分进行转换，不进行十六进制转换，保持原始格式
+     */
+    private long convertYaliangEslIdToDecimal(String yaliangEslId) {
+        try {
+            // 雅量格式：CG101F6D-00125414A7B9B046
+            // 分割为 code 和 mac 两部分
+            String[] parts = yaliangEslId.split("-");
+            if (parts.length == 2) {
+                String code = parts[0]; // CG101F6D
+                String mac = parts[1];  // 00125414A7B9B046
+                
+                log.info("雅量ESL ID解析: 原始={}, 代码={}, MAC={}", yaliangEslId, code, mac);
+                
+                // 对于雅量，我们使用MAC地址的hashCode作为tag值
+                // 这样可以确保每个设备有唯一的标识，同时避免十六进制转换问题
+                long result = Math.abs(mac.hashCode());
+                log.info("雅量ESL ID转换完成: {} -> {}", yaliangEslId, result);
+                return result;
+            } else {
+                log.warn("雅量ESL ID格式不正确，期望格式: CODE-MAC，实际: {}", yaliangEslId);
+                return Math.abs(yaliangEslId.hashCode());
+            }
+        } catch (Exception e) {
+            log.error("雅量ESL ID转换失败: {}", yaliangEslId, e);
+            return Math.abs(yaliangEslId.hashCode());
+        }
+    }
+    
+    /**
+     * 转换攀攀ESL ID格式 (标准十六进制)
+     */
+    private long convertPandaEslIdToDecimal(String pandaEslId) {
         try {
             // 移除可能的前缀和空格
-            String cleanHexId = eslId.trim().toUpperCase();
+            String cleanHexId = pandaEslId;
             
             // 如果包含0x前缀，移除它
             if (cleanHexId.startsWith("0X")) {
@@ -204,14 +388,14 @@ public class MessageProducerService {
             
             // 将十六进制字符串转换为Long
             Long result = Long.parseUnsignedLong(cleanHexId, 16);
-            log.debug("ESL ID转换成功: {} -> {}", eslId, result);
+            log.debug("攀攀ESL ID转换成功: {} -> {}", pandaEslId, result);
             return result;
             
         } catch (NumberFormatException e) {
-            log.error("ESL ID转换失败，无效的十六进制格式: {}", eslId, e);
+            log.error("攀攀ESL ID转换失败，无效的十六进制格式: {}", pandaEslId, e);
             // 如果转换失败，尝试提取数字部分
             try {
-                String numericPart = eslId.replaceAll("[^0-9A-Fa-f]", "");
+                String numericPart = pandaEslId.replaceAll("[^0-9A-Fa-f]", "");
                 if (!numericPart.isEmpty()) {
                     Long result = Long.parseUnsignedLong(numericPart, 16);
                     log.warn("使用提取的数字部分进行转换: {} -> {}", numericPart, result);
@@ -222,8 +406,8 @@ public class MessageProducerService {
             }
             
             // 最后的备用方案：返回hashCode的绝对值
-            long fallback = Math.abs(eslId.hashCode());
-            log.warn("使用hashCode作为备用方案: {} -> {}", eslId, fallback);
+            long fallback = Math.abs(pandaEslId.hashCode());
+            log.warn("使用hashCode作为备用方案: {} -> {}", pandaEslId, fallback);
             return fallback;
         }
     }

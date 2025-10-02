@@ -3,6 +3,7 @@ package com.pandatech.downloadcf.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.adapter.BrandAdapter;
 import com.pandatech.downloadcf.brands.BrandAdapterFactory;
+import com.pandatech.downloadcf.brands.BaseBrandAdapter;
 import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
@@ -214,33 +215,53 @@ public class EslRefreshService {
     
     /**
      * 发送消息到RabbitMQ刷新队列
+     * 注意：YALIANG品牌直接发送MQTT消息，不通过RabbitMQ队列，避免重复发送
      */
     private boolean sendToRefreshQueue(BrandOutputData outputData) {
         try {
-            // 构建MQTT消息载荷
-            Object mqttPayload = messageProducerService.buildMqttPayload(outputData);
+            // 根据品牌确定MQTT主题和载荷
+            String mqttTopic;
+            Object mqttPayload;
             
-            // 构建队列消息
-            Map<String, Object> queueMessage = new HashMap<>();
-            queueMessage.put("messageType", "refresh");
-            queueMessage.put("brandCode", outputData.getBrandCode());
-            queueMessage.put("eslId", outputData.getEslId());
-            queueMessage.put("storeCode", outputData.getStoreCode());
-            queueMessage.put("mqttTopic", "esl/server/data/" + outputData.getStoreCode());
-            queueMessage.put("mqttPayload", mqttPayload);
-            queueMessage.put("timestamp", System.currentTimeMillis());
-            queueMessage.put("priority", 1); // 刷新消息优先级为1
-            
-            // 发送到刷新队列
-            String jsonMessage = objectMapper.writeValueAsString(queueMessage);
-            rabbitTemplate.convertAndSend("refresh.queue", jsonMessage);
-            
-            log.info("价签刷新消息已发送到RabbitMQ队列: eslId={}, storeCode={}", 
-                    outputData.getEslId(), outputData.getStoreCode());
-            return true;
+            if ("YALIANG001".equals(outputData.getBrandCode())) {
+                // 雅量品牌直接发送MQTT消息，不通过RabbitMQ队列
+                // 使用MessageProducerService的sendMessage方法，它会自动处理MQTT发送
+                boolean success = messageProducerService.sendMessage(outputData);
+                
+                if (success) {
+                    log.info("YALIANG品牌MQTT消息直接发送成功: eslId={}", outputData.getEslId());
+                } else {
+                    log.error("YALIANG品牌MQTT消息直接发送失败: eslId={}", outputData.getEslId());
+                }
+                
+                return success;
+            } else {
+                // 其他品牌使用原有格式，通过RabbitMQ队列
+                mqttTopic = "esl/server/data/" + outputData.getStoreCode();
+                mqttPayload = messageProducerService.buildMqttPayload(outputData);
+                
+                // 构建队列消息
+                Map<String, Object> queueMessage = new HashMap<>();
+                queueMessage.put("messageType", "refresh");
+                queueMessage.put("brandCode", outputData.getBrandCode());
+                queueMessage.put("eslId", outputData.getEslId());
+                queueMessage.put("storeCode", outputData.getStoreCode());
+                queueMessage.put("mqttTopic", mqttTopic);
+                queueMessage.put("mqttPayload", mqttPayload);
+                queueMessage.put("timestamp", System.currentTimeMillis());
+                queueMessage.put("priority", 1); // 刷新消息优先级为1
+                
+                // 发送到刷新队列
+                String jsonMessage = objectMapper.writeValueAsString(queueMessage);
+                rabbitTemplate.convertAndSend("refresh.queue", jsonMessage);
+                
+                log.info("价签刷新消息已发送到RabbitMQ队列: eslId={}, storeCode={}, mqttTopic={}", 
+                        outputData.getEslId(), outputData.getStoreCode(), mqttTopic);
+                return true;
+            }
             
         } catch (Exception e) {
-            log.error("发送消息到RabbitMQ队列失败: eslId={}, 错误: {}", 
+            log.error("发送消息失败: eslId={}, 错误: {}", 
                     outputData.getEslId(), e.getMessage(), e);
             return false;
         }

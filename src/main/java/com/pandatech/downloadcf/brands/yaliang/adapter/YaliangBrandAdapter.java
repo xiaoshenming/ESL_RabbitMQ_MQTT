@@ -2,6 +2,7 @@ package com.pandatech.downloadcf.brands.yaliang.adapter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.brands.BaseBrandAdapter;
+import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.entity.PandaProductWithBLOBs;
 import com.pandatech.downloadcf.brands.yaliang.config.YaliangBrandConfig;
@@ -9,6 +10,7 @@ import com.pandatech.downloadcf.brands.yaliang.dto.YaliangRefreshMessage;
 import com.pandatech.downloadcf.brands.yaliang.dto.YaliangRefreshRequest;
 import com.pandatech.downloadcf.brands.yaliang.exception.YaliangException;
 import com.pandatech.downloadcf.brands.yaliang.util.YaliangImageProcessor;
+import com.pandatech.downloadcf.service.DataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,9 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
     
     @Autowired
     private YaliangImageProcessor imageProcessor;
+    
+    @Autowired
+    private DataService dataService;
     
     public YaliangBrandAdapter(ObjectMapper objectMapper) {
         super(objectMapper);
@@ -223,60 +228,303 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
         return value.toString().trim();
     }
     
+    @Override
+    public BrandOutputData transform(EslCompleteData completeData) {
+        log.info("开始转换雅量品牌数据: ESL_ID={}", completeData.getEsl().getEslId());
+        
+        try {
+            // 调用父类的基础转换逻辑
+            BrandOutputData outputData = super.transform(completeData);
+            
+            // 解析雅量ESL ID格式 (CG101F6D-00125414A7B9B046)
+            YaliangEslIdInfo eslIdInfo = parseYaliangEslId(completeData.getEsl().getEslId());
+            
+            // 处理模板EXT_JSON中的templateBase64
+            String templateBase64 = extractTemplateBase64FromExtJson(
+                completeData.getTemplate() != null ? completeData.getTemplate().getExtJson() : null);
+            
+            // 创建雅量专用的MQTT消息
+            Map<String, Object> yaliangMessage = createYaliangMqttMessage(eslIdInfo, templateBase64);
+            
+            // 添加雅量特有的数据到dataMap
+            Map<String, Object> dataMap = outputData.getDataMap();
+            if (dataMap == null) {
+                dataMap = new HashMap<>();
+                outputData.setDataMap(dataMap);
+            }
+            
+            dataMap.put("mqttTopic", getMqttTopic(eslIdInfo.getDeviceCode()));
+            dataMap.put("mqttPayload", yaliangMessage);
+            dataMap.put("deviceCode", eslIdInfo.getDeviceCode());
+            dataMap.put("deviceMac", eslIdInfo.getDeviceMac());
+            
+            log.info("雅量品牌数据转换完成: topic={}, deviceCode={}, deviceMac={}", 
+                    dataMap.get("mqttTopic"), eslIdInfo.getDeviceCode(), eslIdInfo.getDeviceMac());
+            
+            return outputData;
+            
+        } catch (Exception e) {
+            log.error("雅量品牌数据转换失败: ESL_ID={}", completeData.getEsl().getEslId(), e);
+            throw new YaliangException(YaliangException.ErrorCodes.DATA_TRANSFORMATION_ERROR, 
+                "数据转换失败: " + e.getMessage(), e);
+        }
+    }
+    
     /**
-     * 创建雅量刷新消息
-     *
-     * @param request 刷新请求
-     * @return 雅量刷新消息
+     * 解析雅量ESL ID格式
+     * 格式: CG101F6D-5414A7B9B046 (code-mac，MAC地址需要补充前缀00)
      */
-    public YaliangRefreshMessage createRefreshMessage(YaliangRefreshRequest request) {
-        log.info("创建雅量刷新消息: deviceCode={}, deviceMac={}", request.getDeviceCode(), request.getDeviceMac());
+    private YaliangEslIdInfo parseYaliangEslId(String eslId) {
+        if (eslId == null || eslId.trim().isEmpty()) {
+            throw new YaliangException(YaliangException.ErrorCodes.INVALID_ESL_ID, "ESL ID不能为空");
+        }
         
-        // 验证请求参数
-        validateRefreshRequest(request);
+        String cleanEslId = eslId.trim().toUpperCase();
         
-        // 获取设备规格
-        YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpec(request.getDeviceSize());
+        // 检查是否包含连字符
+        if (!cleanEslId.contains("-")) {
+            throw new YaliangException(YaliangException.ErrorCodes.INVALID_ESL_ID, 
+                "雅量ESL ID格式错误，期望格式: CODE-MAC，实际: " + eslId);
+        }
         
-        // 处理图片
-        String processedImageBase64 = imageProcessor.processImage(request.getImageBase64(), deviceSpec, config);
+        String[] parts = cleanEslId.split("-");
+        if (parts.length != 2) {
+            throw new YaliangException(YaliangException.ErrorCodes.INVALID_ESL_ID, 
+                "雅量ESL ID格式错误，期望格式: CODE-MAC，实际: " + eslId);
+        }
         
-        // 构建刷新消息
-        YaliangRefreshMessage message = new YaliangRefreshMessage();
-        message.setQueueId(request.getQueueId() != null ? request.getQueueId() : generateQueueId());
-        message.setDeviceType(request.getDeviceType() != null ? request.getDeviceType() : config.getDefaultDeviceType());
-        message.setDeviceCode(request.getDeviceCode());
-        message.setDeviceMac(request.getDeviceMac());
-        message.setDeviceVersion(request.getDeviceVersion() != null ? request.getDeviceVersion() : "4.0.0");
-        message.setRefreshAction(request.getRefreshAction() != null ? request.getRefreshAction() : config.getDefaultRefreshAction());
-        message.setRefreshArea(request.getRefreshArea() != null ? request.getRefreshArea() : config.getDefaultRefreshArea());
+        String deviceCode = parts[0]; // CG101F6D
+        String rawMac = parts[1];     // 5414A7B9B046
         
-        // 构建内容列表
-        List<YaliangRefreshMessage.ContentItem> contentList = new ArrayList<>();
-        YaliangRefreshMessage.ContentItem contentItem = new YaliangRefreshMessage.ContentItem();
-        contentItem.setDataType(config.getDataFormat().getImageDataType());
-        contentItem.setDataRef(processedImageBase64);
-        contentItem.setLayerEnd(config.getDataFormat().isLayerEnd());
+        // MAC地址需要补充前缀"00"，确保格式为16位
+        String deviceMac = rawMac;
+        if (rawMac.length() == 12) {
+            deviceMac = "00" + rawMac; // 补充前缀00，变为00125414A7B9B046
+        } else if (rawMac.length() != 14) {
+            log.warn("MAC地址长度异常: {}, 长度: {}", rawMac, rawMac.length());
+        }
+        
+        // 验证格式
+        if (deviceCode.isEmpty() || deviceMac.isEmpty()) {
+            throw new YaliangException(YaliangException.ErrorCodes.INVALID_ESL_ID, 
+                "雅量ESL ID的code或mac部分不能为空: " + eslId);
+        }
+        
+        log.info("雅量ESL ID解析成功: 原始={}, 设备代码={}, 原始MAC={}, 处理后MAC={}", 
+                eslId, deviceCode, rawMac, deviceMac);
+        
+        return new YaliangEslIdInfo(deviceCode, deviceMac);
+    }
+    
+    /**
+     * 从EXT_JSON中提取templateBase64
+     */
+    private String extractTemplateBase64FromExtJson(String extJson) {
+        // 添加详细的日志输出来调试EXT_JSON内容
+        log.info("=== EXT_JSON调试信息开始 ===");
+        log.info("EXT_JSON是否为null: {}", extJson == null);
+        if (extJson != null) {
+            log.info("EXT_JSON长度: {}", extJson.length());
+            log.info("EXT_JSON前200字符: {}", extJson.length() > 200 ? extJson.substring(0, 200) + "..." : extJson);
+            log.info("EXT_JSON是否为空字符串: {}", extJson.trim().isEmpty());
+        }
+        log.info("=== EXT_JSON调试信息结束 ===");
+        
+        if (extJson == null || extJson.trim().isEmpty()) {
+            log.warn("EXT_JSON为空，无法提取templateBase64");
+            return generateDefaultImageBase64();
+        }
+        
+        try {
+            Map<String, Object> extData = objectMapper.readValue(extJson, Map.class);
+            log.info("EXT_JSON解析成功，包含的键: {}", extData.keySet());
+            
+            String templateBase64 = (String) extData.get("templateBase64");
+            log.info("templateBase64字段是否存在: {}", extData.containsKey("templateBase64"));
+            log.info("templateBase64字段值是否为null: {}", templateBase64 == null);
+            
+            if (templateBase64 != null) {
+                log.info("templateBase64原始长度: {}", templateBase64.length());
+                log.info("templateBase64前100字符: {}", templateBase64.length() > 100 ? templateBase64.substring(0, 100) + "..." : templateBase64);
+            }
+            
+            if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+                // 移除data:image/png;base64,前缀（如果存在）
+                if (templateBase64.startsWith("data:image/")) {
+                    int commaIndex = templateBase64.indexOf(",");
+                    if (commaIndex > 0) {
+                        log.info("检测到data:image前缀，移除前缀，原长度: {}, 前缀长度: {}", templateBase64.length(), commaIndex + 1);
+                        templateBase64 = templateBase64.substring(commaIndex + 1);
+                        log.info("移除前缀后长度: {}", templateBase64.length());
+                    }
+                }
+                
+                log.info("从EXT_JSON中成功提取templateBase64，最终大小: {}KB", templateBase64.length() / 1024.0);
+                return templateBase64;
+            } else {
+                log.warn("EXT_JSON中未找到templateBase64字段或字段为空，使用默认图片");
+                return generateDefaultImageBase64();
+            }
+            
+        } catch (Exception e) {
+            log.error("解析EXT_JSON失败: {}", e.getMessage(), e);
+            log.error("EXT_JSON内容: {}", extJson);
+            return generateDefaultImageBase64();
+        }
+    }
+    
+    /**
+     * 生成默认的Base64图片数据
+     * 这是一个简单的1x1像素透明PNG图片
+     */
+    private String generateDefaultImageBase64() {
+        // 这是一个1x1像素的透明PNG图片的Base64编码
+        String defaultBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77yQAAAABJRU5ErkJggg==";
+        log.info("使用默认图片Base64数据，大小: {}KB", defaultBase64.length() / 1024);
+        return defaultBase64;
+    }
+    
+    /**
+     * 创建雅量专用的MQTT消息
+     */
+    private Map<String, Object> createYaliangMqttMessage(YaliangEslIdInfo eslIdInfo, String templateBase64) {
+        Map<String, Object> message = new HashMap<>();
+        
+        // 基本信息
+        message.put("queueId", generateQueueId());
+        message.put("deviceType", config.getDefaultDeviceType());
+        message.put("deviceCode", eslIdInfo.getDeviceCode());
+        message.put("deviceMac", eslIdInfo.getDeviceMac());
+        message.put("deviceVersion", "4.0.0");
+        message.put("refreshAction", config.getDefaultRefreshAction());
+        message.put("refreshArea", config.getDefaultRefreshArea());
+        
+        // 内容列表
+        List<Map<String, Object>> contentList = new ArrayList<>();
+        Map<String, Object> contentItem = new HashMap<>();
+        contentItem.put("dataType", config.getDataFormat().getImageDataType());
+        contentItem.put("dataRef", templateBase64 != null ? templateBase64 : "");
+        contentItem.put("layerEnd", config.getDataFormat().isLayerEnd());
         contentList.add(contentItem);
         
-        message.setContent(contentList);
+        message.put("content", contentList);
         
-        log.info("雅量刷新消息创建完成: queueId={}, 图片大小={}KB", 
-                message.getQueueId(), processedImageBase64.length() / 1024);
+        log.info("雅量MQTT消息创建完成: queueId={}, deviceCode={}, deviceMac={}, 图片大小={}KB", 
+                message.get("queueId"), eslIdInfo.getDeviceCode(), eslIdInfo.getDeviceMac(), 
+                templateBase64 != null ? templateBase64.length() / 1024 : 0);
         
         return message;
     }
     
     /**
      * 获取MQTT主题
-     *
-     * @param deviceCode 设备编码
-     * @return MQTT主题
+     * 格式: yl-esl/XD010012/refresh/queue
+     * 注意：这里使用固定的XD010012作为主题中间部分，而不是deviceCode
      */
     public String getMqttTopic(String deviceCode) {
-        return config.getMqttTopicPrefix() + "/" + deviceCode + "/refresh/queue";
+        return config.getMqttTopicPrefix() + "/XD010012/refresh/queue";
     }
     
+    /**
+     * 雅量ESL ID信息类
+     */
+    private static class YaliangEslIdInfo {
+        private final String deviceCode;
+        private final String deviceMac;
+        
+        public YaliangEslIdInfo(String deviceCode, String deviceMac) {
+            this.deviceCode = deviceCode;
+            this.deviceMac = deviceMac;
+        }
+        
+        public String getDeviceCode() {
+            return deviceCode;
+        }
+        
+        public String getDeviceMac() {
+            return deviceMac;
+        }
+    }
+    
+    /**
+     * 创建刷新消息
+     *
+     * @param request 刷新请求
+     * @return 雅量刷新消息
+     */
+    public YaliangRefreshMessage createRefreshMessage(YaliangRefreshRequest request) {
+        log.info("开始创建雅量刷新消息: deviceCode={}, deviceMac={}", 
+                request.getDeviceCode(), request.getDeviceMac());
+        
+        try {
+            // 验证请求参数
+            validateRefreshRequest(request);
+            
+            // 获取完整的价签数据，包括模板信息
+            String eslId = request.getDeviceCode() + "_" + request.getDeviceMac();
+            EslCompleteData completeData = dataService.getEslCompleteData(eslId);
+            
+            String templateBase64 = null;
+            
+            // 尝试从模板的EXT_JSON中提取templateBase64
+            if (completeData != null && completeData.getTemplate() != null) {
+                String extJson = completeData.getTemplate().getExtJson();
+                log.info("模板EXT_JSON内容: {}", extJson != null ? extJson.substring(0, Math.min(100, extJson.length())) + "..." : "null");
+                
+                if (extJson != null && !extJson.trim().isEmpty()) {
+                    templateBase64 = extractTemplateBase64FromExtJson(extJson);
+                    log.info("从EXT_JSON中提取templateBase64成功，大小: {}KB", 
+                            templateBase64 != null ? templateBase64.length() / 1024 : 0);
+                } else {
+                    log.warn("模板EXT_JSON为空，无法提取templateBase64");
+                }
+            } else {
+                log.warn("未找到价签对应的模板数据: eslId={}", eslId);
+            }
+            
+            // 如果从模板中无法获取templateBase64，使用请求中的imageBase64作为备选
+            if (templateBase64 == null || templateBase64.trim().isEmpty()) {
+                templateBase64 = request.getImageBase64();
+                log.info("使用请求中的imageBase64作为templateBase64");
+            }
+            
+            // 创建刷新消息
+            YaliangRefreshMessage message = new YaliangRefreshMessage();
+            
+            // 设置基本信息
+            message.setQueueId(generateQueueId());
+            message.setDeviceType(config.getDefaultDeviceType());
+            message.setDeviceCode(request.getDeviceCode());
+            message.setDeviceMac(request.getDeviceMac());
+            message.setDeviceVersion("4.0.0");
+            message.setRefreshAction(config.getDefaultRefreshAction());
+            message.setRefreshArea(config.getDefaultRefreshArea());
+            
+            // 创建内容项
+            List<YaliangRefreshMessage.ContentItem> contentList = new ArrayList<>();
+            YaliangRefreshMessage.ContentItem contentItem = new YaliangRefreshMessage.ContentItem();
+            contentItem.setDataType(config.getDataFormat().getImageDataType());
+            contentItem.setDataRef(templateBase64 != null ? templateBase64 : "");
+            contentItem.setLayerEnd(config.getDataFormat().isLayerEnd());
+            contentList.add(contentItem);
+            
+            message.setContent(contentList);
+            
+            log.info("雅量刷新消息创建完成: queueId={}, deviceCode={}, deviceMac={}, templateBase64Size={}KB", 
+                    message.getQueueId(), request.getDeviceCode(), request.getDeviceMac(),
+                    templateBase64 != null ? templateBase64.length() / 1024 : 0);
+            
+            return message;
+            
+        } catch (Exception e) {
+            log.error("创建雅量刷新消息失败: deviceCode={}, error={}", 
+                    request.getDeviceCode(), e.getMessage(), e);
+            throw new YaliangException(YaliangException.ErrorCodes.MESSAGE_CREATION_ERROR, 
+                "创建刷新消息失败: " + e.getMessage(), 
+                request.getDeviceCode(), request.getDeviceMac(), e);
+        }
+    }
+
     /**
      * 验证刷新请求参数
      *

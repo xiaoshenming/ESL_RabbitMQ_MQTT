@@ -348,8 +348,16 @@ public class MqttService {
         Message<byte[]> message = MessageBuilder
                 .withPayload(payload)
                 .setHeader("mqtt_topic", topic)
+                .setHeader("mqtt_qos", 0)
+                .setHeader("mqtt_retained", false)
                 .build();
-        mqttOutboundChannel.send(message);
+        
+        boolean sent = mqttOutboundChannel.send(message);
+        if (sent) {
+            log.info("MQTT消息发送成功: topic={}, 消息大小={}字节", topic, payload.length);
+        } else {
+            log.error("MQTT消息发送失败: topic={}", topic);
+        }
     }
     
     /**

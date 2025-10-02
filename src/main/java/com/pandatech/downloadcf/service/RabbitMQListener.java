@@ -145,6 +145,7 @@ public class RabbitMQListener {
     
     /**
      * 处理新格式的刷新消息
+     * RabbitMQListener的职责是接收队列消息并发送MQTT消息
      */
     private void processNewRefreshMessage(JsonNode messageNode) {
         try {
@@ -197,7 +198,7 @@ public class RabbitMQListener {
                     String eslId = request.get("eslId").asText();
                     String brandCode = request.get("brandCode").asText();
                     
-                    // 调用EslRefreshService处理单个刷新
+                    // 直接刷新价签，避免重复进入队列造成循环
                     eslRefreshService.refreshEslDirect(eslId, brandCode, storeCode);
                     
                     // 处理间隔控制

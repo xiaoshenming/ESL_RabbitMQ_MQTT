@@ -80,5 +80,9 @@ public class YaliangException extends RuntimeException {
         public static final String VALIDATION_ERROR = "YALIANG_VALIDATION_ERROR";
         public static final String QUEUE_ID_GENERATION_ERROR = "YALIANG_QUEUE_ID_GENERATION_ERROR";
         public static final String UNSUPPORTED_OPERATION = "YALIANG_UNSUPPORTED_OPERATION";
+        public static final String INVALID_ESL_ID = "YALIANG_INVALID_ESL_ID";
+        public static final String DATA_TRANSFORMATION_ERROR = "YALIANG_DATA_TRANSFORMATION_ERROR";
+        public static final String EXT_JSON_PARSING_ERROR = "YALIANG_EXT_JSON_PARSING_ERROR";
+        public static final String MESSAGE_CREATION_ERROR = "YALIANG_MESSAGE_CREATION_ERROR";
     }
 }

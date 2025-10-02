@@ -38,10 +38,13 @@ public class YaliangEslService {
     
     /**
      * 刷新单个雅量价签
+     * 注意：此方法已废弃，请使用EslRefreshService.refreshEsl()统一接口
+     * 为了避免重复发送MQTT消息，此方法不再直接发送MQTT，而是返回消息内容
      *
      * @param request 刷新请求
      * @return 刷新结果
      */
+    @Deprecated
     public Map<String, Object> refreshEsl(YaliangRefreshRequest request) {
         log.info("开始处理雅量价签刷新: deviceCode={}, deviceMac={}", 
                 request.getDeviceCode(), request.getDeviceMac());
@@ -56,8 +59,9 @@ public class YaliangEslService {
             // 3. 获取MQTT主题
             String mqttTopic = yaliangBrandAdapter.getMqttTopic(request.getDeviceCode());
             
-            // 4. 发送MQTT消息
-            sendMqttMessage(mqttTopic, message);
+            // 注意：不再直接发送MQTT消息，避免与EslRefreshService重复发送
+            log.info("雅量价签刷新消息已准备完成，但不直接发送MQTT以避免重复: deviceCode={}, queueId={}, topic={}", 
+                    request.getDeviceCode(), message.getQueueId(), mqttTopic);
             
             // 5. 构建返回结果
             Map<String, Object> result = new HashMap<>();
@@ -67,9 +71,7 @@ public class YaliangEslService {
             result.put("deviceCode", request.getDeviceCode());
             result.put("deviceMac", request.getDeviceMac());
             result.put("timestamp", System.currentTimeMillis());
-            
-            log.info("雅量价签刷新完成: deviceCode={}, queueId={}, topic={}", 
-                    request.getDeviceCode(), message.getQueueId(), mqttTopic);
+            result.put("message", message); // 返回消息内容而不是直接发送
             
             return result;
             

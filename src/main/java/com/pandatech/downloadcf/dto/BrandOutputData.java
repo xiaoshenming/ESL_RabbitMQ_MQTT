@@ -48,4 +48,9 @@ public class BrandOutputData {
      * 门店编码
      */
     private String storeCode;
+    
+    /**
+     * 图片Base64数据
+     */
+    private String imageBase64;
 }
