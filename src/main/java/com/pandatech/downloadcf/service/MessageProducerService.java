@@ -7,6 +7,8 @@ import com.pandatech.downloadcf.dto.MessageExecutionData;
 import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import com.pandatech.downloadcf.executor.MessageExecutor;
 import com.pandatech.downloadcf.util.BrandCodeUtil;
+import com.pandatech.downloadcf.brands.yaliang.util.YaliangImageProcessor;
+import com.pandatech.downloadcf.brands.yaliang.config.YaliangBrandConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,8 @@ public class MessageProducerService {
     
     private final List<MessageExecutor> messageExecutors;
     private final DataService dataService;
+    private final YaliangImageProcessor yaliangImageProcessor;
+    private final YaliangBrandConfig yaliangBrandConfig;
     
     /**
      * 发送品牌输出数据到对应的执行器
@@ -186,8 +190,32 @@ public class MessageProducerService {
         Map<String, Object> contentItem = new HashMap<>();
         contentItem.put("dataType", 3);
         
-        // 从EXT_JSON中提取templateBase64
+        // 从EXT_JSON中提取templateBase64并进行图片处理
         String templateBase64 = extractTemplateBase64FromOutputData(outputData);
+        
+        // 如果获取到了templateBase64，进行图片分辨率转换
+        if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+            try {
+                // 根据设备规格获取目标分辨率
+                YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpecForEsl(deviceCode);
+                if (deviceSpec != null) {
+                    log.info("开始处理雅量图片: deviceCode={}, 目标分辨率={}x{}, 旋转角度={}", 
+                            deviceCode, deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
+                    
+                    // 使用YaliangImageProcessor处理图片
+                     String processedImage = yaliangImageProcessor.processImage(templateBase64, deviceSpec, yaliangBrandConfig);
+                    templateBase64 = processedImage;
+                    
+                    log.info("雅量图片处理完成: deviceCode={}, 处理后大小={}KB", 
+                            deviceCode, processedImage.length() / 1024);
+                } else {
+                    log.warn("未找到设备规格配置，使用原始图片: deviceCode={}", deviceCode);
+                }
+            } catch (Exception e) {
+                log.error("雅量图片处理失败，使用原始图片: deviceCode={}, error={}", deviceCode, e.getMessage());
+            }
+        }
+        
         contentItem.put("dataRef", templateBase64 != null ? templateBase64 : "iVxxxYII=");
         contentItem.put("layerEnd", true);
         contentList.add(contentItem);
@@ -201,11 +229,34 @@ public class MessageProducerService {
     }
     
     /**
-     * 构建PANDA标准MQTT载荷
+     * 根据设备代码获取设备规格
      */
-    private Object buildPandaMqttPayload(BrandOutputData outputData) {
-        log.info("构建PANDA标准MQTT载荷，ESL ID: {}, 门店代码: {}", 
-                outputData.getEslId(), outputData.getStoreCode());
+    private YaliangBrandConfig.DeviceSpec getDeviceSpecForEsl(String deviceCode) {
+        try {
+            // 从设备代码推断设备尺寸，这里需要根据实际的设备代码规则来实现
+            // 暂时使用4.2寸作为默认规格
+            String deviceSize = "4.2";
+            
+            // 从配置中获取设备规格
+            YaliangBrandConfig.DeviceSpecs deviceSpecs = yaliangBrandConfig.getDeviceSpecs();
+            if (deviceSpecs != null && deviceSpecs.getSpecs() != null) {
+                return deviceSpecs.getSpecs().get(deviceSize);
+            }
+            
+            log.warn("未找到设备规格配置: deviceCode={}, deviceSize={}", deviceCode, deviceSize);
+            return null;
+        } catch (Exception e) {
+            log.error("获取设备规格失败: deviceCode={}, error={}", deviceCode, e.getMessage());
+            return null;
+        }
+    }
+     
+     /**
+      * 构建PANDA标准MQTT载荷
+      */
+     private Object buildPandaMqttPayload(BrandOutputData outputData) {
+         log.info("构建PANDA标准MQTT载荷，ESL ID: {}, 门店代码: {}", 
+                 outputData.getEslId(), outputData.getStoreCode());
         
         Map<String, Object> payload = new LinkedHashMap<>(); // 使用LinkedHashMap保持字段顺序
         
