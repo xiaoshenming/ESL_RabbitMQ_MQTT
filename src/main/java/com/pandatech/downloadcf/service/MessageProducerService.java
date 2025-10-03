@@ -138,8 +138,8 @@ public class MessageProducerService {
      * 为YALIANG品牌构建特定的MQTT主题
      */
     private String buildYaliangMqttTopic(String storeCode) {
-        // YALIANG品牌使用特定的MQTT主题格式
-        return String.format("yl-esl/%s/refresh/queue", storeCode);
+        // YALIANG品牌使用固定的MQTT主题格式: yl-esl/XD010012/refresh/queue
+        return "yl-esl/XD010012/refresh/queue";
     }
     
     /**
@@ -152,6 +152,21 @@ public class MessageProducerService {
         // 根据品牌选择不同的载荷格式
         if ("YALIANG001".equals(outputData.getBrandCode())) {
             return buildYaliangMqttPayload(outputData);
+        } else {
+            return buildPandaMqttPayload(outputData);
+        }
+    }
+    
+    /**
+     * 构建MQTT载荷（带模板数据，避免重复查询）
+     */
+    public Object buildMqttPayload(BrandOutputData outputData, PrintTemplateDesignWithBLOBs template) {
+        log.info("开始构建MQTT载荷（使用已有模板数据），品牌: {}, ESL ID: {}, 门店代码: {}", 
+                outputData.getBrandCode(), outputData.getEslId(), outputData.getStoreCode());
+        
+        // 根据品牌选择不同的载荷格式
+        if ("YALIANG001".equals(outputData.getBrandCode())) {
+            return buildYaliangMqttPayload(outputData, template);
         } else {
             return buildPandaMqttPayload(outputData);
         }
@@ -191,6 +206,7 @@ public class MessageProducerService {
         contentItem.put("dataType", 3);
         
         // 从EXT_JSON中提取templateBase64并进行图片处理
+        // 注意：这个方法应该被弃用，建议使用带模板参数的版本以避免重复查询
         String templateBase64 = extractTemplateBase64FromOutputData(outputData);
         
         // 如果获取到了templateBase64，进行图片分辨率转换
@@ -223,6 +239,83 @@ public class MessageProducerService {
         payload.put("content", contentList);
         
         log.info("雅量MQTT载荷构建完成: queueId={}, deviceCode={}, deviceMac={}", 
+                payload.get("queueId"), deviceCode, deviceMac);
+        
+        return payload;
+    }
+    
+    /**
+     * 构建雅量品牌MQTT载荷（使用已有模板数据，避免重复查询）
+     */
+    private Object buildYaliangMqttPayload(BrandOutputData outputData, PrintTemplateDesignWithBLOBs template) {
+        log.info("构建雅量品牌MQTT载荷（使用已有模板数据），ESL ID: {}", outputData.getEslId());
+        
+        Map<String, Object> payload = new LinkedHashMap<>();
+        
+        // 解析雅量ESL ID格式：CG101F6D-00125414A7B9B046
+        String actualEslId = outputData.getActualEslId();
+        String[] parts = actualEslId.split("-");
+        if (parts.length != 2) {
+            log.error("雅量ESL ID格式错误: {}", actualEslId);
+            throw new RuntimeException("雅量ESL ID格式错误: " + actualEslId);
+        }
+        
+        String deviceCode = parts[0];
+        String deviceMac = parts[1];
+        
+        // 构建雅量格式的消息
+        payload.put("queueId", generateYaliangQueueId());
+        payload.put("deviceType", 1);
+        payload.put("deviceCode", deviceCode);
+        payload.put("deviceMac", deviceMac);
+        payload.put("deviceVersion", "4.0.0");
+        payload.put("refreshAction", 3);
+        payload.put("refreshArea", 1);
+        
+        // 构建content数组
+        List<Map<String, Object>> contentList = new ArrayList<>();
+        Map<String, Object> contentItem = new HashMap<>();
+        contentItem.put("dataType", 3);
+        
+        // 直接从已有模板数据中提取templateBase64，避免重复查询
+        String templateBase64 = null;
+        if (template != null && template.getExtJson() != null) {
+            templateBase64 = extractTemplateBase64FromExtJson(template.getExtJson());
+            log.info("从已有模板数据中提取templateBase64成功，模板ID: {}", template.getId());
+        } else {
+            log.warn("模板数据为空，使用默认图片数据");
+        }
+        
+        // 如果获取到了templateBase64，进行图片分辨率转换
+        if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+            try {
+                // 根据设备规格获取目标分辨率
+                YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpecForEsl(deviceCode);
+                if (deviceSpec != null) {
+                    log.info("开始处理雅量图片: deviceCode={}, 目标分辨率={}x{}, 旋转角度={}", 
+                            deviceCode, deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
+                    
+                    // 使用YaliangImageProcessor处理图片
+                     String processedImage = yaliangImageProcessor.processImage(templateBase64, deviceSpec, yaliangBrandConfig);
+                    templateBase64 = processedImage;
+                    
+                    log.info("雅量图片处理完成: deviceCode={}, 处理后大小={}KB", 
+                            deviceCode, processedImage.length() / 1024);
+                } else {
+                    log.warn("未找到设备规格配置，使用原始图片: deviceCode={}", deviceCode);
+                }
+            } catch (Exception e) {
+                log.error("雅量图片处理失败，使用原始图片: deviceCode={}, error={}", deviceCode, e.getMessage());
+            }
+        }
+        
+        contentItem.put("dataRef", templateBase64 != null ? templateBase64 : "iVxxxYII=");
+        contentItem.put("layerEnd", true);
+        contentList.add(contentItem);
+        
+        payload.put("content", contentList);
+        
+        log.info("雅量MQTT载荷构建完成（使用已有模板数据）: queueId={}, deviceCode={}, deviceMac={}", 
                 payload.get("queueId"), deviceCode, deviceMac);
         
         return payload;

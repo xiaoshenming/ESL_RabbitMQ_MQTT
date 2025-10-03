@@ -36,6 +36,7 @@ public class DataService {
     
     /**
      * 根据价签ID获取完整的价签数据
+     * 优化版本：避免重复数据库查询
      */
     public EslCompleteData getEslCompleteData(String eslId) {
         log.info("获取价签完整数据: {}", eslId);
@@ -51,12 +52,36 @@ public class DataService {
         completeData.setEsl(esl);
         completeData.setStoreCode(esl.getStoreCode());
         
-        // 2. 获取绑定的商品信息
-        PandaProductWithBLOBs product = getProductByEslId(eslId);
+        // 2. 获取绑定的商品信息 - 直接使用已获取的esl对象，避免重复查询
+        PandaProductWithBLOBs product = null;
+        if (esl.getBoundProduct() != null) {
+            product = pandaProductMapper.selectByPrimaryKey(esl.getBoundProduct());
+            if (product == null) {
+                log.warn("价签绑定的商品不存在: eslId={}, productId={}", eslId, esl.getBoundProduct());
+            }
+        } else {
+            log.warn("价签未绑定商品: {}", eslId);
+        }
         completeData.setProduct(product);
         
-        // 3. 获取模板信息
-        PrintTemplateDesignWithBLOBs template = getTemplateByEslId(eslId);
+        // 3. 获取模板信息 - 直接使用已获取的product对象，避免重复查询
+        PrintTemplateDesignWithBLOBs template = null;
+        if (product != null && product.getEslTemplateCode() != null) {
+            // 商品的ESL_TEMPLATE_CODE实际上是模板的ID，直接通过ID查询
+            log.info("查询模板，模板ID: {}", product.getEslTemplateCode());
+            template = templateMapper.selectByPrimaryKey(product.getEslTemplateCode());
+            if (template != null) {
+                log.debug("成功找到模板: templateId={}, templateName={}", template.getId(), template.getName());
+            } else {
+                log.warn("通过模板ID未找到模板: templateId={}", product.getEslTemplateCode());
+                // 如果没有找到模板，使用默认模板
+                template = getDefaultTemplate();
+            }
+        } else {
+            // 如果没有商品或商品没有模板代码，使用默认模板
+            log.warn("未找到商品对应的模板，使用默认模板: eslId={}", eslId);
+            template = getDefaultTemplate();
+        }
         completeData.setTemplate(template);
         
         // 4. 获取字段映射配置 - 使用BrandCodeUtil处理品牌代码

@@ -9,6 +9,7 @@ import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
 import com.pandatech.downloadcf.dto.EslStoreRefreshRequest;
 import com.pandatech.downloadcf.dto.EslProductRefreshRequest;
+import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
 import com.pandatech.downloadcf.util.BrandCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,8 +56,8 @@ public class EslRefreshService {
             String productBrand = completeData.getProduct().getProductBrand();
             String normalizedProductBrand = BrandCodeUtil.normalizeBrandCode(productBrand);
             
-            // 优先使用商品数据中的品牌字段，如果为空则使用请求中的品牌代码
-            String actualBrandCode = StringUtils.hasText(normalizedProductBrand) ? normalizedProductBrand : requestBrandCode;
+            // 优先使用请求参数中的品牌代码，如果为空则使用商品数据中的品牌字段
+            String actualBrandCode = StringUtils.hasText(requestBrandCode) ? requestBrandCode : normalizedProductBrand;
             
             // 转换为适配器使用的品牌代码
             String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(actualBrandCode);
@@ -102,7 +103,7 @@ public class EslRefreshService {
             
             // 6. 发送消息到RabbitMQ队列
             log.info("准备发送消息到RabbitMQ队列，使用品牌编码: {}", adapterBrandCode);
-            boolean success = sendToRefreshQueue(outputData);
+            boolean success = sendToRefreshQueue(outputData, completeData.getTemplate());
             
             if (success) {
                 log.info("价签刷新消息已发送到队列: eslId={}, brandCode={}", 
@@ -215,50 +216,50 @@ public class EslRefreshService {
     
     /**
      * 发送消息到RabbitMQ刷新队列
-     * 注意：YALIANG品牌直接发送MQTT消息，不通过RabbitMQ队列，避免重复发送
+     * 所有品牌统一通过RabbitMQ队列处理，确保消息的可靠性和一致性
+     * 优化版本：使用已获取的模板数据，避免重复数据库查询
      */
-    private boolean sendToRefreshQueue(BrandOutputData outputData) {
+    private boolean sendToRefreshQueue(BrandOutputData outputData, PrintTemplateDesignWithBLOBs template) {
         try {
+            if (template == null) {
+                log.error("模板数据为空，无法发送消息: eslId={}", outputData.getEslId());
+                return false;
+            }
+            
             // 根据品牌确定MQTT主题和载荷
             String mqttTopic;
             Object mqttPayload;
             
             if ("YALIANG001".equals(outputData.getBrandCode())) {
-                // 雅量品牌直接发送MQTT消息，不通过RabbitMQ队列
-                // 使用MessageProducerService的sendMessage方法，它会自动处理MQTT发送
-                boolean success = messageProducerService.sendMessage(outputData);
-                
-                if (success) {
-                    log.info("YALIANG品牌MQTT消息直接发送成功: eslId={}", outputData.getEslId());
-                } else {
-                    log.error("YALIANG品牌MQTT消息直接发送失败: eslId={}", outputData.getEslId());
-                }
-                
-                return success;
+                // 雅量品牌使用特定的MQTT主题和载荷格式
+                mqttTopic = "yl-esl/XD010012/refresh/queue";
+                mqttPayload = messageProducerService.buildMqttPayload(outputData, template);
+                log.info("YALIANG品牌消息准备发送到RabbitMQ队列: eslId={}, topic={}", outputData.getEslId(), mqttTopic);
             } else {
-                // 其他品牌使用原有格式，通过RabbitMQ队列
+                // 其他品牌使用原有格式
                 mqttTopic = "esl/server/data/" + outputData.getStoreCode();
-                mqttPayload = messageProducerService.buildMqttPayload(outputData);
-                
-                // 构建队列消息
-                Map<String, Object> queueMessage = new HashMap<>();
-                queueMessage.put("messageType", "refresh");
-                queueMessage.put("brandCode", outputData.getBrandCode());
-                queueMessage.put("eslId", outputData.getEslId());
-                queueMessage.put("storeCode", outputData.getStoreCode());
-                queueMessage.put("mqttTopic", mqttTopic);
-                queueMessage.put("mqttPayload", mqttPayload);
-                queueMessage.put("timestamp", System.currentTimeMillis());
-                queueMessage.put("priority", 1); // 刷新消息优先级为1
-                
-                // 发送到刷新队列
-                String jsonMessage = objectMapper.writeValueAsString(queueMessage);
-                rabbitTemplate.convertAndSend("refresh.queue", jsonMessage);
-                
-                log.info("价签刷新消息已发送到RabbitMQ队列: eslId={}, storeCode={}, mqttTopic={}", 
-                        outputData.getEslId(), outputData.getStoreCode(), mqttTopic);
-                return true;
+                mqttPayload = messageProducerService.buildMqttPayload(outputData, template);
+                log.info("其他品牌消息准备发送到RabbitMQ队列: eslId={}, topic={}", outputData.getEslId(), mqttTopic);
             }
+            
+            // 构建队列消息
+            Map<String, Object> queueMessage = new HashMap<>();
+            queueMessage.put("messageType", "refresh");
+            queueMessage.put("brandCode", outputData.getBrandCode());
+            queueMessage.put("eslId", outputData.getEslId());
+            queueMessage.put("storeCode", outputData.getStoreCode());
+            queueMessage.put("mqttTopic", mqttTopic);
+            queueMessage.put("mqttPayload", mqttPayload);
+            queueMessage.put("timestamp", System.currentTimeMillis());
+            queueMessage.put("priority", 1); // 刷新消息优先级为1
+            
+            // 发送到刷新队列
+            String jsonMessage = objectMapper.writeValueAsString(queueMessage);
+            rabbitTemplate.convertAndSend("refresh.queue", jsonMessage);
+            
+            log.info("价签刷新消息已发送到RabbitMQ队列: eslId={}, storeCode={}, mqttTopic={}", 
+                    outputData.getEslId(), outputData.getStoreCode(), mqttTopic);
+            return true;
             
         } catch (Exception e) {
             log.error("发送消息失败: eslId={}, 错误: {}", 
@@ -268,12 +269,84 @@ public class EslRefreshService {
     }
     
     /**
+     * 直接刷新价签（用于特殊情况）
+     * 现在统一通过RabbitMQ队列处理，不再直接发送MQTT消息
+     */
+    public boolean directRefreshEsl(String eslId) {
+        try {
+            log.info("开始直接刷新价签: eslId={}", eslId);
+            
+            // 获取完整的ESL数据
+            EslCompleteData completeData = dataService.getEslCompleteData(eslId);
+            if (completeData == null) {
+                log.error("获取ESL完整数据失败: eslId={}", eslId);
+                return false;
+            }
+            
+            // 获取品牌代码并进行转换
+            String productBrand = completeData.getProduct().getProductBrand();
+            String normalizedProductBrand = BrandCodeUtil.normalizeBrandCode(productBrand);
+            String adapterBrandCode = BrandCodeUtil.toAdapterBrandCode(normalizedProductBrand);
+            
+            // 获取品牌适配器
+            BrandAdapter adapter = brandAdapterFactory.getAdapter(adapterBrandCode);
+            if (adapter == null) {
+                log.error("未找到品牌适配器: brandCode={}", adapterBrandCode);
+                return false;
+            }
+            
+            // 设置品牌代码
+            completeData.setBrandCode(adapterBrandCode);
+            
+            // 验证数据
+            if (!adapter.validate(completeData)) {
+                log.error("数据验证失败: eslId={}, brandCode={}", eslId, adapterBrandCode);
+                return false;
+            }
+            
+            // 转换数据
+            BrandOutputData outputData = adapter.transform(completeData);
+            if (outputData == null) {
+                log.error("数据转换失败: eslId={}, brandCode={}", eslId, adapterBrandCode);
+                return false;
+            }
+            
+            // 统一通过RabbitMQ队列发送消息
+            boolean success = sendToRefreshQueue(outputData, completeData.getTemplate());
+            
+            if (success) {
+                log.info("直接刷新价签成功（已发送到RabbitMQ队列）: eslId={}, brandCode={}", eslId, adapterBrandCode);
+            } else {
+                log.error("直接刷新价签失败: eslId={}, brandCode={}", eslId, adapterBrandCode);
+            }
+            
+            return success;
+            
+        } catch (Exception e) {
+            log.error("直接刷新价签异常: eslId={}, 错误: {}", eslId, e.getMessage(), e);
+            return false;
+        }
+    }
+    
+    /**
      * 直接刷新价签（用于批量处理）
      * 不经过队列，直接发送MQTT消息
+     * 注意：YALIANG品牌已在sendToRefreshQueue中处理，此方法仅用于其他品牌的直接刷新
+     */
+    /**
+     * 直接刷新价签（用于批量处理中的单个价签）
+     * 现在统一通过RabbitMQ队列处理，不再直接发送MQTT消息
      */
     public void refreshEslDirect(String eslId, String brandCode, String storeCode) {
         try {
             log.info("直接刷新价签: eslId={}, brandCode={}, storeCode={}", eslId, brandCode, storeCode);
+            
+            // 获取完整的ESL数据以获取模板信息
+            EslCompleteData completeData = dataService.getEslCompleteData(eslId);
+            if (completeData == null) {
+                log.error("获取ESL完整数据失败: eslId={}", eslId);
+                throw new RuntimeException("获取ESL完整数据失败");
+            }
             
             // 使用BrandCodeUtil进行品牌代码兼容性处理
             String normalizedBrandCode = BrandCodeUtil.normalizeBrandCode(brandCode);
@@ -297,13 +370,18 @@ public class EslRefreshService {
             dataMap.put("brandCode", adapterBrandCode);
             outputData.setDataMap(dataMap);
             
-            // 直接发送MQTT消息
-            messageProducerService.sendMessage(outputData);
+            // 统一通过RabbitMQ队列发送消息，传入模板数据
+            boolean success = sendToRefreshQueue(outputData, completeData.getTemplate());
             
-            log.info("直接刷新价签完成: eslId={}", eslId);
+            if (success) {
+                log.info("直接刷新价签成功（已发送到RabbitMQ队列）: eslId={}, brandCode={}", eslId, adapterBrandCode);
+            } else {
+                log.error("直接刷新价签失败: eslId={}, brandCode={}", eslId, adapterBrandCode);
+                throw new RuntimeException("直接刷新价签失败");
+            }
             
         } catch (Exception e) {
-            log.error("直接刷新价签失败: eslId={}, 错误: {}", eslId, e.getMessage(), e);
+            log.error("直接刷新价签异常: eslId={}, 错误: {}", eslId, e.getMessage(), e);
             throw new RuntimeException("直接刷新价签失败: " + e.getMessage(), e);
         }
     }
