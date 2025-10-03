@@ -7,7 +7,6 @@ spring:
     username: panda
     password: panda@123
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # 如果使用Druid连接池
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
       initial-size: 5
@@ -20,11 +19,13 @@ spring:
       test-while-idle: true
       test-on-borrow: false
       test-on-return: false
+      
   rabbitmq:
     host: 192.168.10.50
     port: 5672
     username: panda
     password: panda@123
+    
   mqtt:
     username: panda
     password: panda@123
@@ -47,7 +48,7 @@ logging:
   level:
     com.pandatech.downloadcf.mapper: debug
 
-# Swagger
+# Swagger配置
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -57,88 +58,148 @@ springdoc:
     path: /v3/api-docs
   show-actuator: true
 
-# 模板下载配置
+# 应用配置
 app:
+  # 模板下载配置
   template:
     base-url: http://10.3.36.25:8999/api/res/templ/loadtemple
+    
+  # ESL电子价签配置
   esl:
     # 价签刷新配置
     refresh:
-      # 默认租户ID
       default-tenant-id: "396a5189-53d8-4354-bcfa-27d57d9d69ad"
-      # 默认门店编码
       default-store-code: "STORE001"
-      # 强制刷新标志
       force-refresh: true
-      # 默认模板ID（当价签没有绑定模板时使用）
       default-template-id: "default_template"
-      # 校验码计算方式（md5, crc32等）
       checksum-algorithm: "md5"
+      
     # 字段映射配置
     field-mapping:
-      # 默认品牌编码
       default-brand-code: "DEFAULT"
-      # 强制转换字段列表
       force-convert-fields:
         - "GOODS_NAME"
         - "GOODS_CODE"
     
     # 品牌配置
     brands:
+      # 攀攀科技品牌配置
       aes001:
         name: "攀攀科技"
         code: "AES001"
         enabled: true
         executor-type: MQTT
         template-format: CUSTOM
+        
+      # 雅量科技品牌配置
       yaliang001:
         name: "雅量科技"
         code: "YALIANG001"
         enabled: true
-        executor-type: MQTT
-        template-format: CUSTOM
-        # 雅量品牌特定配置
+        executor-type: "mqtt"
+        template-format: "json"
+        default-esl-id: "06000000195B"
+        mqtt-topic-prefix: "yl-esl"
+        default-device-type: 1
+        default-refresh-action: 3
+        default-refresh-area: 1
+        
+        # 设备规格配置
         device-specs:
-          - size: "2.13"
-            width: 250
-            height: 122
-            color-mode: "BW"
-            supported-formats: ["PNG", "BMP"]
-          - size: "2.9"
-            width: 296
-            height: 128
-            color-mode: "BW"
-            supported-formats: ["PNG", "BMP"]
-          - size: "4.2"
-            width: 400
-            height: 300
-            color-mode: "BWR"
-            supported-formats: ["PNG", "BMP"]
-        mqtt:
-          topic-prefix: "yaliang/esl"
-          qos: 1
-          retain: false
-        image:
-          max-size: 2097152  # 2MB
-          compression-quality: 0.8
-          supported-formats: ["PNG", "BMP"]
+          specs:
+            "1.54":
+              width: 200
+              height: 200
+              rotation: 90
+              supported: true
+            "1.54_old":
+              width: 152
+              height: 152
+              rotation: 90
+              supported: false
+            "2.13":
+              width: 250
+              height: 122
+              rotation: 90
+              supported: true
+            "2.13_old":
+              width: 212
+              height: 104
+              rotation: 90
+              supported: false
+            "2.66":
+              width: 296
+              height: 152
+              rotation: 90
+              supported: true
+            "2.66_old":
+              width: 296
+              height: 160
+              rotation: 90
+              supported: false
+            "2.9":
+              width: 296
+              height: 128
+              rotation: 90
+              supported: true
+            "3.5":
+              width: 384
+              height: 184
+              rotation: 90
+              supported: true
+            "4.2":
+              width: 400
+              height: 300
+              rotation: 0
+              supported: true
+            "5.83":
+              width: 648
+              height: 480
+              rotation: 0
+              supported: true
+            "7.5":
+              width: 800
+              height: 480
+              rotation: 0
+              supported: true
+            "7.5_old":
+              width: 640
+              height: 384
+              rotation: 0
+              supported: false
+            "10.2":
+              width: 960
+              height: 640
+              rotation: 0
+              supported: true
+          default-spec: "2.13"
+          
+        # 数据格式配置
+        data-format:
+          image-data-type: 1
+          layer-end: true
+          price-decimal-places: 2
+          number-decimal-places: 2
+          
+        # 验证配置
         validation:
-          device-code-pattern: "^YL[0-9A-F]{8}$"
+          device-code-pattern: "^[A-Z0-9]{8}$"
           mac-address-pattern: "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
+          esl-id-pattern: "^[A-Z0-9]+-[A-F0-9]{16}$"
         
     # 缓存配置
     cache:
       enabled: true
-      ttl: 300 # 5分钟
+      ttl: 300  # 5分钟
       max-size: 1000
       
     # 批处理配置
     batch:
       size: 100
-      timeout: 30000 # 30秒
+      timeout: 30000  # 30秒
       
     # 重试配置
     retry:
       max-attempts: 3
-      delay: 1000 # 1秒
+      delay: 1000  # 1秒
       multiplier: 2.0
