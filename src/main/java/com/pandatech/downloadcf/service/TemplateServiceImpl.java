@@ -36,6 +36,7 @@ public class TemplateServiceImpl implements TemplateService {
     private final MessageProducerService messageProducerService;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+    private final TemplateConverter templateConverter;
     private final MqttService mqttService;
 
     @Value("${app.template.base-url:http://localhost:8999/api/res/templ/loadtemple}")
@@ -121,7 +122,7 @@ public class TemplateServiceImpl implements TemplateService {
 
         try {
             // 将数据库中的模板内容（JSON字符串）转换为官方模板格式
-            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            String officialTemplateJson = templateConverter.convertToOfficialTemplate(template);
             return officialTemplateJson.getBytes();
         } catch (JsonProcessingException e) {
             log.error("Error converting template to official format for ID: {} or Name: {}", request.getId(), request.getName(), e);
@@ -140,7 +141,7 @@ public class TemplateServiceImpl implements TemplateService {
             }
             
             // 从模板内容中提取屏幕类型
-            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            String officialTemplateJson = templateConverter.convertToOfficialTemplate(template);
             String tagType = extractTagTypeFromTemplate(officialTemplateJson);
             
             // 构建文件名：{模板名称}_{屏幕类型}
@@ -265,7 +266,7 @@ public class TemplateServiceImpl implements TemplateService {
             data.put("tid", java.util.UUID.randomUUID().toString()); // 事务ID
             
             // 获取模板的官方格式并提取TagType
-            String officialTemplateJson = mqttService.convertToOfficialTemplate(template);
+            String officialTemplateJson = templateConverter.convertToOfficialTemplate(template);
             String tagType = extractTagTypeFromTemplate(officialTemplateJson);
             
             // 构建正确的文件名格式：{templateName}_{tagType}.json

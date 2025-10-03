@@ -24,7 +24,7 @@ public class RabbitMQListener {
     @Qualifier("mqttOutboundChannel")
     private final MessageChannel mqttOutboundChannel;
     private final ObjectMapper objectMapper;
-    private final MqttService mqttService;
+    private final MqttServiceRefactored mqttService;
     private final EslRefreshService eslRefreshService;
     private final ApplicationEventPublisher eventPublisher;
     private final LoadInfoService loadInfoService;
