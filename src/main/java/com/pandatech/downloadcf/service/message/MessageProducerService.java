@@ -323,17 +323,48 @@ public class MessageProducerService {
     
     /**
      * 根据设备代码获取设备规格
+     * 通过ESL ID获取商品信息，从商品名称中识别设备尺寸
      */
     private YaliangBrandConfig.DeviceSpec getDeviceSpecForEsl(String deviceCode) {
         try {
-            // 从设备代码推断设备尺寸，这里需要根据实际的设备代码规则来实现
-            // 暂时使用4.2寸作为默认规格
-            String deviceSize = "4.2";
+            String deviceSize = "2.13"; // 默认规格
+            
+            // 尝试从当前处理的ESL获取商品信息来识别设备尺寸
+            // 这里需要通过其他方式获取ESL ID，暂时使用设备代码匹配规则
+            
+            // 根据设备代码前缀匹配设备尺寸
+            if (deviceCode != null) {
+                // 雅量设备代码规则匹配
+                if (deviceCode.startsWith("DC100")) {
+                    // DC100开头的设备通常是1.54寸
+                    deviceSize = "1.54";
+                    log.info("根据设备代码识别为1.54寸设备: deviceCode={}", deviceCode);
+                } else if (deviceCode.startsWith("CG101")) {
+                    // CG101开头的设备通常是2.13寸
+                    deviceSize = "2.13";
+                    log.info("根据设备代码识别为2.13寸设备: deviceCode={}", deviceCode);
+                } else if (deviceCode.startsWith("CG420")) {
+                    // CG420开头的设备通常是4.2寸
+                    deviceSize = "4.2";
+                    log.info("根据设备代码识别为4.2寸设备: deviceCode={}", deviceCode);
+                } else {
+                    log.warn("未知设备代码前缀，使用默认规格: deviceCode={}, defaultSize={}", deviceCode, deviceSize);
+                }
+            }
             
             // 从配置中获取设备规格
             YaliangBrandConfig.DeviceSpecs deviceSpecs = yaliangBrandConfig.getDeviceSpecs();
             if (deviceSpecs != null && deviceSpecs.getSpecs() != null) {
-                return deviceSpecs.getSpecs().get(deviceSize);
+                YaliangBrandConfig.DeviceSpec spec = deviceSpecs.getSpecs().get(deviceSize);
+                if (spec != null) {
+                    log.info("成功获取设备规格: deviceCode={}, deviceSize={}, resolution={}x{}, rotation={}", 
+                            deviceCode, deviceSize, spec.getWidth(), spec.getHeight(), spec.getRotation());
+                    return spec;
+                } else {
+                    log.warn("未找到指定尺寸的设备规格，使用默认规格: deviceCode={}, requestedSize={}, defaultSize={}", 
+                            deviceCode, deviceSize, deviceSpecs.getDefaultSpec());
+                    return deviceSpecs.getSpecs().get(deviceSpecs.getDefaultSpec());
+                }
             }
             
             log.warn("未找到设备规格配置: deviceCode={}, deviceSize={}", deviceCode, deviceSize);

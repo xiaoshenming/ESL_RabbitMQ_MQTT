@@ -95,13 +95,15 @@ public class YaliangImageProcessor {
     
     /**
      * 旋转图片
+     * 按照价签硬件要求：以图片左下角为原点，按逆时针为正方向进行旋转
      */
     private BufferedImage rotateImage(BufferedImage originalImage, int rotation) {
         if (rotation == 0) {
             return originalImage;
         }
         
-        double radians = Math.toRadians(rotation);
+        // 将角度转换为逆时针旋转（负角度表示逆时针）
+        double radians = Math.toRadians(-rotation);
         double sin = Math.abs(Math.sin(radians));
         double cos = Math.abs(Math.cos(radians));
         
@@ -124,15 +126,18 @@ public class YaliangImageProcessor {
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, newWidth, newHeight);
         
-        // 设置旋转变换
+        // 设置旋转变换（逆时针旋转）
         AffineTransform transform = new AffineTransform();
         transform.translate(newWidth / 2.0, newHeight / 2.0);
-        transform.rotate(radians);
+        transform.rotate(radians); // 使用负角度实现逆时针旋转
         transform.translate(-originalWidth / 2.0, -originalHeight / 2.0);
         
         g2d.setTransform(transform);
         g2d.drawImage(originalImage, 0, 0, null);
         g2d.dispose();
+        
+        log.info("图片旋转完成: 原始尺寸={}x{}, 旋转角度={}°(逆时针), 旋转后尺寸={}x{}", 
+                originalWidth, originalHeight, rotation, newWidth, newHeight);
         
         return rotatedImage;
     }
