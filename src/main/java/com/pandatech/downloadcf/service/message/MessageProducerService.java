@@ -205,34 +205,25 @@ public class MessageProducerService {
         Map<String, Object> contentItem = new HashMap<>();
         contentItem.put("dataType", 3);
         
-        // 从EXT_JSON中提取templateBase64并进行图片处理
-        // 注意：这个方法应该被弃用，建议使用带模板参数的版本以避免重复查询
-        String templateBase64 = extractTemplateBase64FromOutputData(outputData);
-        
-        // 如果获取到了templateBase64，进行图片分辨率转换
-        if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+        // 直接从BrandOutputData中获取已处理的图片数据
+        // YaliangBrandAdapter已经完成了图片的获取、处理和转换
+        String processedImageData = null;
+        if (outputData.getExtJson() != null) {
             try {
-                // 根据设备规格获取目标分辨率
-                YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpecForEsl(deviceCode);
-                if (deviceSpec != null) {
-                    log.info("开始处理雅量图片: deviceCode={}, 目标分辨率={}x{}, 旋转角度={}", 
-                            deviceCode, deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
-                    
-                    // 使用YaliangImageProcessor处理图片
-                     String processedImage = yaliangImageProcessor.processImage(templateBase64, deviceSpec, yaliangBrandConfig);
-                    templateBase64 = processedImage;
-                    
-                    log.info("雅量图片处理完成: deviceCode={}, 处理后大小={}KB", 
-                            deviceCode, processedImage.length() / 1024);
-                } else {
-                    log.warn("未找到设备规格配置，使用原始图片: deviceCode={}", deviceCode);
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode rootNode = mapper.readTree(outputData.getExtJson());
+                JsonNode dataRefNode = rootNode.get("dataRef");
+                if (dataRefNode != null && !dataRefNode.isNull()) {
+                    processedImageData = dataRefNode.asText();
+                    log.info("从BrandOutputData获取已处理的图片数据: deviceCode={}, 数据大小={}KB", 
+                            deviceCode, processedImageData.length() / 1024);
                 }
             } catch (Exception e) {
-                log.error("雅量图片处理失败，使用原始图片: deviceCode={}, error={}", deviceCode, e.getMessage());
+                log.error("解析BrandOutputData中的图片数据失败: deviceCode={}, error={}", deviceCode, e.getMessage());
             }
         }
         
-        contentItem.put("dataRef", templateBase64 != null ? templateBase64 : "iVxxxYII=");
+        contentItem.put("dataRef", processedImageData != null ? processedImageData : "iVxxxYII=");
         contentItem.put("layerEnd", true);
         contentList.add(contentItem);
         
@@ -277,39 +268,25 @@ public class MessageProducerService {
         Map<String, Object> contentItem = new HashMap<>();
         contentItem.put("dataType", 3);
         
-        // 直接从已有模板数据中提取templateBase64，避免重复查询
-        String templateBase64 = null;
-        if (template != null && template.getExtJson() != null) {
-            templateBase64 = extractTemplateBase64FromExtJson(template.getExtJson());
-            log.info("从已有模板数据中提取templateBase64成功，模板ID: {}", template.getId());
-        } else {
-            log.warn("模板数据为空，使用默认图片数据");
-        }
-        
-        // 如果获取到了templateBase64，进行图片分辨率转换
-        if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+        // 直接从BrandOutputData中获取已处理的图片数据
+        // YaliangBrandAdapter已经完成了图片的获取、处理和转换
+        String processedImageData = null;
+        if (outputData.getExtJson() != null) {
             try {
-                // 根据设备规格获取目标分辨率
-                YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpecForEsl(deviceCode);
-                if (deviceSpec != null) {
-                    log.info("开始处理雅量图片: deviceCode={}, 目标分辨率={}x{}, 旋转角度={}", 
-                            deviceCode, deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
-                    
-                    // 使用YaliangImageProcessor处理图片
-                     String processedImage = yaliangImageProcessor.processImage(templateBase64, deviceSpec, yaliangBrandConfig);
-                    templateBase64 = processedImage;
-                    
-                    log.info("雅量图片处理完成: deviceCode={}, 处理后大小={}KB", 
-                            deviceCode, processedImage.length() / 1024);
-                } else {
-                    log.warn("未找到设备规格配置，使用原始图片: deviceCode={}", deviceCode);
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode rootNode = mapper.readTree(outputData.getExtJson());
+                JsonNode dataRefNode = rootNode.get("dataRef");
+                if (dataRefNode != null && !dataRefNode.isNull()) {
+                    processedImageData = dataRefNode.asText();
+                    log.info("从BrandOutputData获取已处理的图片数据（使用已有模板数据）: deviceCode={}, 数据大小={}KB", 
+                            deviceCode, processedImageData.length() / 1024);
                 }
             } catch (Exception e) {
-                log.error("雅量图片处理失败，使用原始图片: deviceCode={}, error={}", deviceCode, e.getMessage());
+                log.error("解析BrandOutputData中的图片数据失败（使用已有模板数据）: deviceCode={}, error={}", deviceCode, e.getMessage());
             }
         }
         
-        contentItem.put("dataRef", templateBase64 != null ? templateBase64 : "iVxxxYII=");
+        contentItem.put("dataRef", processedImageData != null ? processedImageData : "iVxxxYII=");
         contentItem.put("layerEnd", true);
         contentList.add(contentItem);
         
@@ -408,62 +385,6 @@ public class MessageProducerService {
     private int generateYaliangQueueId() {
         // 使用当前时间戳的后4位作为queueId，确保唯一性
         return (int) (System.currentTimeMillis() % 10000);
-    }
-    
-    /**
-     * 从BrandOutputData中提取templateBase64
-     */
-    private String extractTemplateBase64FromOutputData(BrandOutputData outputData) {
-        try {
-            // 尝试从ESL数据中获取模板信息
-            String eslId = outputData.getEslId();
-            PrintTemplateDesignWithBLOBs template = dataService.getTemplateByEslId(eslId);
-            
-            if (template != null && template.getExtJson() != null) {
-                String extJson = template.getExtJson();
-                return extractTemplateBase64FromExtJson(extJson);
-            }
-            
-            log.warn("无法从ESL数据中获取templateBase64: eslId={}", eslId);
-            return null;
-        } catch (Exception e) {
-            log.error("提取templateBase64失败", e);
-            return null;
-        }
-    }
-    
-    /**
-     * 从EXT_JSON中提取templateBase64字段
-     */
-    private String extractTemplateBase64FromExtJson(String extJson) {
-        if (extJson == null || extJson.trim().isEmpty()) {
-            return null;
-        }
-        
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode rootNode = mapper.readTree(extJson);
-            
-            // 查找templateBase64字段
-            JsonNode templateBase64Node = rootNode.get("templateBase64");
-            if (templateBase64Node != null && !templateBase64Node.isNull()) {
-                String templateBase64 = templateBase64Node.asText();
-                // 如果是data:image格式，提取base64部分
-                if (templateBase64.startsWith("data:image/")) {
-                    int commaIndex = templateBase64.indexOf(",");
-                    if (commaIndex > 0 && commaIndex < templateBase64.length() - 1) {
-                        return templateBase64.substring(commaIndex + 1);
-                    }
-                }
-                return templateBase64;
-            }
-            
-            log.warn("EXT_JSON中未找到templateBase64字段");
-            return null;
-        } catch (Exception e) {
-            log.error("解析EXT_JSON失败", e);
-            return null;
-        }
     }
     
     /**

@@ -86,13 +86,28 @@ public class BrandPayloadBuilderService {
         // 获取设备规格
         YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpecForEsl(deviceCode);
         if (deviceSpec != null) {
-            // 从输出数据中提取模板Base64
-            String templateBase64 = extractTemplateBase64FromOutputData(outputData);
-            if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
-                payload.put("refreshData", templateBase64);
+            // 直接从BrandOutputData中获取已处理的图片数据
+            // YaliangBrandAdapter已经完成了图片的获取、处理和转换
+            String processedImageData = null;
+            if (outputData.getExtJson() != null) {
+                try {
+                    JsonNode rootNode = objectMapper.readTree(outputData.getExtJson());
+                    JsonNode dataRefNode = rootNode.get("dataRef");
+                    if (dataRefNode != null && !dataRefNode.isNull()) {
+                        processedImageData = dataRefNode.asText();
+                        log.info("从BrandOutputData获取已处理的图片数据: deviceCode={}, 数据大小={}KB", 
+                                deviceCode, processedImageData.length() / 1024);
+                    }
+                } catch (Exception e) {
+                    log.error("解析BrandOutputData中的图片数据失败: deviceCode={}, error={}", deviceCode, e.getMessage());
+                }
+            }
+            
+            if (processedImageData != null && !processedImageData.trim().isEmpty()) {
+                payload.put("refreshData", processedImageData);
                 log.info("雅量MQTT载荷构建完成，包含模板数据");
             } else {
-                log.warn("未找到模板Base64数据，ESL ID: {}", outputData.getEslId());
+                log.warn("未找到处理后的图片数据，ESL ID: {}", outputData.getEslId());
             }
         }
         
@@ -129,13 +144,28 @@ public class BrandPayloadBuilderService {
         // 获取设备规格
         YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpecForEsl(deviceCode);
         if (deviceSpec != null && template != null) {
-            // 从模板的EXT_JSON中提取templateBase64
-            String templateBase64 = extractTemplateBase64FromExtJson(template.getExtJson());
-            if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
-                payload.put("refreshData", templateBase64);
+            // 直接从BrandOutputData中获取已处理的图片数据
+            // YaliangBrandAdapter已经完成了图片的获取、处理和转换
+            String processedImageData = null;
+            if (outputData.getExtJson() != null) {
+                try {
+                    JsonNode rootNode = objectMapper.readTree(outputData.getExtJson());
+                    JsonNode dataRefNode = rootNode.get("dataRef");
+                    if (dataRefNode != null && !dataRefNode.isNull()) {
+                        processedImageData = dataRefNode.asText();
+                        log.info("从BrandOutputData获取已处理的图片数据（使用已有模板）: deviceCode={}, 数据大小={}KB", 
+                                deviceCode, processedImageData.length() / 1024);
+                    }
+                } catch (Exception e) {
+                    log.error("解析BrandOutputData中的图片数据失败（使用已有模板）: deviceCode={}, error={}", deviceCode, e.getMessage());
+                }
+            }
+            
+            if (processedImageData != null && !processedImageData.trim().isEmpty()) {
+                payload.put("refreshData", processedImageData);
                 log.info("雅量MQTT载荷构建完成，使用模板数据");
             } else {
-                log.warn("模板中未找到Base64数据，ESL ID: {}", outputData.getEslId());
+                log.warn("未找到处理后的图片数据，ESL ID: {}", outputData.getEslId());
             }
         }
         
@@ -212,48 +242,6 @@ public class BrandPayloadBuilderService {
     }
     
     /**
-     * 从输出数据中提取模板Base64
-     */
-    private String extractTemplateBase64FromOutputData(BrandOutputData outputData) {
-        if (outputData.getExtJson() != null && !outputData.getExtJson().trim().isEmpty()) {
-            return extractTemplateBase64FromExtJson(outputData.getExtJson());
-        }
-        return null;
-    }
-    
-    /**
-     * 从EXT_JSON中提取templateBase64字段
-     */
-    private String extractTemplateBase64FromExtJson(String extJson) {
-        if (extJson == null || extJson.trim().isEmpty()) {
-            return null;
-        }
-        
-        try {
-            JsonNode rootNode = objectMapper.readTree(extJson);
-            
-            // 查找templateBase64字段
-            JsonNode templateBase64Node = rootNode.get("templateBase64");
-            if (templateBase64Node != null && !templateBase64Node.isNull()) {
-                String templateBase64 = templateBase64Node.asText();
-                // 如果是data:image格式，提取base64部分
-                if (templateBase64.startsWith("data:image/")) {
-                    int commaIndex = templateBase64.indexOf(",");
-                    if (commaIndex > 0 && commaIndex < templateBase64.length() - 1) {
-                        return templateBase64.substring(commaIndex + 1);
-                    }
-                }
-                return templateBase64;
-            }
-            
-            log.warn("EXT_JSON中未找到templateBase64字段");
-            return null;
-        } catch (Exception e) {
-            log.error("解析EXT_JSON失败", e);
-            return null;
-        }
-    }
-    
     /**
      * 构建data数组 - 严格按照PANDA标准格式
      */
