@@ -31,9 +31,10 @@ public class BrandAdapterConfig {
     
     /**
      * 注册YALIANG品牌适配器
+     * 返回具体类型，同时满足BrandAdapter接口和YaliangBrandAdapter具体类型的依赖注入需求
      */
     @Bean
-    public BrandAdapter yaliangBrandAdapter() {
+    public YaliangBrandAdapter yaliangBrandAdapter() {
         log.info("注册YALIANG品牌适配器");
         return new YaliangBrandAdapter(objectMapper);
     }
