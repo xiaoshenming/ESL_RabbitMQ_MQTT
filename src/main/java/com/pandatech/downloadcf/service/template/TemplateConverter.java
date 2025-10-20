@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.pandatech.downloadcf.entity.PrintTemplateDesignWithBLOBs;
+import com.pandatech.downloadcf.service.mqtt.MqttImageProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.util.*;
 public class TemplateConverter {
 
     private final ObjectMapper objectMapper;
+    private final MqttImageProcessor mqttImageProcessor;
 
     /**
      * 将自定义模板格式转换为官方格式
@@ -172,7 +174,11 @@ public class TemplateConverter {
             officialTemplate.put("Items", items);
             officialTemplate.put("Name", templateName);
             officialTemplate.put("Size", templateWidth + ", " + templateHeight);
-            officialTemplate.put("TagType", "06");
+            
+            // 使用MqttImageProcessor获取正确的TagType
+            String tagType = mqttImageProcessor.getTagType(templateName);
+            officialTemplate.put("TagType", tagType);
+            
             officialTemplate.put("Version", 10);
             officialTemplate.put("height", String.valueOf(templateHeight));
             officialTemplate.put("hext", "6");

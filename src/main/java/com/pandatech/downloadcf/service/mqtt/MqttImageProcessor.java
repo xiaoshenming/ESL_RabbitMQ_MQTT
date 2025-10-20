@@ -174,21 +174,19 @@ public class MqttImageProcessor {
         switch (tagType) {
             case "06": // 2.13T
                 return "6";
-            case "07": // 2.13F - 关键修复！
-                return "6"; // 之前错误设置为"0"，现在修正为"6"
+            case "07": // 2.13F
+                return "6";
             case "0B": // 2.66T
                 return "0";
             case "0C": // 2.66F
                 return "0";
-            case "04": // 1.54T
+            case "02": // 1.54T
                 return "0";
-            case "08": // 2.9T
+            case "0A": // 2.9T
                 return "0";
-            case "10": // 4.2T
+            case "1C": // 4.2T - 修复：应该返回"0"而不是"6"
                 return "0";
-            case "1C": // 4.20T
-                return "0";
-            case "1D": // 4.20F
+            case "1D": // 4.2F - 修复：应该返回"0"而不是"6"
                 return "0";
             case "1E": // 7.5T
                 return "0";
@@ -202,37 +200,109 @@ public class MqttImageProcessor {
      * 根据屏幕类型获取TagType
      */
     public String getTagType(String screenType) {
-        if (screenType == null) return "06";
+        log.info("开始转换屏幕类型到TagType，输入屏幕类型: {}", screenType);
         
-        switch (screenType.toLowerCase()) {
+        if (screenType == null || screenType.trim().isEmpty()) {
+            log.warn("屏幕类型为空，使用默认TagType: 06");
+            return "06";
+        }
+        
+        // 从模板名称中提取屏幕类型
+        String extractedType = extractScreenTypeFromTemplateName(screenType);
+        String normalizedType = extractedType.toLowerCase().trim();
+        log.info("标准化后的屏幕类型: {}", normalizedType);
+        
+        String result;
+        switch (normalizedType) {
             case "2.13t":
             case "2.13":
-                return "06";
+                result = "06";
+                break;
             case "2.13f":
-                return "07";
+                result = "07";
+                break;
             case "2.66t":
-                return "0B";
+                result = "0B";
+                break;
             case "2.66f":
-                return "0C";
-            case "1.54t":
-            case "1.54":
-                return "04";
-            case "2.9t":
-            case "2.9":
-                return "08";
+                result = "0C";
+                break;
             case "4.2t":
-            case "4.2":
-                return "10";
             case "4.20t":
             case "4.20":
-                return "1C";
+                result = "1C";
+                break;
+            case "4.2f":
             case "4.20f":
-                return "1D";
+                result = "1D";
+                break;
+            case "2.9t":
+            case "2.90t":
+            case "2.90":
+                result = "0A";
+                break;
+            case "1.54t":
+            case "1.54":
+                result = "02";
+                break;
             case "7.5t":
-            case "7.5":
-                return "1E";
+            case "7.50t":
+            case "7.50":
+                result = "1E";
+                break;
             default:
-                return "06";
+                log.warn("未知的屏幕类型: {}, 使用默认TagType: 06", screenType);
+                result = "06";
+                break;
         }
+        
+        log.info("屏幕类型转换完成: {} -> {}", screenType, result);
+        return result;
+    }
+    
+    /**
+     * 从模板名称中提取屏幕类型
+     */
+    private String extractScreenTypeFromTemplateName(String templateName) {
+        if (templateName == null) return "";
+        
+        // 匹配模式：AES模板4.2T_1C.json -> 4.2T
+        // 注意：需要先匹配更具体的模式，避免4.20F被4.2F匹配
+        if (templateName.contains("4.20T")) {
+            return "4.20T";
+        }
+        if (templateName.contains("4.20F")) {
+            return "4.20F";
+        }
+        if (templateName.contains("4.2T")) {
+            return "4.2T";
+        }
+        if (templateName.contains("4.2F")) {
+            return "4.2F";
+        }
+        if (templateName.contains("2.13T")) {
+            return "2.13T";
+        }
+        if (templateName.contains("2.13F")) {
+            return "2.13F";
+        }
+        if (templateName.contains("2.66T")) {
+            return "2.66T";
+        }
+        if (templateName.contains("2.66F")) {
+            return "2.66F";
+        }
+        if (templateName.contains("1.54T")) {
+            return "1.54T";
+        }
+        if (templateName.contains("2.9T")) {
+            return "2.9T";
+        }
+        if (templateName.contains("7.5T")) {
+            return "7.5T";
+        }
+        
+        // 如果没有匹配到，返回原始名称
+        return templateName;
     }
 }

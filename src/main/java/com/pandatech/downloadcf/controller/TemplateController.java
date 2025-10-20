@@ -127,7 +127,16 @@ public class TemplateController {
         // 设置响应头，使用处理后的文件名
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", downloadFileName);
+        
+        // 处理中文文件名的编码问题
+        try {
+            String encodedFileName = java.net.URLEncoder.encode(downloadFileName, "UTF-8")
+                .replaceAll("\\+", "%20");
+            headers.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+        } catch (java.io.UnsupportedEncodingException e) {
+            // 如果编码失败，使用原始文件名（可能会有问题，但至少不会抛异常）
+            headers.add("Content-Disposition", "attachment; filename=\"" + downloadFileName + "\"");
+        }
         headers.setContentLength(templateContent.length);
 
 

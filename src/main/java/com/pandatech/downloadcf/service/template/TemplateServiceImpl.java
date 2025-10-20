@@ -12,6 +12,7 @@ import com.pandatech.downloadcf.exception.BusinessException;
 import com.pandatech.downloadcf.util.JsonUtil;
 import com.pandatech.downloadcf.util.BrandCodeUtil;
 import com.pandatech.downloadcf.service.template.TemplateConverter;
+import com.pandatech.downloadcf.service.mqtt.MqttImageProcessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ public class TemplateServiceImpl implements TemplateService {
     private final ObjectMapper objectMapper;
     private final TemplateConverter templateConverter;
     private final MqttService mqttService;
+    private final MqttImageProcessor mqttImageProcessor;
 
     @Value("${app.template.base-url:http://localhost:8999/api/res/templ/loadtemple}")
     private String baseUrl;
@@ -145,6 +147,14 @@ public class TemplateServiceImpl implements TemplateService {
             String officialTemplateJson = templateConverter.convertToOfficialTemplate(template);
             String tagType = extractTagTypeFromTemplate(officialTemplateJson);
             
+            // 如果从转换后的JSON中提取TagType失败，直接从模板名称推导TagType
+            if (tagType == null || tagType.isEmpty()) {
+                String templateName = template.getName() != null ? template.getName() : "Template";
+                // 使用MqttImageProcessor直接从模板名称获取正确的TagType
+                tagType = mqttImageProcessor.getTagType(templateName);
+                log.info("从转换后JSON提取TagType失败，直接从模板名称推导: {} -> {}", templateName, tagType);
+            }
+
             // 构建文件名：{模板名称}_{屏幕类型}
             String baseName = extractBaseName(template.getName());
             if (tagType != null && !tagType.isEmpty()) {
@@ -270,16 +280,17 @@ public class TemplateServiceImpl implements TemplateService {
             String officialTemplateJson = templateConverter.convertToOfficialTemplate(template);
             String tagType = extractTagTypeFromTemplate(officialTemplateJson);
             
+            // 如果从转换后的JSON中提取TagType失败，直接从模板名称推导TagType
+            if (tagType == null || tagType.isEmpty()) {
+                String templateName = template.getName() != null ? template.getName() : "2";
+                // 使用MqttImageProcessor直接从模板名称获取正确的TagType
+                tagType = mqttImageProcessor.getTagType(templateName);
+                log.info("从转换后JSON提取TagType失败，直接从模板名称推导: {} -> {}", templateName, tagType);
+            }
+            
             // 构建正确的文件名格式：{templateName}_{tagType}.json
             String templateName = template.getName() != null ? template.getName() : "2";
-            String fileName;
-            if (tagType != null && !tagType.isEmpty()) {
-                fileName = templateName + "_" + tagType + ".json";
-            } else {
-                // 如果无法获取TagType，使用默认值06
-                fileName = templateName + "_06.json";
-                log.warn("无法获取模板TagType，使用默认值06: templateId={}", template.getId());
-            }
+            String fileName = templateName + "_" + tagType + ".json";
             
             // 构建tmpls数组
             Map<String, Object> tmplItem = new HashMap<>();

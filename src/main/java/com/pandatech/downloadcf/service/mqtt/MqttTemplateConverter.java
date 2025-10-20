@@ -28,6 +28,7 @@ public class MqttTemplateConverter {
 
     private final ObjectMapper objectMapper;
     private final ImageMagickProcessor imageMagickProcessor;
+    private final MqttImageProcessor mqttImageProcessor;
 
     /**
      * 优化和去重Items，解决重复元素和位置冲突问题
@@ -182,10 +183,8 @@ public class MqttTemplateConverter {
             // 特殊处理不同类型的元素
             String type = String.valueOf(item.get("Type"));
             if ("qrcode".equals(type)) {
-                // 二维码应该是正方形，且有最小尺寸要求
-                int size = Math.max(width, height);
-                size = Math.max(size, 30); // 最小30像素
-                width = height = size;
+                // 二维码应该是正方形99x99，与修复后的文件保持一致
+                width = height = 99;
             } else if ("barcode".equals(type)) {
                 // 条形码宽度应该大于高度
                 width = Math.max(width, 60); // 最小宽度60像素
@@ -268,15 +267,18 @@ public class MqttTemplateConverter {
     private String convertPanelsToOfficialFormat(JsonNode rootNode) throws JsonProcessingException {
         Map<String, Object> officialTemplate = new HashMap<>();
         officialTemplate.put("Version", "1.0");
-        officialTemplate.put("TagType", "06");
-        officialTemplate.put("Hext", "0x0006");
-        officialTemplate.put("Rotate", 0);
         
+        String templateName = "";
         List<Map<String, Object>> items = new ArrayList<>();
         
         JsonNode panelsNode = rootNode.get("panels");
         if (panelsNode != null && panelsNode.isArray() && panelsNode.size() > 0) {
             JsonNode firstPanel = panelsNode.get(0);
+            
+            // 获取模板名称
+            if (firstPanel.has("name")) {
+                templateName = firstPanel.get("name").asText();
+            }
             
             // 设置模板尺寸
             if (firstPanel.has("width")) {
@@ -300,11 +302,21 @@ public class MqttTemplateConverter {
             }
         }
         
+        // 使用MqttImageProcessor获取正确的TagType
+        String tagType = mqttImageProcessor.getTagType(templateName);
+        officialTemplate.put("TagType", tagType);
+        
+        // 根据TagType设置Hext值
+        String hextValue = mqttImageProcessor.getHextValue(tagType);
+        officialTemplate.put("Hext", "0x000" + hextValue);
+        
+        officialTemplate.put("Rotate", 0);
+        
         // 优化和去重Items
         items = optimizeAndDeduplicateItems(items);
         officialTemplate.put("Items", items);
         
-        log.info("MQTT模板转换完成，生成Items数量: {}", items.size());
+        log.info("MQTT模板转换完成，生成Items数量: {}, TagType: {}", items.size(), tagType);
         return objectMapper.writeValueAsString(officialTemplate);
     }
     
@@ -380,13 +392,19 @@ public class MqttTemplateConverter {
                     item.put("Imgdeal", 0);
                     item.put("Imgfill", 0);
                     item.put("Imgtype", "png");
-                    // 如果是base64图片，提取纯base64数据
+                    // 如果是base64图片，使用MqttImageProcessor生成简化的dval
                     if (src.startsWith("data:image/")) {
                         int commaIndex = src.indexOf(",");
                         if (commaIndex > 0 && commaIndex < src.length() - 1) {
                             String base64Data = src.substring(commaIndex + 1);
-                            item.put("dval", base64Data);
+                            // 使用MqttImageProcessor生成简化的dval
+                            String simplifiedDval = mqttImageProcessor.generateSimplifiedDval(
+                                base64Data, "3", w, h);
+                            item.put("dval", simplifiedDval);
                         }
+                    } else {
+                        // 如果不是base64图片，设置空的dval
+                        item.put("dval", "");
                     }
                 }
                 // 清除不适用于图片的字段
@@ -403,7 +421,8 @@ public class MqttTemplateConverter {
                     item.put("Type", "barcode");
                     // 添加条形码特有的字段
                     item.put("Barformat", 0);
-                    item.put("Barheight", (double) h);
+                    // 修复条形码高度：使用固定的合理高度17而不是原始高度
+                    item.put("Barheight", 17);
                     item.put("Bartype", "code128");
                     item.put("Barwidth", w);
                     item.put("Fontinval", 1);
@@ -448,11 +467,47 @@ public class MqttTemplateConverter {
     public String extractTagTypeFromOfficialTemplate(String officialJson) {
         try {
             JsonNode rootNode = objectMapper.readTree(officialJson);
-            JsonNode tagTypeNode = rootNode.path("tagtype");
-            return tagTypeNode.asText("2"); // 默认返回"2"
+            
+            // 首先尝试获取TagType字段（正确的字段名）
+            if (rootNode.has("TagType")) {
+                String tagType = rootNode.get("TagType").asText();
+                log.debug("从模板中提取TagType: {}", tagType);
+                return tagType;
+            }
+            
+            // 如果没有TagType，尝试从Hext推导
+            if (rootNode.has("Hext")) {
+                String hext = rootNode.get("Hext").asText();
+                String tagType = getTagTypeFromHext(hext);
+                log.debug("从Hext推导TagType: {} -> {}", hext, tagType);
+                return tagType;
+            }
+            
+            log.warn("未找到TagType，使用默认值06");
+            return "06";
+            
         } catch (Exception e) {
-            log.warn("提取TagType失败，使用默认值: {}", e.getMessage());
-            return "2";
+            log.error("提取TagType时出错，使用默认值06", e);
+            return "06";
+        }
+    }
+    
+    /**
+     * 从Hext值推导TagType
+     */
+    private String getTagTypeFromHext(String hext) {
+        if (hext == null) return "06";
+        
+        // 移除0x前缀并提取最后一位数字
+        String cleanHext = hext.replace("0x", "").replace("000", "");
+        
+        switch (cleanHext) {
+            case "6":
+                return "06"; // 默认2.13T
+            case "0":
+                return "1C"; // 默认4.2T，但实际需要更精确的判断
+            default:
+                return "06";
         }
     }
 }
