@@ -29,7 +29,7 @@ spring:
   mqtt:
     username: panda
     password: panda@123
-    url: tcp://192.168.10.30:1883
+    url: tcp://47.119.183.105:1883
     client:
       id: data_server_1
     default:

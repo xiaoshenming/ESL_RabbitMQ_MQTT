@@ -1,4 +1,4 @@
-package com.pandatech.downloadcf.service;
+package com.pandatech.downloadcf.service.template;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -116,10 +116,216 @@ public class TemplateConverter {
      * 将panels格式转换为官方格式
      */
     private String convertPanelsToOfficialFormat(JsonNode rootNode, PrintTemplateDesignWithBLOBs template) throws JsonProcessingException {
-        // 这里应该包含复杂的转换逻辑
-        // 为了简化，暂时返回默认模板
         log.info("执行panels到官方格式的转换");
-        return createDefaultOfficialTemplate();
+        
+        try {
+            // 创建基础模板结构
+            Map<String, Object> officialTemplate = new HashMap<>();
+            
+            List<Map<String, Object>> items = new ArrayList<>();
+            
+            // 查找panels数据
+            JsonNode panelsNode = null;
+            if (rootNode.has("designConfig") && rootNode.get("designConfig").has("panels")) {
+                panelsNode = rootNode.get("designConfig").get("panels");
+                log.info("从designConfig.panels中提取数据");
+            } else if (rootNode.has("panels")) {
+                panelsNode = rootNode.get("panels");
+                log.info("从panels中提取数据");
+            }
+            
+            int templateWidth = 250;
+            int templateHeight = 122;
+            String templateName = template.getName() != null ? template.getName() : "Template";
+            
+            if (panelsNode != null && panelsNode.isArray() && panelsNode.size() > 0) {
+                JsonNode firstPanel = panelsNode.get(0);
+                
+                // 获取模板尺寸
+                if (firstPanel.has("width")) {
+                    templateWidth = firstPanel.get("width").asInt();
+                }
+                if (firstPanel.has("height")) {
+                    templateHeight = firstPanel.get("height").asInt();
+                }
+                
+                // 获取模板名称
+                if (firstPanel.has("name")) {
+                    templateName = firstPanel.get("name").asText();
+                }
+                
+                // 转换printElements为Items
+                if (firstPanel.has("printElements")) {
+                    JsonNode printElements = firstPanel.get("printElements");
+                    log.info("找到printElements，元素数量: {}", printElements.size());
+                    
+                    for (JsonNode element : printElements) {
+                        Map<String, Object> item = convertPrintElementToItem(element);
+                        if (item != null) {
+                            items.add(item);
+                        }
+                    }
+                }
+            }
+            
+            // 按照期望的格式设置所有必要字段
+            officialTemplate.put("Items", items);
+            officialTemplate.put("Name", templateName);
+            officialTemplate.put("Size", templateWidth + ", " + templateHeight);
+            officialTemplate.put("TagType", "06");
+            officialTemplate.put("Version", 10);
+            officialTemplate.put("height", String.valueOf(templateHeight));
+            officialTemplate.put("hext", "6");
+            officialTemplate.put("rgb", "3");
+            officialTemplate.put("wext", "0");
+            officialTemplate.put("width", String.valueOf(templateWidth));
+            
+            log.info("转换完成，生成Items数量: {}, 模板尺寸: {}x{}", items.size(), templateWidth, templateHeight);
+            
+            return objectMapper.writeValueAsString(officialTemplate);
+            
+        } catch (Exception e) {
+            log.error("转换panels格式时发生错误，使用默认模板", e);
+            return createDefaultOfficialTemplate();
+        }
+    }
+
+    /**
+     * 将printElement转换为Item格式
+     */
+    private Map<String, Object> convertPrintElementToItem(JsonNode element) {
+        try {
+            if (!element.has("options") || !element.has("printElementType")) {
+                log.warn("printElement缺少必要字段，跳过");
+                return null;
+            }
+            
+            JsonNode options = element.get("options");
+            JsonNode elementType = element.get("printElementType");
+            
+            Map<String, Object> item = new HashMap<>();
+            
+            // 基础属性
+            String type = elementType.get("type").asText("text");
+            item.put("Type", type);
+            
+            // 位置和尺寸 - 直接使用设计器坐标转换为像素坐标
+            double left = options.has("left") ? options.get("left").asDouble() : 0;
+            double top = options.has("top") ? options.get("top").asDouble() : 0;
+            double width = options.has("width") ? options.get("width").asDouble() : 50;
+            double height = options.has("height") ? options.get("height").asDouble() : 20;
+            
+            // 坐标转换：设计器坐标(750x345) -> 像素坐标(250x122)
+            int x = (int) Math.round(left * 250.0 / 750.0);
+            int y = (int) Math.round(top * 122.0 / 345.0);
+            int w = (int) Math.round(width * 250.0 / 750.0);
+            int h = (int) Math.round(height * 122.0 / 345.0);
+            
+            item.put("x", x);
+            item.put("y", y);
+            item.put("width", w);
+            item.put("height", h);
+            item.put("Location", x + ", " + y);
+            item.put("Size", w + ", " + h);
+            
+            // 数据字段
+            if (options.has("templateField")) {
+                item.put("DataKey", options.get("templateField").asText());
+            }
+            if (options.has("testData")) {
+                item.put("DataDefault", options.get("testData").asText());
+            }
+            
+            // 样式属性
+            item.put("FontFamily", "阿里普惠");
+            item.put("FontSize", options.has("fontSize") ? options.get("fontSize").asInt() : 8);
+            item.put("FontStyle", 0);
+            item.put("FontSpace", 0);
+            item.put("TextAlign", getTextAlign(options.get("textAlign")));
+            item.put("DataKeyStyle", 0);
+            
+            // 颜色
+            item.put("FontColor", options.has("color") ? options.get("color").asText() : "Black");
+            item.put("Background", options.has("backgroundColor") ? options.get("backgroundColor").asText() : "Transparent");
+            
+            // 边框
+            item.put("BorderColor", "Transparent");
+            item.put("BorderStyle", 0);
+            
+            // 处理特殊类型
+            if ("image".equals(type)) {
+                // 图片类型的特殊处理
+                item.put("Type", "pic");
+                if (options.has("src")) {
+                    String src = options.get("src").asText();
+                    item.put("DataDefault", src);
+                    // 添加图片特有的字段
+                    item.put("Imgdeal", 0);
+                    item.put("Imgfill", 0);
+                    item.put("Imgtype", "png");
+                    // 如果是base64图片，提取纯base64数据
+                    if (src.startsWith("data:image/")) {
+                        int commaIndex = src.indexOf(",");
+                        if (commaIndex > 0 && commaIndex < src.length() - 1) {
+                            String base64Data = src.substring(commaIndex + 1);
+                            item.put("dval", base64Data);
+                        }
+                    }
+                }
+                // 清除不适用于图片的字段
+                item.remove("FontFamily");
+                item.remove("FontSize");
+                item.remove("FontStyle");
+                item.remove("FontSpace");
+                item.remove("TextAlign");
+                item.remove("FontColor");
+                item.put("DataKey", "");
+            } else if ("text".equals(type) && options.has("textType")) {
+                String textType = options.get("textType").asText();
+                if ("barcode".equals(textType)) {
+                    item.put("Type", "barcode");
+                    // 添加条形码特有的字段
+                    item.put("Barformat", 0);
+                    item.put("Barheight", (double) h);
+                    item.put("Bartype", "code128");
+                    item.put("Barwidth", w);
+                    item.put("Fontinval", 1);
+                    item.put("Showtext", 1);
+                } else if ("qrcode".equals(textType)) {
+                    item.put("Type", "qrcode");
+                    // 二维码使用默认字体大小16
+                    item.put("FontSize", 16);
+                }
+            }
+            
+            log.debug("转换printElement成功: Type={}, DataKey={}, Location={}, Size={}", 
+                     item.get("Type"), item.get("DataKey"), item.get("Location"), item.get("Size"));
+            
+            return item;
+            
+        } catch (Exception e) {
+            log.error("转换printElement时发生错误", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 转换文本对齐方式
+     */
+    private int getTextAlign(JsonNode textAlignNode) {
+        if (textAlignNode == null) {
+            return 0; // 默认左对齐
+        }
+        
+        String textAlign = textAlignNode.asText("left");
+        switch (textAlign.toLowerCase()) {
+            case "center":
+                return 1;
+            case "right":
+                return 2;
+            default:
+                return 0; // 左对齐
+        }
     }
 
     /**
