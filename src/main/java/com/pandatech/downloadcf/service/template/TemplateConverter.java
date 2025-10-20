@@ -162,7 +162,7 @@ public class TemplateConverter {
                     log.info("找到printElements，元素数量: {}", printElements.size());
                     
                     for (JsonNode element : printElements) {
-                        Map<String, Object> item = convertPrintElementToItem(element);
+                        Map<String, Object> item = convertPrintElementToItem(element, template);
                         if (item != null) {
                             items.add(item);
                         }
@@ -179,10 +179,16 @@ public class TemplateConverter {
             String tagType = mqttImageProcessor.getTagType(templateName);
             officialTemplate.put("TagType", tagType);
             
+            // 根据TagType设置正确的hext值
+            String hextValue = mqttImageProcessor.getHextValue(tagType);
+            
+            // 根据TagType设置正确的rgb值
+            String rgbValue = getRgbValueByTagType(tagType);
+            
             officialTemplate.put("Version", 10);
             officialTemplate.put("height", String.valueOf(templateHeight));
-            officialTemplate.put("hext", "6");
-            officialTemplate.put("rgb", "3");
+            officialTemplate.put("hext", hextValue);
+            officialTemplate.put("rgb", rgbValue);
             officialTemplate.put("wext", "0");
             officialTemplate.put("width", String.valueOf(templateWidth));
             
@@ -199,7 +205,7 @@ public class TemplateConverter {
     /**
      * 将printElement转换为Item格式
      */
-    private Map<String, Object> convertPrintElementToItem(JsonNode element) {
+    private Map<String, Object> convertPrintElementToItem(JsonNode element, PrintTemplateDesignWithBLOBs template) {
         try {
             if (!element.has("options") || !element.has("printElementType")) {
                 log.warn("printElement缺少必要字段，跳过");
@@ -221,11 +227,21 @@ public class TemplateConverter {
             double width = options.has("width") ? options.get("width").asDouble() : 50;
             double height = options.has("height") ? options.get("height").asDouble() : 20;
             
-            // 坐标转换：设计器坐标(750x345) -> 像素坐标(250x122)
-            int x = (int) Math.round(left * 250.0 / 750.0);
-            int y = (int) Math.round(top * 122.0 / 345.0);
-            int w = (int) Math.round(width * 250.0 / 750.0);
-            int h = (int) Math.round(height * 122.0 / 345.0);
+            // 坐标转换：设计器坐标(750x345) -> 像素坐标
+            // 根据模板名称确定目标尺寸
+            String templateName = template.getName();
+            double targetWidth = 250.0; // 默认2.13T尺寸
+            double targetHeight = 122.0;
+            
+            if (templateName != null && templateName.contains("4.2")) {
+                targetWidth = 400.0;
+                targetHeight = 300.0;
+            }
+            
+            int x = (int) Math.round(left * targetWidth / 750.0);
+            int y = (int) Math.round(top * targetHeight / 345.0);
+            int w = (int) Math.round(width * targetWidth / 750.0);
+            int h = (int) Math.round(height * targetHeight / 345.0);
             
             item.put("x", x);
             item.put("y", y);
@@ -292,7 +308,14 @@ public class TemplateConverter {
                     item.put("Type", "barcode");
                     // 添加条形码特有的字段
                     item.put("Barformat", 0);
-                    item.put("Barheight", (double) h);
+                    // 修复条形码高度：根据模板类型设置正确的高度
+                    if (templateName != null && templateName.contains("4.2")) {
+                        // 4.2寸屏幕条形码高度为17
+                        item.put("Barheight", 17);
+                    } else {
+                        // 2.13寸屏幕条形码高度为19
+                        item.put("Barheight", 19);
+                    }
                     item.put("Bartype", "code128");
                     item.put("Barwidth", w);
                     item.put("Fontinval", 1);
@@ -301,6 +324,17 @@ public class TemplateConverter {
                     item.put("Type", "qrcode");
                     // 二维码使用默认字体大小16
                     item.put("FontSize", 16);
+                    
+                    // 修复二维码尺寸：根据模板类型设置正确的尺寸
+                    if (templateName != null && templateName.contains("4.2")) {
+                        // 4.2寸屏幕二维码尺寸为99x99
+                        item.put("width", 99);
+                        item.put("height", 99);
+                        item.put("Size", "99, 99");
+                    } else {
+                        // 2.13寸屏幕保持原有尺寸
+                        // 不修改w和h，保持原有计算结果
+                    }
                 }
             }
             
@@ -380,6 +414,37 @@ public class TemplateConverter {
         } catch (Exception e) {
             log.error("提取TagType时出错，使用默认值06", e);
             return "06";
+        }
+    }
+
+    /**
+     * 根据TagType获取正确的rgb值
+     */
+    private String getRgbValueByTagType(String tagType) {
+        if (tagType == null) return "3";
+        
+        switch (tagType) {
+            case "06": // 2.13T
+                return "3";
+            case "07": // 2.13F
+                return "3";
+            case "0B": // 2.66T
+                return "3";
+            case "0C": // 2.66F
+                return "3";
+            case "02": // 1.54T
+                return "3";
+            case "0A": // 2.9T
+                return "3";
+            case "1C": // 4.2T
+                return "3";
+            case "1D": // 4.2F
+                return "4";
+            case "1E": // 7.5T
+                return "3";
+            default:
+                log.debug("未知TagType: {}, 使用默认rgb值: 3", tagType);
+                return "3";
         }
     }
 
