@@ -236,6 +236,9 @@ public class TemplateConverter {
             if (templateName != null && templateName.contains("4.2")) {
                 targetWidth = 400.0;
                 targetHeight = 300.0;
+            } else if (templateName != null && templateName.contains("2.66")) {
+                targetWidth = 296.0;
+                targetHeight = 152.0;
             }
             
             int x = (int) Math.round(left * targetWidth / 750.0);
@@ -312,6 +315,8 @@ public class TemplateConverter {
                     if (templateName != null && templateName.contains("4.2")) {
                         // 4.2寸屏幕条形码高度为17
                         item.put("Barheight", 17);
+                    } else if (templateName != null && templateName.contains("2.66")) {
+                        item.put("Barheight", 10.5);
                     } else {
                         // 2.13寸屏幕条形码高度为19
                         item.put("Barheight", 19);
@@ -331,6 +336,11 @@ public class TemplateConverter {
                         item.put("width", 99);
                         item.put("height", 99);
                         item.put("Size", "99, 99");
+                    } else if (templateName != null && templateName.contains("2.66")) {
+                        // 2.66寸屏幕设置为59x63
+                        item.put("width", 59);
+                        item.put("height", 63);
+                        item.put("Size", "59, 63");
                     } else {
                         // 2.13寸屏幕保持原有尺寸
                         // 不修改w和h，保持原有计算结果
@@ -431,7 +441,7 @@ public class TemplateConverter {
             case "0B": // 2.66T
                 return "3";
             case "0C": // 2.66F
-                return "3";
+                return "4";
             case "02": // 1.54T
                 return "3";
             case "0A": // 2.9T
