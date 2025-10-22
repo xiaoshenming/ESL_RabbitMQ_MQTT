@@ -28,7 +28,7 @@ spring:
   mqtt:
     username: panda
     password: panda@123
-    url: tcp://192.168.10.30:1883
+    url: tcp://47.119.183.105:1883
     client:
       id: data_server_1
     default:
@@ -71,7 +71,7 @@ app:
         enabled: true
         timeout: 30000  # 30秒超时
         retry-count: 3  # 重试次数
-    base-url: http://10.3.36.25:8999/api/res/templ/loadtemple
+    base-url: http://10.3.36.36:8999/api/res/templ/loadtemple
   esl:
     # 价签刷新配置
     refresh:
