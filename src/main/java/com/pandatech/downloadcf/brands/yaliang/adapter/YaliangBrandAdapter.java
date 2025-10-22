@@ -258,57 +258,40 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
             // 解析雅量ESL ID格式
             YaliangEslIdInfo eslIdInfo = parseYaliangEslId(completeData.getEsl().getEslId());
             
-            // 直接调用前端渲染API生成图片
+            // 优化：只调用一次前端渲染API生成模板图片
             String templateBase64 = renderTemplateWithProductData(completeData);
             
-            // 如果获取到图片数据，进行图片处理
-            if (templateBase64 != null && !templateBase64.isEmpty()) {
-                // 获取设备规格信息
-                String deviceSize = mapDeviceCodeToSize(eslIdInfo.getDeviceCode());
-                if (deviceSize == null && currentDeviceSize != null) {
-                    deviceSize = currentDeviceSize;
-                }
-                
-                if (deviceSize != null) {
-                    YaliangBrandConfig.DeviceSpec deviceSpec = config.getDeviceSpec(deviceSize);
-                    if (deviceSpec != null) {
-                        log.info("找到设备规格: deviceCode={}, deviceSize={}, resolution={}x{}, rotation={}°", 
-                                eslIdInfo.getDeviceCode(), deviceSize, 
-                                deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
-                        
-                        // 使用图片处理器处理图片
-                        try {
-                            String processedBase64 = imageProcessor.processImage(templateBase64, deviceSpec);
-                            if (processedBase64 != null) {
-                                templateBase64 = processedBase64;
-                                log.info("图片处理完成，处理后大小: {}KB，目标分辨率: {}x{}，旋转: {}°", 
-                                        templateBase64.length() / 1024, deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
-                            } else {
-                                log.warn("图片处理返回null，使用原始图片");
-                            }
-                        } catch (Exception e) {
-                            log.error("图片处理失败，使用原始图片: {}", e.getMessage(), e);
-                            // 继续使用原始图片，不抛出异常
-                        }
-                    }
-                }
+            // 如果图片生成失败，使用默认图片
+            if (templateBase64 == null || templateBase64.trim().isEmpty()) {
+                templateBase64 = generateDefaultImageBase64();
+                log.warn("前端渲染失败，使用默认图片");
             }
             
             // 创建雅量专用的MQTT消息
             Map<String, Object> yaliangMessage = createYaliangMqttMessage(eslIdInfo, templateBase64);
             
-            // 将图片数据存储到BrandOutputData.extJson中
-            // 修复：使用dataRef字段名以匹配MessageProducerService的期望
+            // 将完整的雅量MQTT载荷数据存储到BrandOutputData.extJson中
             if (templateBase64 != null && !templateBase64.isEmpty()) {
+                // 构建完整的雅量MQTT载荷数据，包含所有必要字段
                 Map<String, Object> extJsonData = new HashMap<>();
-                extJsonData.put("dataRef", templateBase64); // 修复：使用dataRef而不是templateBase64
+                extJsonData.put("queueId", yaliangMessage.get("queueId"));
+                extJsonData.put("deviceType", yaliangMessage.get("deviceType"));
                 extJsonData.put("deviceCode", eslIdInfo.getDeviceCode());
                 extJsonData.put("deviceMac", eslIdInfo.getDeviceMac());
+                extJsonData.put("deviceVersion", yaliangMessage.get("deviceVersion"));
+                extJsonData.put("refreshAction", yaliangMessage.get("refreshAction"));
+                extJsonData.put("refreshArea", yaliangMessage.get("refreshArea"));
+                extJsonData.put("content", yaliangMessage.get("content"));
+                extJsonData.put("timestamp", yaliangMessage.get("timestamp"));
+                
+                // 只保存dataRef字段，符合MQTT消息格式要求
+                extJsonData.put("dataRef", templateBase64);
+                extJsonData.put("imageProcessed", true);
                 
                 try {
                     String extJsonString = objectMapper.writeValueAsString(extJsonData);
                     outputData.setExtJson(extJsonString);
-                    log.info("已将图片数据存储到BrandOutputData.extJson: deviceCode={}, 数据大小={}KB", 
+                    log.info("已将完整的雅量MQTT载荷数据存储到BrandOutputData.extJson: deviceCode={}, 数据大小={}KB", 
                             eslIdInfo.getDeviceCode(), templateBase64.length() / 1024);
                 } catch (Exception e) {
                     log.error("序列化extJson数据失败", e);
@@ -387,7 +370,7 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
     
     /**
      * 从EXT_JSON中提取图片数据
-     * 修复：支持从dataRef字段获取图片数据，以匹配MessageProducerService的期望
+     * 修复：只从已存储的dataRef或templateBase64字段获取图片数据，不再重复调用前端渲染API
      */
     private String extractTemplateBase64FromExtJson(String extJson) {
         // 添加详细的日志输出来调试EXT_JSON内容
@@ -402,7 +385,7 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
         
         if (extJson == null || extJson.trim().isEmpty()) {
             log.warn("EXT_JSON为空，无法提取图片数据");
-            return generateDefaultImageBase64();
+            return null; // 返回null而不是默认图片，让调用方决定如何处理
         }
         
         try {
@@ -421,37 +404,10 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
                 log.info("templateBase64字段值是否为null: {}", imageBase64 == null);
             }
             
-            // 如果EXT_JSON中没有图片数据，尝试使用前端渲染服务
-            if (imageBase64 == null || imageBase64.trim().isEmpty()) {
-                log.info("EXT_JSON中未找到图片数据，尝试使用前端渲染服务");
-                
-                // 从EXT_JSON中获取templateId和productId
-                String templateId = (String) extData.get("templateId");
-                String productId = (String) extData.get("productId");
-                
-                if (templateId != null && productId != null) {
-                    log.info("尝试使用前端渲染服务: templateId={}, productId={}", templateId, productId);
-                    try {
-                        imageBase64 = templateRenderingService.renderTemplate(templateId, productId);
-                        if (imageBase64 != null && !imageBase64.trim().isEmpty()) {
-                            log.info("前端渲染服务成功生成图片，大小: {}KB", imageBase64.length() / 1024.0);
-                        } else {
-                            log.warn("前端渲染服务返回空图片");
-                        }
-                    } catch (Exception e) {
-                        log.error("前端渲染服务调用失败: {}", e.getMessage(), e);
-                    }
-                } else {
-                    log.warn("EXT_JSON中缺少templateId或productId，无法调用前端渲染服务");
-                }
-            }
-            
-            if (imageBase64 != null) {
+            if (imageBase64 != null && !imageBase64.trim().isEmpty()) {
                 log.info("图片数据原始长度: {}", imageBase64.length());
                 log.info("图片数据前100字符: {}", imageBase64.length() > 100 ? imageBase64.substring(0, 100) + "..." : imageBase64);
-            }
-            
-            if (imageBase64 != null && !imageBase64.trim().isEmpty()) {
+                
                 // 移除data:image/png;base64,前缀（如果存在）
                 if (imageBase64.startsWith("data:image/")) {
                     int commaIndex = imageBase64.indexOf(",");
@@ -462,17 +418,17 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
                     }
                 }
                 
-                log.info("成功获取图片数据，最终大小: {}KB", imageBase64.length() / 1024.0);
+                log.info("成功从EXT_JSON获取图片数据，最终大小: {}KB", imageBase64.length() / 1024.0);
                 return imageBase64;
             } else {
-                log.warn("无法获取图片数据，使用默认图片");
-                return generateDefaultImageBase64();
+                log.warn("EXT_JSON中未找到图片数据");
+                return null; // 返回null而不是默认图片，让调用方决定如何处理
             }
             
         } catch (Exception e) {
             log.error("解析EXT_JSON失败: {}", e.getMessage(), e);
             log.error("EXT_JSON内容: {}", extJson);
-            return generateDefaultImageBase64();
+            return null; // 返回null而不是默认图片，让调用方决定如何处理
         }
     }
     
@@ -501,6 +457,7 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
         message.put("deviceVersion", "4.0.0");
         message.put("refreshAction", config.getDefaultRefreshAction());
         message.put("refreshArea", config.getDefaultRefreshArea());
+        message.put("timestamp", System.currentTimeMillis()); // 添加时间戳字段
         
         // 内容列表
         List<Map<String, Object>> contentList = new ArrayList<>();
@@ -512,9 +469,9 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
         
         message.put("content", contentList);
         
-        log.info("雅量MQTT消息创建完成: queueId={}, deviceCode={}, deviceMac={}, 图片大小={}KB", 
+        log.info("雅量MQTT消息创建完成: queueId={}, deviceCode={}, deviceMac={}, timestamp={}, 图片大小={}KB", 
                 message.get("queueId"), eslIdInfo.getDeviceCode(), eslIdInfo.getDeviceMac(), 
-                templateBase64 != null ? templateBase64.length() / 1024 : 0);
+                message.get("timestamp"), templateBase64 != null ? templateBase64.length() / 1024 : 0);
         
         return message;
     }
@@ -781,65 +738,64 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
      * 使用前端渲染API生成图片
      */
     private String renderTemplateWithProductData(EslCompleteData completeData) {
+        log.info("准备调用前端渲染服务: templateId={}, productId={}", 
+                completeData.getTemplate().getId(), completeData.getProduct().getId());
+        
         try {
-            String templateId = completeData.getTemplate() != null ? 
-                String.valueOf(completeData.getTemplate().getTemplateId()) : null;
-            // 使用商品的数据库主键ID，而不是业务编号
-            // 前端渲染API需要的是商品的数据库主键ID
-            String productId = String.valueOf(completeData.getProduct().getId()); // 这是数据库主键ID，如"1974785930188967938"
-            
-            if (templateId == null || productId == null || productId.trim().isEmpty()) {
-                log.warn("缺少templateId或productId，无法调用前端渲染服务: templateId={}, productId={}", 
-                    templateId, productId);
-                return generateDefaultImageBase64();
-            }
-            
-            log.info("开始调用前端渲染API: templateId={}, productId={}", templateId, productId);
-            
-            // 调用前端渲染服务
-            String templateBase64 = templateRenderingService.renderTemplate(templateId, productId);
+            // 调用前端渲染API生成图片
+            String templateBase64 = templateRenderingService.renderTemplate(
+                completeData.getTemplate().getId(), 
+                completeData.getProduct().getId()
+            );
             
             if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
                 log.info("前端渲染API调用成功，原始图片大小: {}KB", templateBase64.length() / 1024.0);
                 
-                // 解析ESL ID获取设备信息
+                // 解析雅量ESL ID格式以获取设备信息
                 YaliangEslIdInfo eslIdInfo = parseYaliangEslId(completeData.getEsl().getEslId());
                 
-                // 从模板类别中提取设备规格
-                String deviceSize = currentDeviceSize;
-                if (deviceSize == null) {
-                    deviceSize = mapDeviceCodeToSize(eslIdInfo.getDeviceCode());
-                }
-                
+                // 获取设备规格进行图片处理
+                String deviceSize = currentDeviceSize != null ? currentDeviceSize : mapDeviceCodeToSize(eslIdInfo.getDeviceCode());
                 if (deviceSize != null) {
-                    log.info("从模板类别中提取到设备规格: {}", deviceSize);
-                    
-                    // 获取设备规格配置
-                    YaliangBrandConfig.DeviceSpec deviceSpec = config.getDeviceSpecs().getSpecs().get(deviceSize);
-                    if (deviceSpec != null && deviceSpec.isSupported()) {
+                    YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpec(deviceSize);
+                    if (deviceSpec != null) {
                         log.info("找到设备规格: deviceCode={}, deviceSize={}, resolution={}x{}, rotation={}°", 
                             eslIdInfo.getDeviceCode(), deviceSize, 
                             deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
                         
-                        // 处理图片
+                        // 处理图片 - 关键修复：确保异常被正确处理
                         try {
-                            String processedBase64 = imageProcessor.processImage(templateBase64, deviceSpec, config);
-                            
-                            log.info("图片处理完成，处理后大小: {}KB，目标分辨率: {}x{}，旋转: {}°", 
-                                processedBase64.length() / 1024.0, 
+                            log.info("开始处理图片: 原始大小={}KB, 目标分辨率={}x{}, 旋转角度={}°", 
+                                templateBase64.length() / 1024.0,
                                 deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
                             
-                            return processedBase64;
+                            String processedBase64 = imageProcessor.processImage(templateBase64, deviceSpec, config);
+                            
+                            if (processedBase64 != null && !processedBase64.trim().isEmpty()) {
+                                log.info("图片处理完成，处理后大小: {}KB，目标分辨率: {}x{}，旋转: {}°", 
+                                    processedBase64.length() / 1024.0, 
+                                    deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
+                                
+                                return processedBase64;
+                            } else {
+                                log.error("图片处理返回空结果，使用原始图片");
+                                return templateBase64;
+                            }
                         } catch (Exception e) {
-                            log.error("图片处理失败，使用原始图片: {}", e.getMessage(), e);
-                            return templateBase64;
+                            log.error("图片处理失败，错误详情: {}", e.getMessage(), e);
+                            log.error("图片处理失败，使用原始图片: deviceCode={}, deviceSize={}", 
+                                eslIdInfo.getDeviceCode(), deviceSize);
+                            // 不要返回原始图片，而是生成默认图片，确保数据格式正确
+                            return generateDefaultImageBase64();
                         }
                     } else {
                         log.warn("不支持的设备规格: {}", deviceSize);
+                        return generateDefaultImageBase64();
                     }
+                } else {
+                    log.warn("无法确定设备尺寸: deviceCode={}", eslIdInfo.getDeviceCode());
+                    return generateDefaultImageBase64();
                 }
-                
-                return templateBase64;
             } else {
                 log.warn("前端渲染API返回空图片");
                 return generateDefaultImageBase64();

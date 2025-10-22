@@ -199,6 +199,7 @@ public class MessageProducerService {
         payload.put("deviceVersion", "4.0.0");
         payload.put("refreshAction", 3);
         payload.put("refreshArea", 1);
+        payload.put("timestamp", System.currentTimeMillis()); // 添加时间戳字段
         
         // 构建content数组
         List<Map<String, Object>> contentList = new ArrayList<>();
@@ -238,8 +239,8 @@ public class MessageProducerService {
         
         payload.put("content", contentList);
         
-        log.info("雅量MQTT载荷构建完成: queueId={}, deviceCode={}, deviceMac={}", 
-                payload.get("queueId"), deviceCode, deviceMac);
+        log.info("雅量MQTT载荷构建完成: queueId={}, deviceCode={}, deviceMac={}, timestamp={}", 
+                payload.get("queueId"), deviceCode, deviceMac, payload.get("timestamp"));
         
         return payload;
     }
@@ -250,6 +251,59 @@ public class MessageProducerService {
     private Object buildYaliangMqttPayload(BrandOutputData outputData, PrintTemplateDesignWithBLOBs template) {
         log.info("构建雅量品牌MQTT载荷（使用已有模板数据），ESL ID: {}", outputData.getEslId());
         
+        try {
+            // 优先从BrandOutputData.extJson中获取完整的雅量MQTT载荷数据
+            if (outputData.getExtJson() != null && !outputData.getExtJson().trim().isEmpty()) {
+                try {
+                    ObjectMapper mapper = new ObjectMapper();
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> extJsonData = mapper.readValue(outputData.getExtJson(), Map.class);
+                    
+                    // 检查是否包含完整的雅量MQTT载荷数据
+                    if (extJsonData.containsKey("queueId") && extJsonData.containsKey("content")) {
+                        log.info("从extJson中获取到完整的雅量MQTT载荷数据");
+                        // 移除根级别的多余dataRef字段，确保符合标准格式
+                        extJsonData.remove("dataRef");
+                        return extJsonData;
+                    }
+                    
+                    // 只从extJson中获取dataRef字段
+                    String templateBase64 = (String) extJsonData.get("dataRef");
+                    
+                    if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+                        log.info("从extJson中获取到图片数据，构建完整载荷");
+                        return buildCompleteYaliangPayload(outputData, templateBase64);
+                    }
+                } catch (Exception e) {
+                    log.warn("解析extJson失败，尝试其他方式获取图片数据", e);
+                }
+            }
+            
+            // 如果extJson中没有数据，尝试从模板数据中获取
+            String templateBase64 = null;
+            if (template != null && template.getExtJson() != null) {
+                templateBase64 = extractTemplateBase64FromExtJson(template.getExtJson());
+                log.info("从模板数据中提取原始图片成功，模板ID: {}", template.getId());
+            }
+            
+            if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+                log.info("从模板数据中获取到图片，构建雅量载荷");
+                return buildCompleteYaliangPayload(outputData, templateBase64);
+            }
+            
+            log.warn("未找到图片数据，构建空载荷");
+            return buildCompleteYaliangPayload(outputData, "");
+            
+        } catch (Exception e) {
+            log.error("构建雅量MQTT载荷失败", e);
+            return new LinkedHashMap<>();
+        }
+    }
+    
+    /**
+     * 构建完整的雅量MQTT载荷
+     */
+    private Object buildCompleteYaliangPayload(BrandOutputData outputData, String templateBase64) {
         Map<String, Object> payload = new LinkedHashMap<>();
         
         // 解析雅量ESL ID格式：CG101F6D-00125414A7B9B046
@@ -271,53 +325,26 @@ public class MessageProducerService {
         payload.put("deviceVersion", "4.0.0");
         payload.put("refreshAction", 3);
         payload.put("refreshArea", 1);
+        payload.put("timestamp", System.currentTimeMillis()); // 添加时间戳字段
         
         // 构建content数组
         List<Map<String, Object>> contentList = new ArrayList<>();
         Map<String, Object> contentItem = new HashMap<>();
         contentItem.put("dataType", 3);
         
-        // 直接从已有模板数据中提取templateBase64，避免重复查询
-        String templateBase64 = null;
-        if (template != null && template.getExtJson() != null) {
-            templateBase64 = extractTemplateBase64FromExtJson(template.getExtJson());
-            log.info("从已有模板数据中提取templateBase64成功，模板ID: {}", template.getId());
-        } else {
-            log.warn("模板数据为空，使用默认图片数据");
+        // 如果仍然没有获取到图片数据，使用默认图片
+        if (templateBase64 == null || templateBase64.trim().isEmpty()) {
+            log.warn("未获取到图片数据，使用默认图片: deviceCode={}", deviceCode);
+            templateBase64 = "iVxxxYII=";
         }
         
-        // 如果获取到了templateBase64，进行图片分辨率转换
-        if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
-            try {
-                // 根据设备规格获取目标分辨率
-                YaliangBrandConfig.DeviceSpec deviceSpec = getDeviceSpecForEsl(deviceCode);
-                if (deviceSpec != null) {
-                    log.info("开始处理雅量图片: deviceCode={}, 目标分辨率={}x{}, 旋转角度={}", 
-                            deviceCode, deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
-                    
-                    // 使用YaliangImageProcessor处理图片
-                     String processedImage = yaliangImageProcessor.processImage(templateBase64, deviceSpec, yaliangBrandConfig);
-                    templateBase64 = processedImage;
-                    
-                    log.info("雅量图片处理完成: deviceCode={}, 处理后大小={}KB", 
-                            deviceCode, processedImage.length() / 1024);
-                } else {
-                    log.warn("未找到设备规格配置，使用原始图片: deviceCode={}", deviceCode);
-                }
-            } catch (Exception e) {
-                log.error("雅量图片处理失败，使用原始图片: deviceCode={}, error={}", deviceCode, e.getMessage());
-            }
-        }
-        
-        contentItem.put("dataRef", templateBase64 != null ? templateBase64 : "iVxxxYII=");
+        contentItem.put("dataRef", templateBase64);
         contentItem.put("layerEnd", true);
         contentList.add(contentItem);
         
         payload.put("content", contentList);
         
-        log.info("雅量MQTT载荷构建完成（使用已有模板数据）: queueId={}, deviceCode={}, deviceMac={}", 
-                payload.get("queueId"), deviceCode, deviceMac);
-        
+        log.info("构建完整雅量MQTT载荷完成，包含{}个content项，timestamp={}", contentList.size(), payload.get("timestamp"));
         return payload;
     }
     
@@ -414,6 +441,20 @@ public class MessageProducerService {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(extJson);
             
+            // 添加详细的调试信息
+            log.info("=== MessageProducerService EXT_JSON调试信息开始 ===");
+            log.info("EXT_JSON内容: {}", extJson);
+            log.info("解析后的JSON节点数量: {}", rootNode.size());
+            
+            // 打印所有可用字段
+            StringBuilder fieldsInfo = new StringBuilder();
+            rootNode.fieldNames().forEachRemaining(fieldName -> {
+                JsonNode fieldValue = rootNode.get(fieldName);
+                fieldsInfo.append(fieldName).append("=").append(fieldValue.asText()).append(", ");
+            });
+            log.info("所有可用字段: {}", fieldsInfo.toString());
+            log.info("=== MessageProducerService EXT_JSON调试信息结束 ===");
+            
             // 首先尝试从dataRef字段获取图片数据（新格式）
             JsonNode dataRefNode = rootNode.get("dataRef");
             if (dataRefNode != null && !dataRefNode.isNull()) {
@@ -446,7 +487,7 @@ public class MessageProducerService {
                 return templateBase64;
             }
             
-            log.warn("EXT_JSON中未找到dataRef或templateBase64字段，可用字段: {}", rootNode.fieldNames());
+            log.warn("EXT_JSON中未找到dataRef或templateBase64字段");
             return null;
         } catch (Exception e) {
             log.error("解析EXT_JSON失败: {}", e.getMessage(), e);

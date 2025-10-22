@@ -25,120 +25,18 @@ public class YaliangImageProcessor {
      *
      * @param imageBase64 原始图片Base64数据
      * @param deviceSpec 设备规格
-     * @return 处理后的Base64数据
-     */
-    public String processImage(String imageBase64, YaliangBrandConfig.DeviceSpec deviceSpec) {
-        try {
-            // 验证Base64数据
-            if (imageBase64 == null || imageBase64.trim().isEmpty()) {
-                throw new IllegalArgumentException("图片Base64数据为空");
-            }
-            
-            // 清理并验证Base64数据
-            String cleanedBase64 = cleanBase64(imageBase64);
-            if (!isValidBase64(cleanedBase64)) {
-                throw new IllegalArgumentException("无效的Base64数据格式");
-            }
-            
-            // 解码Base64图片
-            byte[] imageBytes;
-            try {
-                imageBytes = Base64.getDecoder().decode(cleanedBase64);
-            } catch (IllegalArgumentException e) {
-                log.error("Base64解码失败: {}", e.getMessage());
-                throw new IllegalArgumentException("Base64解码失败: " + e.getMessage(), e);
-            }
-            
-            if (imageBytes.length == 0) {
-                throw new IllegalArgumentException("解码后的图片数据为空");
-            }
-            
-            // 验证图片数据头部
-            if (!isValidImageData(imageBytes)) {
-                throw new IllegalArgumentException("无效的图片数据格式");
-            }
-            
-            BufferedImage originalImage;
-            try {
-                originalImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            } catch (IOException e) {
-                log.error("图片读取失败: {}", e.getMessage());
-                throw new IllegalArgumentException("图片数据损坏或格式不支持: " + e.getMessage(), e);
-            }
-            
-            if (originalImage == null) {
-                throw new IllegalArgumentException("无法解析图片数据，可能是不支持的图片格式");
-            }
-            
-            log.info("原始图片尺寸: {}x{}, 目标尺寸: {}x{}, 旋转角度: {}°", 
-                    originalImage.getWidth(), originalImage.getHeight(),
-                    deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
-            
-            // 缩放图片到目标尺寸
-            BufferedImage scaledImage = scaleImage(originalImage, deviceSpec.getWidth(), deviceSpec.getHeight());
-            
-            // 旋转图片
-            BufferedImage rotatedImage = rotateImage(scaledImage, deviceSpec.getRotation());
-            
-            // 转换为Base64
-            return imageToBase64(rotatedImage, "PNG", false);
-            
-        } catch (Exception e) {
-            log.error("图片处理失败: {}", e.getMessage(), e);
-            throw new RuntimeException("图片处理失败: " + e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * 处理图片：缩放、旋转、转换为Base64
-     *
-     * @param imageBase64 原始图片Base64数据
-     * @param deviceSpec 设备规格
      * @param config 品牌配置
      * @return 处理后的Base64数据
      */
     public String processImage(String imageBase64, YaliangBrandConfig.DeviceSpec deviceSpec, 
                               YaliangBrandConfig config) {
         try {
-            // 验证Base64数据
-            if (imageBase64 == null || imageBase64.trim().isEmpty()) {
-                throw new IllegalArgumentException("图片Base64数据为空");
-            }
-            
-            // 清理并验证Base64数据
-            String cleanedBase64 = cleanBase64(imageBase64);
-            if (!isValidBase64(cleanedBase64)) {
-                throw new IllegalArgumentException("无效的Base64数据格式");
-            }
-            
             // 解码Base64图片
-            byte[] imageBytes;
-            try {
-                imageBytes = Base64.getDecoder().decode(cleanedBase64);
-            } catch (IllegalArgumentException e) {
-                log.error("Base64解码失败: {}", e.getMessage());
-                throw new IllegalArgumentException("Base64解码失败: " + e.getMessage(), e);
-            }
-            
-            if (imageBytes.length == 0) {
-                throw new IllegalArgumentException("解码后的图片数据为空");
-            }
-            
-            // 验证图片数据头部
-            if (!isValidImageData(imageBytes)) {
-                throw new IllegalArgumentException("无效的图片数据格式");
-            }
-            
-            BufferedImage originalImage;
-            try {
-                originalImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            } catch (IOException e) {
-                log.error("图片读取失败: {}", e.getMessage());
-                throw new IllegalArgumentException("图片数据损坏或格式不支持: " + e.getMessage(), e);
-            }
+            byte[] imageBytes = Base64.getDecoder().decode(cleanBase64(imageBase64));
+            BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
             
             if (originalImage == null) {
-                throw new IllegalArgumentException("无法解析图片数据，可能是不支持的图片格式");
+                throw new IllegalArgumentException("无法解析图片数据");
             }
             
             log.info("原始图片尺寸: {}x{}, 目标尺寸: {}x{}, 旋转角度: {}°", 
@@ -197,13 +95,15 @@ public class YaliangImageProcessor {
     
     /**
      * 旋转图片
+     * 按照价签硬件要求：以图片左下角为原点，按逆时针为正方向进行旋转
      */
     private BufferedImage rotateImage(BufferedImage originalImage, int rotation) {
         if (rotation == 0) {
             return originalImage;
         }
         
-        double radians = Math.toRadians(rotation);
+        // 将角度转换为逆时针旋转（负角度表示逆时针）
+        double radians = Math.toRadians(-rotation);
         double sin = Math.abs(Math.sin(radians));
         double cos = Math.abs(Math.cos(radians));
         
@@ -226,15 +126,18 @@ public class YaliangImageProcessor {
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, newWidth, newHeight);
         
-        // 设置旋转变换
+        // 设置旋转变换（逆时针旋转）
         AffineTransform transform = new AffineTransform();
         transform.translate(newWidth / 2.0, newHeight / 2.0);
-        transform.rotate(radians);
+        transform.rotate(radians); // 使用负角度实现逆时针旋转
         transform.translate(-originalWidth / 2.0, -originalHeight / 2.0);
         
         g2d.setTransform(transform);
         g2d.drawImage(originalImage, 0, 0, null);
         g2d.dispose();
+        
+        log.info("图片旋转完成: 原始尺寸={}x{}, 旋转角度={}°(逆时针), 旋转后尺寸={}x{}", 
+                originalWidth, originalHeight, rotation, newWidth, newHeight);
         
         return rotatedImage;
     }
@@ -261,69 +164,7 @@ public class YaliangImageProcessor {
         if (base64.contains(",")) {
             return base64.substring(base64.indexOf(",") + 1);
         }
-        return base64.trim().replaceAll("\\s", ""); // 移除所有空白字符
-    }
-    
-    /**
-     * 验证Base64数据格式
-     */
-    private boolean isValidBase64(String base64) {
-        if (base64 == null || base64.isEmpty()) {
-            return false;
-        }
-        
-        // Base64字符集验证
-        if (!base64.matches("^[A-Za-z0-9+/]*={0,2}$")) {
-            return false;
-        }
-        
-        // 长度验证（Base64编码后的长度必须是4的倍数）
-        if (base64.length() % 4 != 0) {
-            return false;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * 验证图片数据头部
-     */
-    private boolean isValidImageData(byte[] imageBytes) {
-        if (imageBytes == null || imageBytes.length < 8) {
-            return false;
-        }
-        
-        // PNG文件头: 89 50 4E 47 0D 0A 1A 0A
-        if (imageBytes.length >= 8 && 
-            imageBytes[0] == (byte) 0x89 && imageBytes[1] == 0x50 && 
-            imageBytes[2] == 0x4E && imageBytes[3] == 0x47 &&
-            imageBytes[4] == 0x0D && imageBytes[5] == 0x0A && 
-            imageBytes[6] == 0x1A && imageBytes[7] == 0x0A) {
-            return true;
-        }
-        
-        // JPEG文件头: FF D8 FF
-        if (imageBytes.length >= 3 && 
-            imageBytes[0] == (byte) 0xFF && imageBytes[1] == (byte) 0xD8 && 
-            imageBytes[2] == (byte) 0xFF) {
-            return true;
-        }
-        
-        // GIF文件头: GIF87a 或 GIF89a
-        if (imageBytes.length >= 6) {
-            String header = new String(imageBytes, 0, 6);
-            if ("GIF87a".equals(header) || "GIF89a".equals(header)) {
-                return true;
-            }
-        }
-        
-        // BMP文件头: BM
-        if (imageBytes.length >= 2 && 
-            imageBytes[0] == 0x42 && imageBytes[1] == 0x4D) {
-            return true;
-        }
-        
-        return false;
+        return base64;
     }
     
     /**
