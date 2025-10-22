@@ -402,7 +402,8 @@ public class MessageProducerService {
     }
     
     /**
-     * 从EXT_JSON中提取templateBase64字段
+     * 从EXT_JSON中提取图片数据
+     * 修复：优先从dataRef字段获取图片数据，以匹配YaliangBrandAdapter的存储格式
      */
     private String extractTemplateBase64FromExtJson(String extJson) {
         if (extJson == null || extJson.trim().isEmpty()) {
@@ -413,10 +414,28 @@ public class MessageProducerService {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(extJson);
             
-            // 查找templateBase64字段
+            // 首先尝试从dataRef字段获取图片数据（新格式）
+            JsonNode dataRefNode = rootNode.get("dataRef");
+            if (dataRefNode != null && !dataRefNode.isNull()) {
+                String imageBase64 = dataRefNode.asText();
+                log.info("从EXT_JSON的dataRef字段获取图片数据，大小: {}KB", imageBase64.length() / 1024.0);
+                
+                // 如果是data:image格式，提取base64部分
+                if (imageBase64.startsWith("data:image/")) {
+                    int commaIndex = imageBase64.indexOf(",");
+                    if (commaIndex > 0 && commaIndex < imageBase64.length() - 1) {
+                        return imageBase64.substring(commaIndex + 1);
+                    }
+                }
+                return imageBase64;
+            }
+            
+            // 如果没有dataRef，尝试获取templateBase64字段（旧格式兼容）
             JsonNode templateBase64Node = rootNode.get("templateBase64");
             if (templateBase64Node != null && !templateBase64Node.isNull()) {
                 String templateBase64 = templateBase64Node.asText();
+                log.info("从EXT_JSON的templateBase64字段获取图片数据（兼容模式），大小: {}KB", templateBase64.length() / 1024.0);
+                
                 // 如果是data:image格式，提取base64部分
                 if (templateBase64.startsWith("data:image/")) {
                     int commaIndex = templateBase64.indexOf(",");
@@ -427,10 +446,11 @@ public class MessageProducerService {
                 return templateBase64;
             }
             
-            log.warn("EXT_JSON中未找到templateBase64字段");
+            log.warn("EXT_JSON中未找到dataRef或templateBase64字段，可用字段: {}", rootNode.fieldNames());
             return null;
         } catch (Exception e) {
-            log.error("解析EXT_JSON失败", e);
+            log.error("解析EXT_JSON失败: {}", e.getMessage(), e);
+            log.error("EXT_JSON内容: {}", extJson);
             return null;
         }
     }

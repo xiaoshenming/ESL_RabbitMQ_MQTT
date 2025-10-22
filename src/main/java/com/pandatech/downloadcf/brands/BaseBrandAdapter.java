@@ -116,8 +116,8 @@ public abstract class BaseBrandAdapter implements BrandAdapter {
             return dataMap;
         }
         
-        log.info("开始构建{}数据映射，商品ID: {}, 商品名称: {}", 
-                getBrandName(), product.getProductId(), product.getProductName());
+        log.info("开始构建{}数据映射，商品主键ID: {}, 商品业务编号: {}, 商品名称: {}", 
+                getBrandName(), product.getId(), product.getProductId(), product.getProductName());
         
         // 根据字段映射配置进行精确映射
         if (completeData.getFieldMappings() != null && !completeData.getFieldMappings().isEmpty()) {

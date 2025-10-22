@@ -92,8 +92,9 @@ public class DataService {
         
         log.info("字段映射配置查询结果: brandCode={}, mappingCount={}", adapterBrandCode, fieldMappings.size());
         
-        log.info("成功获取价签完整数据: eslId={}, productId={}, templateId={}", 
+        log.info("成功获取价签完整数据: eslId={}, 商品主键ID={}, 商品业务编号={}, templateId={}", 
                 eslId, product != null ? product.getId() : null, 
+                product != null ? product.getProductId() : null,
                 template != null ? template.getId() : null);
         
         return completeData;

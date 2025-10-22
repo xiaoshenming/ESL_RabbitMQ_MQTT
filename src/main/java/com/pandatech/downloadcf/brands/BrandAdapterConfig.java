@@ -3,7 +3,6 @@ package com.pandatech.downloadcf.brands;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.adapter.BrandAdapter;
 import com.pandatech.downloadcf.brands.aes.adapter.AesBrandAdapter;
-import com.pandatech.downloadcf.brands.yaliang.adapter.YaliangBrandAdapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -29,14 +28,8 @@ public class BrandAdapterConfig {
         return new AesBrandAdapter(objectMapper);
     }
     
-    /**
-     * 注册YALIANG品牌适配器
-     */
-    @Bean
-    public BrandAdapter yaliangBrandAdapter() {
-        log.info("注册YALIANG品牌适配器");
-        return new YaliangBrandAdapter(objectMapper);
-    }
+    // 注意：YaliangBrandAdapter现在使用@Component注解自动注册
+    // 不再需要手动@Bean配置，Spring会自动扫描并注册
     
     // 未来新增品牌适配器时，在这里添加对应的@Bean方法
     // 例如：

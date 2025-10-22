@@ -53,4 +53,9 @@ public class BrandOutputData {
      * 图片Base64数据
      */
     private String imageBase64;
+    
+    /**
+     * 扩展JSON数据
+     */
+    private String extJson;
 }

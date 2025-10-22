@@ -11,6 +11,7 @@ import com.pandatech.downloadcf.brands.yaliang.dto.YaliangRefreshRequest;
 import com.pandatech.downloadcf.brands.yaliang.exception.YaliangException;
 import com.pandatech.downloadcf.brands.yaliang.util.YaliangImageProcessor;
 import com.pandatech.downloadcf.service.DataService;
+import com.pandatech.downloadcf.service.TemplateRenderingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * 注意：此类通过 BrandAdapterConfig 进行Bean注册，不使用 @Component 注解
  */
 @Slf4j
+@Component
 public class YaliangBrandAdapter extends BaseBrandAdapter {
     
     private static final DecimalFormat PRICE_FORMAT = new DecimalFormat("0.00");
@@ -43,6 +45,12 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
     
     @Autowired
     private DataService dataService;
+    
+    @Autowired
+    private TemplateRenderingService templateRenderingService;
+    
+    // 当前处理的设备尺寸
+    private String currentDeviceSize;
     
     public YaliangBrandAdapter(ObjectMapper objectMapper) {
         super(objectMapper);
@@ -233,18 +241,79 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
         log.info("开始转换雅量品牌数据: ESL_ID={}", completeData.getEsl().getEslId());
         
         try {
+            // 从产品名称中提取设备尺寸信息
+            String productName = completeData.getProduct().getProductName();
+            if (productName != null && productName.contains("YALIANG")) {
+                String deviceSize = extractDeviceSizeFromProductName(productName);
+                if (deviceSize != null) {
+                    log.info("从产品名称中提取到设备尺寸: {} -> {}", productName, deviceSize);
+                    // 设置当前处理的设备尺寸，供后续图片处理使用
+                    setCurrentDeviceSize(deviceSize);
+                }
+            }
+            
             // 调用父类的基础转换逻辑
             BrandOutputData outputData = super.transform(completeData);
             
-            // 解析雅量ESL ID格式 (CG101F6D-00125414A7B9B046)
+            // 解析雅量ESL ID格式
             YaliangEslIdInfo eslIdInfo = parseYaliangEslId(completeData.getEsl().getEslId());
             
-            // 处理模板EXT_JSON中的templateBase64
-            String templateBase64 = extractTemplateBase64FromExtJson(
-                completeData.getTemplate() != null ? completeData.getTemplate().getExtJson() : null);
+            // 直接调用前端渲染API生成图片
+            String templateBase64 = renderTemplateWithProductData(completeData);
+            
+            // 如果获取到图片数据，进行图片处理
+            if (templateBase64 != null && !templateBase64.isEmpty()) {
+                // 获取设备规格信息
+                String deviceSize = mapDeviceCodeToSize(eslIdInfo.getDeviceCode());
+                if (deviceSize == null && currentDeviceSize != null) {
+                    deviceSize = currentDeviceSize;
+                }
+                
+                if (deviceSize != null) {
+                    YaliangBrandConfig.DeviceSpec deviceSpec = config.getDeviceSpec(deviceSize);
+                    if (deviceSpec != null) {
+                        log.info("找到设备规格: deviceCode={}, deviceSize={}, resolution={}x{}, rotation={}°", 
+                                eslIdInfo.getDeviceCode(), deviceSize, 
+                                deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
+                        
+                        // 使用图片处理器处理图片
+                        try {
+                            String processedBase64 = imageProcessor.processImage(templateBase64, deviceSpec);
+                            if (processedBase64 != null) {
+                                templateBase64 = processedBase64;
+                                log.info("图片处理完成，处理后大小: {}KB，目标分辨率: {}x{}，旋转: {}°", 
+                                        templateBase64.length() / 1024, deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
+                            } else {
+                                log.warn("图片处理返回null，使用原始图片");
+                            }
+                        } catch (Exception e) {
+                            log.error("图片处理失败，使用原始图片: {}", e.getMessage(), e);
+                            // 继续使用原始图片，不抛出异常
+                        }
+                    }
+                }
+            }
             
             // 创建雅量专用的MQTT消息
             Map<String, Object> yaliangMessage = createYaliangMqttMessage(eslIdInfo, templateBase64);
+            
+            // 将图片数据存储到BrandOutputData.extJson中
+            // 修复：使用dataRef字段名以匹配MessageProducerService的期望
+            if (templateBase64 != null && !templateBase64.isEmpty()) {
+                Map<String, Object> extJsonData = new HashMap<>();
+                extJsonData.put("dataRef", templateBase64); // 修复：使用dataRef而不是templateBase64
+                extJsonData.put("deviceCode", eslIdInfo.getDeviceCode());
+                extJsonData.put("deviceMac", eslIdInfo.getDeviceMac());
+                
+                try {
+                    String extJsonString = objectMapper.writeValueAsString(extJsonData);
+                    outputData.setExtJson(extJsonString);
+                    log.info("已将图片数据存储到BrandOutputData.extJson: deviceCode={}, 数据大小={}KB", 
+                            eslIdInfo.getDeviceCode(), templateBase64.length() / 1024);
+                } catch (Exception e) {
+                    log.error("序列化extJson数据失败", e);
+                }
+            }
             
             // 添加雅量特有的数据到dataMap
             Map<String, Object> dataMap = outputData.getDataMap();
@@ -317,7 +386,8 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
     }
     
     /**
-     * 从EXT_JSON中提取templateBase64
+     * 从EXT_JSON中提取图片数据
+     * 修复：支持从dataRef字段获取图片数据，以匹配MessageProducerService的期望
      */
     private String extractTemplateBase64FromExtJson(String extJson) {
         // 添加详细的日志输出来调试EXT_JSON内容
@@ -331,7 +401,7 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
         log.info("=== EXT_JSON调试信息结束 ===");
         
         if (extJson == null || extJson.trim().isEmpty()) {
-            log.warn("EXT_JSON为空，无法提取templateBase64");
+            log.warn("EXT_JSON为空，无法提取图片数据");
             return generateDefaultImageBase64();
         }
         
@@ -339,30 +409,63 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
             Map<String, Object> extData = objectMapper.readValue(extJson, Map.class);
             log.info("EXT_JSON解析成功，包含的键: {}", extData.keySet());
             
-            String templateBase64 = (String) extData.get("templateBase64");
-            log.info("templateBase64字段是否存在: {}", extData.containsKey("templateBase64"));
-            log.info("templateBase64字段值是否为null: {}", templateBase64 == null);
+            // 首先尝试从EXT_JSON中获取dataRef（新格式）
+            String imageBase64 = (String) extData.get("dataRef");
+            log.info("dataRef字段是否存在: {}", extData.containsKey("dataRef"));
+            log.info("dataRef字段值是否为null: {}", imageBase64 == null);
             
-            if (templateBase64 != null) {
-                log.info("templateBase64原始长度: {}", templateBase64.length());
-                log.info("templateBase64前100字符: {}", templateBase64.length() > 100 ? templateBase64.substring(0, 100) + "..." : templateBase64);
+            // 如果没有dataRef，尝试获取templateBase64（旧格式兼容）
+            if (imageBase64 == null || imageBase64.trim().isEmpty()) {
+                imageBase64 = (String) extData.get("templateBase64");
+                log.info("templateBase64字段是否存在: {}", extData.containsKey("templateBase64"));
+                log.info("templateBase64字段值是否为null: {}", imageBase64 == null);
             }
             
-            if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+            // 如果EXT_JSON中没有图片数据，尝试使用前端渲染服务
+            if (imageBase64 == null || imageBase64.trim().isEmpty()) {
+                log.info("EXT_JSON中未找到图片数据，尝试使用前端渲染服务");
+                
+                // 从EXT_JSON中获取templateId和productId
+                String templateId = (String) extData.get("templateId");
+                String productId = (String) extData.get("productId");
+                
+                if (templateId != null && productId != null) {
+                    log.info("尝试使用前端渲染服务: templateId={}, productId={}", templateId, productId);
+                    try {
+                        imageBase64 = templateRenderingService.renderTemplate(templateId, productId);
+                        if (imageBase64 != null && !imageBase64.trim().isEmpty()) {
+                            log.info("前端渲染服务成功生成图片，大小: {}KB", imageBase64.length() / 1024.0);
+                        } else {
+                            log.warn("前端渲染服务返回空图片");
+                        }
+                    } catch (Exception e) {
+                        log.error("前端渲染服务调用失败: {}", e.getMessage(), e);
+                    }
+                } else {
+                    log.warn("EXT_JSON中缺少templateId或productId，无法调用前端渲染服务");
+                }
+            }
+            
+            if (imageBase64 != null) {
+                log.info("图片数据原始长度: {}", imageBase64.length());
+                log.info("图片数据前100字符: {}", imageBase64.length() > 100 ? imageBase64.substring(0, 100) + "..." : imageBase64);
+            }
+            
+            if (imageBase64 != null && !imageBase64.trim().isEmpty()) {
                 // 移除data:image/png;base64,前缀（如果存在）
-                if (templateBase64.startsWith("data:image/")) {
-                    int commaIndex = templateBase64.indexOf(",");
+                if (imageBase64.startsWith("data:image/")) {
+                    int commaIndex = imageBase64.indexOf(",");
                     if (commaIndex > 0) {
-                        log.info("检测到data:image前缀，移除前缀，原长度: {}, 前缀长度: {}", templateBase64.length(), commaIndex + 1);
-                        templateBase64 = templateBase64.substring(commaIndex + 1);
-                        log.info("移除前缀后长度: {}", templateBase64.length());
+                        log.info("检测到data:image前缀，移除前缀，原长度: {}, 前缀长度: {}", imageBase64.length(), commaIndex + 1);
+                        imageBase64 = imageBase64.substring(commaIndex + 1);
+                        log.info("移除前缀后长度: {}", imageBase64.length());
                     }
                 }
                 
-                log.info("从EXT_JSON中成功提取templateBase64，最终大小: {}KB", templateBase64.length() / 1024.0);
-                return templateBase64;
+                log.info("成功获取图片数据，最终大小: {}KB", imageBase64.length() / 1024.0);
+                return imageBase64;
             } else {
-                log.warn("EXT_JSON中未找到templateBase64字段或字段为空，使用默认图片");
+                log.warn("无法获取图片数据，使用默认图片");
                 return generateDefaultImageBase64();
             }
             
@@ -643,5 +746,127 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
      */
     public YaliangBrandConfig.DeviceSpec getDeviceSpecInfo(String deviceSize) {
         return config.getDeviceSpecs().getSpecs().get(deviceSize);
+    }
+    
+    /**
+     * 从产品名称中提取设备尺寸
+     * 例如: YALIANG2.9T -> 2.9
+     */
+    private String extractDeviceSizeFromProductName(String productName) {
+        if (productName == null || !productName.contains("YALIANG")) {
+            return null;
+        }
+        
+        // 匹配YALIANG后面的数字和小数点
+        String pattern = "YALIANG([0-9]+\\.?[0-9]*)";
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher m = p.matcher(productName);
+        
+        if (m.find()) {
+            return m.group(1);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 设置当前处理的设备尺寸
+     */
+    private void setCurrentDeviceSize(String deviceSize) {
+        this.currentDeviceSize = deviceSize;
+        log.info("设置当前处理的设备尺寸: {}", deviceSize);
+    }
+    
+    /**
+     * 使用前端渲染API生成图片
+     */
+    private String renderTemplateWithProductData(EslCompleteData completeData) {
+        try {
+            String templateId = completeData.getTemplate() != null ? 
+                String.valueOf(completeData.getTemplate().getTemplateId()) : null;
+            // 使用商品的数据库主键ID，而不是业务编号
+            // 前端渲染API需要的是商品的数据库主键ID
+            String productId = String.valueOf(completeData.getProduct().getId()); // 这是数据库主键ID，如"1974785930188967938"
+            
+            if (templateId == null || productId == null || productId.trim().isEmpty()) {
+                log.warn("缺少templateId或productId，无法调用前端渲染服务: templateId={}, productId={}", 
+                    templateId, productId);
+                return generateDefaultImageBase64();
+            }
+            
+            log.info("开始调用前端渲染API: templateId={}, productId={}", templateId, productId);
+            
+            // 调用前端渲染服务
+            String templateBase64 = templateRenderingService.renderTemplate(templateId, productId);
+            
+            if (templateBase64 != null && !templateBase64.trim().isEmpty()) {
+                log.info("前端渲染API调用成功，原始图片大小: {}KB", templateBase64.length() / 1024.0);
+                
+                // 解析ESL ID获取设备信息
+                YaliangEslIdInfo eslIdInfo = parseYaliangEslId(completeData.getEsl().getEslId());
+                
+                // 从模板类别中提取设备规格
+                String deviceSize = currentDeviceSize;
+                if (deviceSize == null) {
+                    deviceSize = mapDeviceCodeToSize(eslIdInfo.getDeviceCode());
+                }
+                
+                if (deviceSize != null) {
+                    log.info("从模板类别中提取到设备规格: {}", deviceSize);
+                    
+                    // 获取设备规格配置
+                    YaliangBrandConfig.DeviceSpec deviceSpec = config.getDeviceSpecs().getSpecs().get(deviceSize);
+                    if (deviceSpec != null && deviceSpec.isSupported()) {
+                        log.info("找到设备规格: deviceCode={}, deviceSize={}, resolution={}x{}, rotation={}°", 
+                            eslIdInfo.getDeviceCode(), deviceSize, 
+                            deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
+                        
+                        // 处理图片
+                        try {
+                            String processedBase64 = imageProcessor.processImage(templateBase64, deviceSpec, config);
+                            
+                            log.info("图片处理完成，处理后大小: {}KB，目标分辨率: {}x{}，旋转: {}°", 
+                                processedBase64.length() / 1024.0, 
+                                deviceSpec.getWidth(), deviceSpec.getHeight(), deviceSpec.getRotation());
+                            
+                            return processedBase64;
+                        } catch (Exception e) {
+                            log.error("图片处理失败，使用原始图片: {}", e.getMessage(), e);
+                            return templateBase64;
+                        }
+                    } else {
+                        log.warn("不支持的设备规格: {}", deviceSize);
+                    }
+                }
+                
+                return templateBase64;
+            } else {
+                log.warn("前端渲染API返回空图片");
+                return generateDefaultImageBase64();
+            }
+            
+        } catch (Exception e) {
+            log.error("前端渲染API调用失败: {}", e.getMessage(), e);
+            return generateDefaultImageBase64();
+        }
+    }
+    
+    /**
+     * 根据设备代码映射到设备尺寸
+     */
+    private String mapDeviceCodeToSize(String deviceCode) {
+        if (deviceCode == null) return null;
+        
+        if (deviceCode.startsWith("CG101") || deviceCode.startsWith("LE2000KC")) return "2.13";
+        if (deviceCode.startsWith("CG102")) return "2.9";
+        if (deviceCode.startsWith("CG103")) return "4.2";
+        if (deviceCode.startsWith("CG104")) return "1.54";
+        if (deviceCode.startsWith("CG105")) return "2.66";
+        if (deviceCode.startsWith("CG106")) return "3.5";
+        if (deviceCode.startsWith("CG107")) return "5.83";
+        if (deviceCode.startsWith("CG108")) return "7.5";
+        if (deviceCode.startsWith("CG109")) return "10.2";
+        
+        return "2.13"; // 默认规格
     }
 }

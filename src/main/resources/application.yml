@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/eslplatform?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&useInformationSchema=true&rewriteBatchedStatements=true
+    url: jdbc:mysql://192.168.10.50:3306/eslplatform?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&useInformationSchema=true&rewriteBatchedStatements=true
     username: panda
     password: panda@123
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -49,17 +49,28 @@ logging:
 
 # Swagger
 springdoc:
+  api-docs:
+    path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
   show-actuator: true
 
-# 模板下载配置
+# 应用配置
 app:
+  # 模板下载基础URL
   template:
+    download:
+      base-url: http://localhost:8080/api/templates
+    # 前端渲染服务配置
+    rendering:
+      api:
+        url: http://localhost:3001  # 修复：移除路径，只保留基础URL
+        key: snowy-print-api-2024
+        enabled: true
+        timeout: 30000  # 30秒超时
+        retry-count: 3  # 重试次数
     base-url: http://10.3.36.25:8999/api/res/templ/loadtemple
   esl:
     # 价签刷新配置

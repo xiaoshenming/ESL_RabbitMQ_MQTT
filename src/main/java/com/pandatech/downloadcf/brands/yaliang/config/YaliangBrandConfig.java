@@ -167,6 +167,13 @@ public class YaliangBrandConfig {
         public String getResolution() {
             return width + "×" + height + (isNewVersion ? "*" : "");
         }
+        
+        /**
+         * 检查设备规格是否支持
+         */
+        public boolean isSupported() {
+            return width > 0 && height > 0;
+        }
     }
     
     @Data
@@ -276,8 +283,27 @@ public class YaliangBrandConfig {
         private int maxFieldCount = 50;
         
         /**
-         * 是否允许空值
+         * 允许空值
          */
         private boolean allowNullValues = true;
+    }
+    
+    /**
+     * 获取设备规格信息
+     *
+     * @param deviceSize 设备尺寸
+     * @return 设备规格
+     */
+    public DeviceSpec getDeviceSpec(String deviceSize) {
+        if (deviceSize == null || deviceSize.trim().isEmpty()) {
+            deviceSize = deviceSpecs.getDefaultSpec();
+        }
+        
+        DeviceSpec spec = deviceSpecs.getSpecs().get(deviceSize);
+        if (spec == null) {
+            spec = deviceSpecs.getSpecs().get(deviceSpecs.getDefaultSpec());
+        }
+        
+        return spec;
     }
 }
