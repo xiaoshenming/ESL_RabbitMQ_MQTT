@@ -400,10 +400,34 @@ public class MessageProducerService {
     
     /**
      * 生成雅量品牌的queueId
+     * 使用时间戳和随机数结合，确保在有效范围内生成唯一的队列ID
      */
     private int generateYaliangQueueId() {
-        // 使用当前时间戳的后4位作为queueId，确保唯一性
-        return (int) (System.currentTimeMillis() % 10000);
+        // 使用雅量配置的范围
+        int minQueueId = yaliangBrandConfig.getValidation().getMinQueueId();
+        int maxQueueId = yaliangBrandConfig.getValidation().getMaxQueueId();
+        
+        // 确保配置的范围有效
+        if (minQueueId <= 0) {
+            minQueueId = 1000;
+        }
+        if (maxQueueId <= minQueueId) {
+            maxQueueId = 9999;
+        }
+        
+        // 使用时间戳的低位和随机数结合生成队列ID
+        long timestamp = System.currentTimeMillis();
+        int timeBasedPart = (int) (timestamp % 1000); // 取时间戳的低3位
+        int randomPart = (int) (Math.random() * 1000); // 生成0-999的随机数
+        
+        // 组合时间戳和随机数，然后映射到有效范围内
+        int combinedValue = (timeBasedPart + randomPart) % (maxQueueId - minQueueId + 1);
+        int queueId = minQueueId + combinedValue;
+        
+        log.debug("生成雅量队列ID: {} (范围: {}-{}, 时间戳部分: {}, 随机部分: {})", 
+                 queueId, minQueueId, maxQueueId, timeBasedPart, randomPart);
+        
+        return queueId;
     }
     
     /**

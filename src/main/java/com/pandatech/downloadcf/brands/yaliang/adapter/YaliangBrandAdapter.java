@@ -669,20 +669,34 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
     
     /**
      * 生成队列ID（带异常处理）
+     * 使用时间戳和随机数结合，确保在有效范围内生成唯一的队列ID
      *
      * @return 队列ID
      */
     public int generateQueueId() {
         try {
-            int queueId = (int) (System.currentTimeMillis() % 100000);
+            int minQueueId = config.getValidation().getMinQueueId();
+            int maxQueueId = config.getValidation().getMaxQueueId();
             
-            // 验证队列ID范围
-            if (config.getValidation().getMinQueueId() > 0 && queueId < config.getValidation().getMinQueueId()) {
-                queueId = config.getValidation().getMinQueueId();
+            // 确保配置的范围有效
+            if (minQueueId <= 0) {
+                minQueueId = 1000;
             }
-            if (config.getValidation().getMaxQueueId() > 0 && queueId > config.getValidation().getMaxQueueId()) {
-                queueId = config.getValidation().getMaxQueueId();
+            if (maxQueueId <= minQueueId) {
+                maxQueueId = 9999;
             }
+            
+            // 使用时间戳的低位和随机数结合生成队列ID
+            long timestamp = System.currentTimeMillis();
+            int timeBasedPart = (int) (timestamp % 1000); // 取时间戳的低3位
+            int randomPart = ThreadLocalRandom.current().nextInt(1000); // 生成0-999的随机数
+            
+            // 组合时间戳和随机数，然后映射到有效范围内
+            int combinedValue = (timeBasedPart + randomPart) % (maxQueueId - minQueueId + 1);
+            int queueId = minQueueId + combinedValue;
+            
+            log.debug("生成队列ID: {} (范围: {}-{}, 时间戳部分: {}, 随机部分: {})", 
+                     queueId, minQueueId, maxQueueId, timeBasedPart, randomPart);
             
             return queueId;
         } catch (Exception e) {
