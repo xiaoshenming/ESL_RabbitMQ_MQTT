@@ -138,8 +138,14 @@ public class MessageProducerService {
      * 为YALIANG品牌构建特定的MQTT主题
      */
     private String buildYaliangMqttTopic(String storeCode) {
-        // YALIANG品牌使用固定的MQTT主题格式: yl-esl/XD010012/refresh/queue
-        return "yl-esl/XD010012/refresh/queue";
+        // YALIANG品牌使用动态门店编码的MQTT主题格式: yl-esl/{storeCode}/refresh/queue
+        if (storeCode == null || storeCode.trim().isEmpty()) {
+            log.warn("门店编码为空，使用默认门店编码: default");
+            storeCode = "default";
+        }
+        String topic = "yl-esl/" + storeCode + "/refresh/queue";
+        log.debug("构建雅量MQTT主题: {}", topic);
+        return topic;
     }
     
     /**

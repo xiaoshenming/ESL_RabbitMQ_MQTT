@@ -305,7 +305,7 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
                 outputData.setDataMap(dataMap);
             }
             
-            dataMap.put("mqttTopic", getMqttTopic(eslIdInfo.getDeviceCode()));
+            dataMap.put("mqttTopic", getMqttTopic(outputData.getStoreCode()));
             dataMap.put("mqttPayload", yaliangMessage);
             dataMap.put("deviceCode", eslIdInfo.getDeviceCode());
             dataMap.put("deviceMac", eslIdInfo.getDeviceMac());
@@ -478,11 +478,17 @@ public class YaliangBrandAdapter extends BaseBrandAdapter {
     
     /**
      * 获取MQTT主题
-     * 格式: yl-esl/XD010012/refresh/queue
-     * 注意：这里使用固定的XD010012作为主题中间部分，而不是deviceCode
+     * 格式: yl-esl/{storeCode}/refresh/queue
+     * 使用动态门店编码作为主题中间部分，支持多门店订阅
      */
-    public String getMqttTopic(String deviceCode) {
-        return config.getMqttTopicPrefix() + "/XD010012/refresh/queue";
+    public String getMqttTopic(String storeCode) {
+        if (storeCode == null || storeCode.trim().isEmpty()) {
+            log.warn("门店编码为空，使用默认门店编码: default");
+            storeCode = "default";
+        }
+        String topic = config.getMqttTopicPrefix() + "/" + storeCode + "/refresh/queue";
+        log.debug("构建雅量MQTT主题: {}", topic);
+        return topic;
     }
     
     /**

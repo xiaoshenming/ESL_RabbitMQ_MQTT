@@ -231,8 +231,8 @@ public class EslRefreshService {
             Object mqttPayload;
             
             if ("YALIANG001".equals(outputData.getBrandCode())) {
-                // 雅量品牌使用特定的MQTT主题和载荷格式
-                mqttTopic = "yl-esl/XD010012/refresh/queue";
+                // 雅量品牌使用特定的MQTT主题和载荷格式，使用动态门店编码
+                mqttTopic = "yl-esl/" + outputData.getStoreCode() + "/refresh/queue";
                 mqttPayload = messageProducerService.buildMqttPayload(outputData, template);
                 log.info("YALIANG品牌消息准备发送到RabbitMQ队列: eslId={}, topic={}", outputData.getEslId(), mqttTopic);
             } else {
