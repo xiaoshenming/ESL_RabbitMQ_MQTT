@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pandatech.downloadcf.adapter.BrandAdapter;
 import com.pandatech.downloadcf.brands.BrandAdapterFactory;
 import com.pandatech.downloadcf.brands.BaseBrandAdapter;
+import com.pandatech.downloadcf.brands.yaliang.adapter.YaliangBrandAdapter;
 import com.pandatech.downloadcf.dto.BrandOutputData;
 import com.pandatech.downloadcf.dto.EslCompleteData;
 import com.pandatech.downloadcf.dto.EslRefreshRequest;
@@ -14,12 +15,16 @@ import com.pandatech.downloadcf.util.BrandCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * 价签刷新服务 - 核心业务逻辑
@@ -34,9 +39,27 @@ public class EslRefreshService {
     private final BrandAdapterFactory brandAdapterFactory;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
-    
+    private final TemplateRenderingService templateRenderingService;
+
     /**
-     * 刷新价签
+     * 异步刷新价签
+     */
+    @Async("eslRefreshExecutor")
+    public CompletableFuture<Boolean> refreshEslAsync(EslRefreshRequest request) {
+        log.info("开始异步刷新价签: {}", request);
+        
+        try {
+            boolean result = refreshEsl(request);
+            log.info("异步价签刷新完成: eslId={}, result={}", request.getEslId(), result);
+            return CompletableFuture.completedFuture(result);
+        } catch (Exception e) {
+            log.error("异步价签刷新异常: eslId={}", request.getEslId(), e);
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    /**
+     * 刷新价签（同步方法，内部使用）
      */
     public boolean refreshEsl(EslRefreshRequest request) {
         log.info("开始刷新价签: {}", request);
@@ -122,7 +145,155 @@ public class EslRefreshService {
     }
     
     /**
-     * 批量刷新价签
+     * 异步批量刷新价签（优化版本）
+     */
+    @Async("eslRefreshExecutor")
+    public CompletableFuture<Map<String, Object>> batchRefreshEslAsync(List<EslRefreshRequest> requests) {
+        log.info("开始异步批量刷新价签: count={}", requests.size());
+        
+        // 按品牌分组，使用批量渲染API优化性能
+        Map<String, List<EslRefreshRequest>> brandGroups = requests.stream()
+                .collect(Collectors.groupingBy(request -> {
+                    try {
+                        EslCompleteData eslData = dataService.getEslCompleteData(request.getEslId());
+                        return eslData != null ? eslData.getBrandCode() : "unknown";
+                    } catch (Exception e) {
+                        log.warn("获取价签品牌信息失败: eslId={}", request.getEslId());
+                        return "unknown";
+                    }
+                }));
+        
+        int successCount = 0;
+        int failedCount = 0;
+        
+        for (Map.Entry<String, List<EslRefreshRequest>> entry : brandGroups.entrySet()) {
+            String brandCode = entry.getKey();
+            List<EslRefreshRequest> brandRequests = entry.getValue();
+            
+            try {
+                // 获取品牌适配器
+                BrandAdapter adapter = brandAdapterFactory.getAdapter(brandCode);
+                if (adapter == null) {
+                    log.error("未找到品牌适配器: brandCode={}", brandCode);
+                    failedCount += brandRequests.size();
+                    continue;
+                }
+                
+                // 批量处理同品牌的价签
+                int batchResult = processBrandBatch(adapter, brandRequests);
+                successCount += batchResult;
+                failedCount += (brandRequests.size() - batchResult);
+                
+            } catch (Exception e) {
+                log.error("批量处理品牌价签异常: brandCode={}, count={}", brandCode, brandRequests.size(), e);
+                failedCount += brandRequests.size();
+            }
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalCount", requests.size());
+        result.put("successCount", successCount);
+        result.put("failedCount", failedCount);
+        
+        log.info("异步批量刷新价签完成: total={}, success={}, failed={}", 
+                requests.size(), successCount, failedCount);
+        
+        return CompletableFuture.completedFuture(result);
+    }
+    
+    /**
+     * 处理同品牌的批量价签刷新
+     */
+    private int processBrandBatch(BrandAdapter adapter, List<EslRefreshRequest> requests) {
+        // 如果支持批量渲染，使用批量API
+        if (adapter instanceof YaliangBrandAdapter && requests.size() > 1) {
+            return processBatchWithBulkRendering(requests);
+        } else {
+            // 否则逐个处理
+            int successCount = 0;
+            for (EslRefreshRequest request : requests) {
+                try {
+                    if (refreshEsl(request)) {
+                        successCount++;
+                    }
+                } catch (Exception e) {
+                    log.error("单个价签刷新异常: eslId={}", request.getEslId(), e);
+                }
+            }
+            return successCount;
+        }
+    }
+    
+    /**
+     * 使用批量渲染API处理价签刷新
+     */
+    private int processBatchWithBulkRendering(List<EslRefreshRequest> requests) {
+        try {
+            // 准备批量渲染数据
+            List<TemplateRenderingService.RenderItem> renderItems = new ArrayList<>();
+            Map<String, EslRefreshRequest> requestMap = new HashMap<>();
+            
+            for (EslRefreshRequest request : requests) {
+                try {
+                    EslCompleteData eslData = dataService.getEslCompleteData(request.getEslId());
+                    if (eslData != null) {
+                        String templateId = eslData.getTemplate() != null ? eslData.getTemplate().getId() : null;
+                        String productId = eslData.getProduct() != null ? eslData.getProduct().getId() : null;
+                        String key = templateId + "_" + productId;
+                        renderItems.add(new TemplateRenderingService.RenderItem(templateId, productId));
+                        requestMap.put(key, request);
+                    }
+                } catch (Exception e) {
+                    log.error("准备批量渲染数据异常: eslId={}", request.getEslId(), e);
+                }
+            }
+            
+            if (renderItems.isEmpty()) {
+                return 0;
+            }
+            
+            // 批量调用前端渲染API
+            Map<String, String> renderResults = templateRenderingService.batchRenderTemplates(renderItems);
+            
+            int successCount = 0;
+            // 处理渲染结果
+            for (Map.Entry<String, String> entry : renderResults.entrySet()) {
+                String key = entry.getKey();
+                String base64Image = entry.getValue();
+                EslRefreshRequest request = requestMap.get(key);
+                
+                if (request != null && base64Image != null) {
+                    try {
+                        // 发送到消息队列
+                        EslCompleteData eslData = dataService.getEslCompleteData(request.getEslId());
+                        if (eslData != null) {
+                            // 创建刷新消息
+                            Map<String, Object> message = new HashMap<>();
+                            message.put("eslId", request.getEslId());
+                            message.put("base64Image", base64Image);
+                            message.put("timestamp", System.currentTimeMillis());
+                            
+                            // 发送到RabbitMQ
+                            rabbitTemplate.convertAndSend("esl.refresh.queue", message);
+                            successCount++;
+                            log.info("批量价签刷新消息已发送: eslId={}", request.getEslId());
+                        }
+                    } catch (Exception e) {
+                        log.error("发送批量刷新消息异常: eslId={}", request.getEslId(), e);
+                    }
+                }
+            }
+            
+            return successCount;
+            
+        } catch (Exception e) {
+            log.error("批量渲染处理异常", e);
+            return 0;
+        }
+    }
+
+    /**
+     * 批量刷新价签（同步方法，内部使用）
      */
     public int batchRefreshEsl(List<EslRefreshRequest> requests) {
         log.info("开始批量刷新价签: count={}", requests.size());

@@ -41,21 +41,21 @@ public class TemplateRenderingConfig {
         /**
          * 请求超时时间（毫秒）
          */
-        private int timeout = 30000;
+        private int timeout = 10000; // 减少到10秒
         
         /**
          * 重试次数
          */
-        private int retryCount = 3;
+        private int retryCount = 2; // 减少重试次数
         
         /**
          * 连接超时时间（毫秒）
          */
-        private int connectTimeout = 10000;
+        private int connectTimeout = 5000; // 减少到5秒
         
         /**
          * 读取超时时间（毫秒）
          */
-        private int readTimeout = 30000;
+        private int readTimeout = 10000; // 减少到10秒
     }
 }

@@ -40,21 +40,23 @@ public class EslController {
         log.info("接收到价签刷新请求: {}", request);
         
         try {
-            boolean success = eslRefreshService.refreshEsl(request);
+            // 异步处理价签刷新，立即返回响应
+            eslRefreshService.refreshEslAsync(request);
             
-            if (success) {
-                Map<String, Object> data = new HashMap<>();
-                data.put("eslId", request.getEslId());
-                data.put("timestamp", System.currentTimeMillis());
-                
-                return ResponseEntity.ok(ApiResponse.success("价签刷新请求已提交", data));
-            } else {
-                Map<String, Object> data = new HashMap<>();
-                data.put("eslId", request.getEslId());
-                
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.badRequest("价签不存在或未绑定商品", data));
-            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("eslId", request.getEslId());
+            data.put("timestamp", System.currentTimeMillis());
+            data.put("status", "processing");
+            
+            return ResponseEntity.ok(ApiResponse.success("价签刷新请求已提交", data));
+            
+        } catch (IllegalArgumentException e) {
+            log.error("价签刷新参数错误: {}", e.getMessage());
+            Map<String, Object> data = new HashMap<>();
+            data.put("eslId", request.getEslId());
+            
+            return ResponseEntity.badRequest().body(
+                ApiResponse.badRequest("参数错误: " + e.getMessage(), data));
             
         } catch (Exception e) {
             log.error("价签刷新异常", e);
@@ -74,22 +76,15 @@ public class EslController {
         log.info("接收到批量价签刷新请求: count={}", requests.size());
         
         try {
-            int successCount = eslRefreshService.batchRefreshEsl(requests);
-            int failedCount = requests.size() - successCount;
+            // 异步批量处理价签刷新，立即返回响应
+            eslRefreshService.batchRefreshEslAsync(requests);
             
             Map<String, Object> data = new HashMap<>();
             data.put("totalCount", requests.size());
-            data.put("successCount", successCount);
-            data.put("failedCount", failedCount);
+            data.put("status", "processing");
+            data.put("timestamp", System.currentTimeMillis());
             
-            // 这里可以添加详细的结果列表，暂时简化处理
-            // TODO: 如果需要详细的每个价签的处理结果，需要修改service层返回更详细的信息
-            
-            if (failedCount == 0) {
-                return ResponseEntity.ok(ApiResponse.success("批量刷新处理完成", data));
-            } else {
-                return ResponseEntity.ok(ApiResponse.partialSuccess("批量刷新处理完成，部分失败", data));
-            }
+            return ResponseEntity.ok(ApiResponse.success("批量刷新任务已提交", data));
             
         } catch (Exception e) {
             log.error("批量价签刷新异常", e);
